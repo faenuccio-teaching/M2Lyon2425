@@ -1,0 +1,10 @@
+/.lake
+*.pdf 
+*.aux 
+*.log 
+*.pdfsync 
+*.gz 
+*.snm 
+*.out 
+*.toc 
+*.nav
