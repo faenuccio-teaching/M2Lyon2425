@@ -6,7 +6,7 @@ This is the repository for the Lean courses of the program <a href="http://mathe
 You will need to do the following tasks before the start of the course. We will help you do these tasks during the "Installation party" on September 4th.
 * Make sure that you have a working wifi, usually via Eduroam.
 * Install a working `git` installation: for some help, you can have a look at <a href="https://www.imo.universite-paris-saclay.fr/~patrick.massot/misc/git.html">this page maintained by Patrick Massot</a>.
-* Install a Lean editor (we *strongly* suggest that you install VSCode) and a working Lean environment: you can follow the instructions on the <a href="https://leanprover-community.github.io/get_started.html">Lean community webpage</a>.
+* Install a Lean editor (we *strongly* suggest that you install VSCode).
 * Clone the course repository on your laptop using the address: https://github.com/faenuccio-teaching/M2Lyon2425.git (more about that during the "Installation Party").
 * Download the Mathlib build cache on your computer (more about that during the "Installation Party").
 * Create a <a href="https://github.com">GitHub account</a> to be able later on to submit your work.
