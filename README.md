@@ -16,7 +16,7 @@ You will need to do the following tasks before the start of the course. We will 
 
 The three teachers for this course are <a href="mailto: sophie.morel@ens-lyon.fr">Sophie Morel</a>, <a href="mailto: filippo.nuccio@univ-st-etienne.fr">Filippo A. E. Nuccio</a> and <a href="mailto: roblot@math.univ-lyon1.fr">Xavier F. Roblot</a>. Feel free to contact us by e-mail or on Zulip (see the relevant point above).
 
-Classes are on Wednesday, from 10AM to 13AM, at ENS-Lyon. The schedule for the first term is as follows
+Classes are on Wednesday, from 10AM to 1PM, at ENS-Lyon. The schedule for the first term is as follows
 
 | Date      | Topic         | Teacher | Optional Link
 |-----------|---------------|---------|---------------
