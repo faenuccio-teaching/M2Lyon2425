@@ -5,13 +5,12 @@ This is the repository for the Lean courses of the program <a href="http://mathe
 
 You will need to do the following tasks before the start of the course. We will help you do these tasks during the "Installation party" on September 4th.
 * Make sure that you have a working wifi, usually via Eduroam.
-* Install a working `git` installation: for some help, you
-can have a look at <a href="https://www.imo.universite-paris-saclay.fr/~patrick.massot/misc/git.html">this page maintained by Patrick Massot</a>.
+* Install a working `git` installation: for some help, you can have a look at <a href="https://www.imo.universite-paris-saclay.fr/~patrick.massot/misc/git.html">this page maintained by Patrick Massot</a>.
 * Install a Lean editor (we *strongly* suggest that you install VSCode) and a working Lean environment: you can follow the instructions on the <a href="https://leanprover-community.github.io/get_started.html">Lean community webpage</a>.
 * Clone the course repository on your laptop using the address: https://github.com/faenuccio-teaching/M2Lyon2425.git (more about that during the "Installation Party").
 * Download the Mathlib build cache on your computer (more about that during the "Installation Party").
-* Create an account on the <a href="https://zulip.com/">Zulip chat app</a>: once you've got it, subscribe to the <a href="https://leanprover.zulipchat.com/">Lean Community Chat</a> and ask to one of the teachers to be invited to join the dedicated stream for this course.
 * Create a <a href="https://github.com">GitHub account</a> to be able later on to submit your work.
+* Create an account to the <a href="https://leanprover.zulipchat.com/">Lean Community Chat</a> on <a href="https://zulip.com/">Zulip</a>. Note you can use your GitHub account for that. Once you've got it, ask to one of the teachers to be invited to join the dedicated stream for this course.
 
 ## Teachers and schedule:
 
