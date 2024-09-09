@@ -24,7 +24,7 @@ Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/
 | Sep 11th | Logic 1 | X. Roblot |
 | Sep 18th | Logic 2 | X. Roblot |
 | Sep 25th | Sets and Functions 1 | F. Nuccio |
-| Oct 2nd | Sets and Functions 1 | F. Nuccio |
+| Oct 2nd | Sets and Functions 2 | F. Nuccio |
 | Oct 9th | Groups 1 | S. Morel
 | Oct 16th | Groups 2 | S. Morel
 | Oct 23rd | Rings and Fields 1 | X. Roblot
