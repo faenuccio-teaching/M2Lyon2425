@@ -1,19 +1,22 @@
 # M2Lyon2425
 This is the repository for the Lean courses of the program <a href="http://mathematiques.ens-lyon.fr/parcours-2024-2025-394652.kjsp">"Higher Algebra and Formalised Mathematics"</a> of the Advanced Master in Mathematics in Lyon for 2024/25.
 
-## Some tips
-To download the repository and start working on it, you need
-* a working `git` installation: for some help, you
-can have a look at <a href="https://www.imo.universite-paris-saclay.fr/~patrick.massot/misc/git.html">this page maintained by Patrick Massot</a>.
-* a Lean editor (we suggest that you install VSCode) and a working Lean environment: you can follow the instructions on the <a href="https://leanprover-community.github.io/get_started.html">Lean community webpage</a>. If you encounter problems, you can come to the "Installation party" on September 4th to get some help.
-* An account on the <a href="https://zulip.com/">Zulip chat app</a>: once you've got it, subscribe to the <a href="https://leanprover.zulipchat.com/">Lean Community Chat</a> and ask to one of the teachers to be invited to join the dedicated stream for this course.
+## Prerequisites
 
+You will need to do the following tasks before the start of the course. We will help you do these tasks during the "Installation party" on September 4th.
+* Make sure that you have a working wifi, usually via Eduroam.
+* Install a working `git` installation: for some help, you can have a look at <a href="https://www.imo.universite-paris-saclay.fr/~patrick.massot/misc/git.html">this page maintained by Patrick Massot</a>.
+* Install a Lean editor (we *strongly* suggest that you install VSCode).
+* Clone the course repository on your laptop using the address: https://github.com/faenuccio-teaching/M2Lyon2425.git (more about that during the "Installation Party").
+* Download the Mathlib build cache on your computer (more about that during the "Installation Party").
+* Create a <a href="https://github.com">GitHub account</a> to be able later on to submit your work.
+* Create an account to the <a href="https://leanprover.zulipchat.com/">Lean Community Chat</a> on <a href="https://zulip.com/">Zulip</a>. Note you can use your GitHub account for that. Once you've got it, ask to one of the teachers to be invited to join the dedicated stream for this course.
 
 ## Teachers and schedule:
 
 The three teachers for this course are <a href="mailto: sophie.morel@ens-lyon.fr">Sophie Morel</a>, <a href="mailto: filippo.nuccio@univ-st-etienne.fr">Filippo A. E. Nuccio</a> and <a href="mailto: roblot@math.univ-lyon1.fr">Xavier F. Roblot</a>. Feel free to contact us by e-mail or on Zulip (see the relevant point above).
 
-Classes are on Wednesday, from 9AM to 12AM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a> in room M7411 on the 4th floor. The schedule for the first term is as follows
+Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a> in room M7411 on the 4th floor. The schedule for the first term is as follows
 
 | Date      | Topic         | Teacher | Optional Link
 |-----------|---------------|---------|---------------
@@ -31,7 +34,6 @@ Classes are on Wednesday, from 9AM to 12AM, at <a href="https://www.ens-lyon.fr/
 | Nov 20th | Topological Spaces 2 | S. Morel
 | Nov 27th | Calculus 1 | X. Roblot
 | Dec 2nd | Calculus 2 | X. Roblot
-
 
 ## Exam
 
