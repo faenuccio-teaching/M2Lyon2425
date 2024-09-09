@@ -13,7 +13,7 @@ can have a look at <a href="https://www.imo.universite-paris-saclay.fr/~patrick.
 
 The three teachers for this course are <a href="mailto: sophie.morel@ens-lyon.fr">Sophie Morel</a>, <a href="mailto: filippo.nuccio@univ-st-etienne.fr">Filippo A. E. Nuccio</a> and <a href="mailto: roblot@math.univ-lyon1.fr">Xavier F. Roblot</a>. Feel free to contact us by e-mail or on Zulip (see the relevant point above).
 
-Classes are on Wednesday, from 9AM to 12AM, at ENS-Lyon. The schedule for the first term is as follows
+Classes are on Wednesday, from 9AM to 12AM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a> in room M7411 on the 4th floor. The schedule for the first term is as follows
 
 | Date      | Topic         | Teacher | Optional Link
 |-----------|---------------|---------|---------------
