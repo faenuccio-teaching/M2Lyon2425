@@ -6,15 +6,13 @@
   * The Mechanics of Proof, H. Macbeth
 -/
 
-import Mathlib.Tactic.Common
-
 /-
   # The Prop type
   Propositions are mathematical statements that can true or false, like `2 + 2 = 5` or
   `A finite group of order 11 is cyclic`. They live in the type `Prop`, it is a special
   type that contains only two elements `True` and `False`.
 
-  In this file, we look at how to prove logic statements about propositions using Lean.
+  In this file, we look at how to prove logical statements using Lean.
 -/
 
 -- Introduce some proposition
@@ -293,6 +291,11 @@ example : P ∨ Q → Q ∨ P := by
   cases h
   · sorry
   · sorry
+
+-- The law of excluded middle is not by default in Lean but we included some conventions
+-- from Mathlib including this law (and we actually already used it already.)
+example : P ∨ ¬ P := by
+  sorry
 
 /- TODO -/
 
