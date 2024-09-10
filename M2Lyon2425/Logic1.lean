@@ -5,57 +5,43 @@
   * Theorem Proving in Lean 4, J. Avigad, L. de Moura, S. Kong, S. Ullrich
   * The Mechanics of Proof, H. Macbeth
 -/
+import Mathlib.Tactic.Common
 
 /-
   # The Prop type
-  Propositions are mathematical statements that can true or false, like `2 + 2 = 5` or
-  `A finite group of order 11 is cyclic`. They live in the type `Prop`, it is a special
+  Propositions are mathematical statements that can be true or false, like `2 + 2 = 5` or
+  `A finite group of order 11 is cyclic`. They live in the type `Prop`. It is a special
   type that contains only two elements `True` and `False`.
-
-  In this file, we look at how to prove logical statements using Lean.
 -/
 
--- Introduce some proposition
-variable (P Q R : Prop)
+-- Introduce some propositions
+variable (P Q R S : Prop)
 
--- Equality
+-- Use of the `rfl` tactic
 example : P = P := by
   sorry
 
--- Proof of P
+-- Use of the `exact` tactic
 example (hP : P) : P := by
   sorry
 
 /-
   # Implication
-  use `\to` to write `→`
+  Use `\to` to write `→`
 -/
 
+-- Use of the `intro` tactic
 example : P → P := by
   intro hP
   sorry
 
+-- Use of the `apply` tactic
 example (h : P → Q) (hP : P) : Q := by
   apply h
   sorry
 
 example (hQ : Q) : P → Q := by
   sorry
-
-/- TODO -/
-
-example : P → Q → P := by
-  sorry
-
--- Modus Ponens: if `P → Q` then `Q` can be deduced from `P`
-example : P → (P → Q) → Q := by
-  sorry
-
--- Transitivity of `→`
-example : (P → Q) → (Q → R) → P → R := by
-  sorry
-
-/- END TODO -/
 
 -- Let's try something a bit more complicated
 -- Use `\.` to write `·`
@@ -69,7 +55,16 @@ example : (P → Q → R) → (P → Q) → P → R := by
 
 /- TODO -/
 
-variable (S T : Prop)
+example : P → Q → P := by
+  sorry
+
+-- Modus Ponens: if `P → Q` then `Q` can be deduced from `P`
+example : P → (P → Q) → Q := by
+  sorry
+
+-- Transitivity of `→`
+example : (P → Q) → (Q → R) → P → R := by
+  sorry
 
 example : (P → Q) → ((P → Q) → P) → Q := by
   sorry
@@ -227,8 +222,7 @@ example : (P ∧ Q → R) → P → Q → R := by
 /-
   # Equivalence
   Use `\iff` to write `↔`
-  `P ↔ Q` can broken into two goals: `P → Q` and `Q → P` using `constructor`
-  (but they are not definitionnally equal!)
+  `P ↔ Q` can broken into two goals: `P → Q` and `Q → P` using `constructor`.
 -/
 
 example : P ↔ P := by
@@ -238,8 +232,8 @@ example : P ↔ P := by
 
 example : (P ↔ Q) → (Q ↔ P) := by
   intro h
-  cases h with
-  | intro mp mpr => sorry
+  cases h
+  sorry
 
 -- Use of the `lemma` tactic
 example : (P ↔ Q) ↔ (Q ↔ P) := by
@@ -287,13 +281,10 @@ example : Q → P ∨ Q := by
 
 -- symmetry of `∨`
 example : P ∨ Q → Q ∨ P := by
-  intro h
-  cases h
-  · sorry
-  · sorry
+  sorry
 
 -- The law of excluded middle is not by default in Lean but we included some conventions
--- from Mathlib including this law (and we actually already used it already.)
+-- from Mathlib including this law (and we actually already used it.)
 example : P ∨ ¬ P := by
   sorry
 
