@@ -338,25 +338,115 @@ example : (P ↔ Q) ↔ (Q ↔ P) := by
 /- TODO -/
 
 example : (P ↔ Q) → (Q ↔ R) → (P ↔ R) := by
-  sorry
+  intro h1 h2
+  constructor
+  · intro hP
+    cases h2 with
+    | intro mp mpr =>
+      apply mp
+      cases h1 with
+      | intro mp mpr =>
+        apply mp
+        exact hP
+  · intro hR
+    cases h1 with
+    | intro mp mpr =>
+      apply mpr
+      cases h2 with
+      | intro mp mpr =>
+        apply mpr
+        exact hR
+
+-- More efficiently
+example : (P ↔ Q) → (Q ↔ R) → (P ↔ R) := by
+  intro h1 h2
+  constructor
+  · intro hP
+    apply h2.mp
+    apply h1.mp
+    exact hP
+  · intro hR
+    apply h1.mpr
+    apply h2.mpr
+    exact hR
+
+-- Even more efficiently
+example : (P ↔ Q) → (Q ↔ R) → (P ↔ R) := by
+  intro h1 h2
+  constructor
+  · intro hP
+    exact h2.mp (h1.mp hP)
+  · intro hR
+    exact h1.mpr (h2.mpr hR)
+
+lemma lemma2 : P ∧ Q → Q ∧ P := by
+  intro h
+  constructor
+  · exact h.right
+  · exact h.left
 
 example : P ∧ Q ↔ Q ∧ P := by
-  sorry
+  constructor
+  · exact lemma2 P Q
+  · exact lemma2 Q P
 
 example : (P ∧ Q) ∧ R ↔ P ∧ Q ∧ R := by
-  sorry
+  constructor
+  · intro h
+    constructor
+    · exact h.left.left
+    · constructor
+      · exact h.left.right
+      · exact h.right
+  · intro h
+    constructor
+    · constructor
+      · exact h.left
+      · exact h.right.left
+    · exact h.right.right
 
 example : P ↔ P ∧ True := by
-  sorry
+  constructor
+  · intro hP
+    constructor
+    · exact hP
+    · trivial
+  · intro h
+    exact h.left
 
 example : False ↔ P ∧ False := by
-  sorry
+  constructor
+  · intro h
+    exfalso
+    exact h
+  · intro h
+    exact h.right
 
 example : (P ↔ Q) → (R ↔ S) → (P ∧ R ↔ Q ∧ S) := by
-  sorry
+  intro h1 h2
+  constructor
+  · intro h3
+    constructor
+    · apply h1.mp
+      exact h3.left
+    · apply h2.mp
+      exact h3.right
+  · intro h3
+    constructor
+    · apply h1.mpr
+      exact h3.left
+    · apply h2.mpr
+      exact h3.right
 
 example : ¬(P ↔ ¬P) := by
-  sorry
+  intro h
+  cases h with
+  | intro mp mpr =>
+    by_cases hP : P
+    · have hP' := mp hP
+      exact hP' hP
+    · have hP' := mpr hP
+      exact hP hP'
 
 /- END TODO -/
 
