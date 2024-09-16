@@ -1,7 +1,4 @@
-import Mathlib.Data.Set.Lattice
-import Mathlib.Data.Nat.Prime
-import Mathlib.Data.Nat.Parity
-import LeanInRome.Common
+import Mathlib.Data.Set.Basic
 
 section
 variable {α : Type*}

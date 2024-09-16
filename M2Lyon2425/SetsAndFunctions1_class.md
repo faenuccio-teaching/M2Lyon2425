@@ -1,24 +1,16 @@
-# Sets and Functions
+# Sets
 
 ## Introduction
-Sets are **primitive** objects when doing classical, old-school, pen-and-paper mathematics: there is no *definition* of what a set is, there are only *rules* about how these objects work, governing their behaviour under unions, intersections, etc. For Lean, sets are **no longer primitive objects**, but the same rules hold.
-
-
-In the same vein, for Lean functions are **primitive** objects: there is no *definition* of what a function (between two "types") is, there are only **rules** about how these fundamental objects behave.
+Sets are **primitive** objects when doing classical, old-school, pen-and-paper mathematics: there is no *definition* of what a set is, there are only *rules* about how these objects work, governing their behaviour under unions, intersections, etc. 
 
 Concretely, that's all you need: one rarely (never?) uses that in set-theoretic language a function between $S$ and $T$ is really a subset of $S\times T$ satisfying some property.
 
-+++ At the end of the day, everything is the same.
-But at 10:00 AM in the morning, things seem different, and it takes a while to get used to them.
-+++
-
-## Sets
-
 Mathematical objects that are normally represented by a set (like a group, a ring, a differentiable manifold, the set of prime numbers, a Riemann surface, the positive reals, etc...) are formalised in Lean as *types* endowed with some extra-structure.
 
-Yet sometimes we really want to speak about *sets* as collections of elements and to play the usual games.
+So, for Lean, sets are **no longer primitive objects**; yet sometimes we really want to speak about *sets* as collections of elements and to play the usual games. This is possible, and the same ``working'' rules hold.
 
-### Basic features
+
+## Definitions
 
 +++ Every set lives in a given type: it is a set of elements (*terms*) of a type:
 ```lean
@@ -39,33 +31,38 @@ S : α → Prop
 ```
 so `(Set α) = (α → Prop)`.
 
-You can think of this function as being the characteristic function of `S`; indeed, the `∈` symbol means that the value of `S` is `True`:
-```lean
-example (α : Type) (x : α) (S : Set α) : x ∈ S ↔ S x := rfl
-```
-You might think that `x ∈ S` is the proposition that is true when `x` belongs to `S` and is false otherwise. So, the positive reals are a *function*!
+You can think of this function as being the characteristic function of `S`; indeed, the `∈` symbol means that the value of `S` is `True`. So `x ∈ S` is the proposition that is true when `x` belongs to `S` and is false otherwise. So, the positive integers are a *function*!
+
+### Some examples: 
+1. How to prove that something belongs to a set?
+1. Positive integers;
+1. Even numbers'
+1. An abstract set of `α` given by some `P`.
 +++
 
 +++ Sub(sub-sub-sub)sets are not treated as sets-inside-sets.
 
 Let's think old-stylish for a moment:
-+++ Given a set $S$, what is a subset $T$ of $S$ *for you*?
+
+Given a set $S$, what is a subset $T$ of $S$ *for you*?
 1. Another set such that $x\in T\Rightarrow x \in S$.
 1. A collection of elements of $S$.
 1. ... is there **any difference** whatsoever?!
 
 *Yes and No*: you can either stress the fact that $T$ is a honest set satisfying some property; or the fact that it is a set whose elements "come from" $S$. We take the **first approach**.
 
-<!-- <br>
- -->
-So, given two sets  `S T : Set α`, the property that `T` is a subset of `S` is an *implication*
+
+So, given two sets  `S T : Set α`, the property that `T` is a subset of `S` is *an implication*
 ```lean
 def (T ⊆ S : Prop) := ∀ a, a ∈ T → a ∈ S
 ```
-Let's see an example.
+#### Final examples
+1. Sub-sub-sets;
+1. A subset of a subset is a subset.
+
 +++
 
-### Main constructions
+## Operations on Sets
 +++ Intersection
 Given sets `S T : Set α` we have the
 ```lean
