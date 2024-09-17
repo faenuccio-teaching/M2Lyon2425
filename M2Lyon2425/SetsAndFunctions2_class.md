@@ -40,6 +40,8 @@ You can think of this function as being the characteristic function of `S`; inde
 example (α : Type) (x : α) (S : Set α) : x ∈ S ↔ S x := rfl
 ```
 You might think that `x ∈ S` is the proposition that is true when `x` belongs to `S` and is false otherwise. So, the positive reals are a *function*!
+
+Nevertheless, a general principle of formalized mathematics is that you shuold rely on an API (_Application Programming Interface_) rather than definitional equality.
 +++
 
 +++ Sub(sub-sub-sub)sets are not treated as sets-inside-sets.
