@@ -370,7 +370,7 @@ example : (P ↔ Q) → (Q ↔ R) → (P ↔ R) := by
     apply h2.mpr
     exact hR
 
--- Even more efficiently
+-- Even shorter
 example : (P ↔ Q) → (Q ↔ R) → (P ↔ R) := by
   intro h1 h2
   constructor
