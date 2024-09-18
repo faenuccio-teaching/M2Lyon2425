@@ -1,9 +1,12 @@
 import Mathlib.Algebra.Group.Nat
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Operations
+import Mathlib.Order.SetNotation
 import Mathlib.Tactic.Common
 
 open Set Classical
+
+open scoped Set
 section Definitions
 
 -- # §1: Definitions
@@ -104,7 +107,7 @@ example (α : Type) (S T W : Set α) (hST : S ⊆ T) (hTW : T ⊆ W) : S ⊆ W :
 -- **Another take on subsets and sets as types**
 def subsub {α : Type} {S : Set α} (P : S → Prop) : Set (S : Type) := P
 
-def subsub' (α : Type) (S : Set α) (P : α → Prop) : Set (S : Type) := by
+def subsub' {α : Type} {S : Set α} (P : α → Prop) : Set (S : Type) := by
   intro a
   exact P a
 
@@ -112,6 +115,8 @@ def subsub' (α : Type) (S : Set α) (P : α → Prop) : Set (S : Type) := by
 
 -- Why does this *fail*? How to fix it?
 -- example (α : Type) (S : Set α) (P : S → Prop) (x : ↑S) (hx : x ∈ subsub P) : x ∈ S := sorry
+/- *Sol.:* This fails because `x` is of type `↑S`, but `S` is in `Set α`, so only terms of type `α`
+can be tested for membership in `S`. It can be made to work as follows:-/
 example (α : Type) (S : Set α) (P : S → Prop) (x : ↑S) (hx : x ∈ subsub P) : {s : S // P s} := by
   use x
   exact hx
@@ -120,9 +125,12 @@ example (α : Type) (S : Set α) (P : S → Prop) (x : ↑S) (hx : x ∈ subsub 
 -- **What is really this "injection"  `Set α ↪ Type*`?**
 
 -- Why does this *fail*? How to fix it?
--- example : ∀ n : PositiveIntegers, 0 ≤ n := by
+-- example : ∀ n : PositiveIntegers, 0 ≤ n := sorry
+/- *Sol.:*  This fails because `0` is a term of `ℕ`, whereas `n` is a term of `PositiveIntegers`.
+They cannot be compared directly, because `n` is actually a *pair* of a natural number and a proof
+of its positivity. It can be made to work as follows-/
 example : ∀ n : PositiveIntegers, 0 < n.1 := by
-  rintro ⟨n, hn⟩
+  rintro ⟨-, hn⟩ --use first `rintro ⟨n, hn⟩` and then `rintro ⟨_, hn⟩`
   exact hn
 
 
@@ -144,10 +152,10 @@ def EvenPositiveNaturals : Set PositiveIntegers := by
   exact d % 2 = 0
 
 -- Why does this *fail*? How to fix it?
-example : 1 ∉ EvenPositiveNaturals := sorry
-/- Lean complains because `3` is not a term of `EvenNaturals`, so it does not make sense
+-- example : 1 ∉ EvenPositiveNaturals := sorry
+/- *Sol.:* Lean complains because `3` is not a term of `EvenNaturals`, so it does not make sense
 to check whether it satisifies a property defined on them. It can be made to work by writing -/
--- example : ⟨1, Int.zero_lt_one⟩ ∉ EvenPositiveNaturals := sorry
+example : ⟨1, Int.zero_lt_one⟩ ∉ EvenPositiveNaturals := sorry
 
 
 -- Define the set of odd numbers and prove some properties
@@ -170,12 +178,17 @@ example (n : ℕ) : n ∈ OddNaturals ↔ n ∉ EvenNaturals := by
     rwa [Nat.mod_two_ne_zero] at h
 
 
--- Why does this *fail*? How to fix it?
-example : subsub = subsub' := sorry
+-- Why does this *fail*?
+-- example (α : Type) (S : Set α) : subsub = subsub' := sorry
+/- *Sol.:*  Lean complanins because in `subsub'` `P` is defined on the type `α` whereas in `subsub`
+it is defined on the type `↑S`. So this is an equality between functions defined on different types,
+that makes no sense. -/
+
 
 end Definitions
 
 -- # §2. Operations
+
 section Operations
 
 -- **Self-intersection is the identity, proven with extensionality**
@@ -199,7 +212,8 @@ example (α : Type) (S T : Set α) (H : S ⊆ T) : S ∪ T = T := by
 
 
 -- **An _unfixable_ problem**
-example (α β : Type) (S : Set α) (T : Set β) : S ⊆ S ∪ T := sorry
+-- example (α β : Type) (S : Set α) (T : Set β) : S ⊆ S ∪ T := sorry
+/- *Sol.:*  Well, it was unfixable, so there is no solution...-/
 
 
 -- **Empty set**
@@ -232,25 +246,55 @@ example (α : Type) (S : Set α) : Sᶜ ∪ S = univ := by
 
 
 
+-- **§ Indexed unions**
+example {α I : Type} (A : I → Set α) (x : α) : x ∈ ⋃ i, A i ↔ ∃ i, x ∈ A i := by
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · rw [mem_iUnion] at h
+    exact h
+  · rw [mem_iUnion]
+    exact h
+  -- *Alternative proof*
+  -- rw [mem_iUnion]
 
+
+
+example {α I : Type} (A : I → Set α) (S : Set α) : (S ∩ ⋃ i, A i) = ⋃ i, A i ∩ S := by
+  ext x
+  simp only [mem_inter_iff, mem_iUnion]
+  constructor
+  · rintro ⟨xs, ⟨i, xAi⟩⟩
+    exact ⟨i, xAi, xs⟩
+  rintro ⟨i, xAi, xs⟩
+  exact ⟨xs, ⟨i, xAi⟩⟩
 
 
 /- **§ Some exercises** -/
 
 -- Try to prove the statement proven before but without using the library
-example (α : Type) (S T : Set α) (H : S ⊆ T) : T = S ∪ T := sorry
-  -- ext
-  -- constructor
-  -- · intro h
-  --   cases h
-  --   · apply H
-  --     assumption
-  --   · assumption
-  -- · intro h
-  --   apply Or.intro_right
-  --   exact h
+example (α : Type) (S T : Set α) (H : S ⊆ T) : T = S ∪ T := by
+  ext
+  constructor
+  · intro h
+    apply Or.intro_right
+    exact h
+  · intro h
+    cases h
+    · apply H
+      assumption
+    · assumption
 
-example (α : Type) (S T R : Set α) : S ∩ (T ∪ R) = (S ∩ T) ∪ (S ∩ R) := sorry
+example (α : Type) (S T R : Set α) : S ∩ (T ∪ R) = (S ∩ T) ∪ (S ∩ R) := by
+  ext x
+  refine ⟨fun ⟨h1, h2⟩ ↦ ?_, fun h ↦ ⟨?_, ?_⟩⟩
+  · rcases h2 with hT | hR
+    · exact Or.intro_left _ (⟨h1, hT⟩ : And _ _ )
+    · exact Or.intro_right _ (⟨h1, hR⟩ : And _ _ )
+  · rcases h with ⟨hS, -⟩ | ⟨hS, -⟩ <;> assumption
+  · rcases h with ⟨-, hT⟩ | ⟨-, hR⟩
+    exact Or.intro_left _ hT
+    exact Or.intro_right _ hR
+
+
 
 -- For this, you can try `simp` at a certain point...`le_antisymm` can also be useful.
 example : (setOf (0 ≤ ·) : Set ℤ) ∩ setOf (· ≤ 0) = {0} := by
@@ -265,9 +309,37 @@ example : (setOf (0 ≤ ·) : Set ℤ) ∩ setOf (· ≤ 0) = {0} := by
 
 
 -- A bit of difference, inclusion and intersection
-example (α : Type) (S T : Set α) (h : T ⊆ S) : T \ S = ∅ := by sorry
+example (α : Type) (S T : Set α) (h : T ⊆ S) : T \ S = ∅ := by
+  ext
+  exact ⟨fun ⟨hT, hnS⟩ ↦ hnS <| h hT, fun _ ↦ by trivial⟩
 
-example (α : Type) (S T R : Set α) : S \ (T ∪ R) ⊆ (S \ T) \ R := sorry
+example (α : Type) (S T R : Set α) : S \ (T ∪ R) ⊆ (S \ T) \ R := by
+  intro x ⟨hxS, hxnTR⟩
+  rw [mem_diff]
+  rw [mem_union, not_or] at hxnTR
+  exact ⟨⟨hxS, fun h ↦ hxnTR.1 h⟩, hxnTR.2⟩
+-- *An alternative tactic* replacing this `exact`: longer but easier to read:
+  -- constructor
+  -- · constructor
+  --   · exact hxS
+  --   · exact hxnTR.1
+  -- exact hxnTR.2
 
+
+-- Indexed intersections work as indexed unions (_mutatis mutandis_)
+example {α I : Type} (A B : I → Set α) : (⋂ i, A i ∩ B i) = (⋂ i, A i) ∩ ⋂ i, B i := by
+  ext x
+  simp only [mem_inter_iff, mem_iInter]
+  constructor
+  · intro h
+    constructor
+    · intro i
+      exact (h i).1
+    intro i
+    exact (h i).2
+  rintro ⟨h1, h2⟩ i
+  constructor
+  · exact h1 i
+  exact h2 i
 
 end Operations
