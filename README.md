@@ -33,7 +33,7 @@ Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/
 | Nov 13th | Topological Spaces 1 | S. Morel
 | Nov 20th | Topological Spaces 2 | S. Morel
 | Nov 27th | Calculus 1 | X. Roblot
-| Dec 2nd | Calculus 2 | X. Roblot
+| Dec 4th | Calculus 2 | X. Roblot
 
 ## Exam
 
