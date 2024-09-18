@@ -16,7 +16,10 @@ You will need to do the following tasks before the start of the course. We will 
 
 The three teachers for this course are <a href="mailto: sophie.morel@ens-lyon.fr">Sophie Morel</a>, <a href="mailto: filippo.nuccio@univ-st-etienne.fr">Filippo A. E. Nuccio</a> and <a href="mailto: roblot@math.univ-lyon1.fr">Xavier F. Roblot</a>. Feel free to contact us by e-mail or on Zulip (see the relevant point above).
 
-Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a> in room M7411 on the 4th floor. The schedule for the first term is as follows
+
+### First Term
+
+Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a> in room M7411 on the 4th floor. The schedule for the first term is as follows:
 
 | Date      | Topic         | Teacher | Optional Link
 |-----------|---------------|---------|---------------
@@ -35,5 +38,22 @@ Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/
 | Nov 27th | Calculus 1 | X. Roblot
 | Dec 4th | Calculus 2 | X. Roblot
 
-## Exam
+### Second Term
+
+Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a>. The schedule for the second term is as follows:
+
+| Date      | Topic         | Teacher | Optional Link
+|-----------|---------------|---------|---------------
+| Jan 8th | Structures | X. Roblot |
+| Jan 15th | Inductive Types | F. Nuccio |
+| Jan 22nd | Classes and Instances 1 | F. Nuccio |
+| Jan 29th | Classes and Instances 2 | F. Nuccio |
+| Feb 5th | Categories in Lean 1 | S. Morel
+| Feb 12th | Categories in Lean 2 | S. Morel
+| Feb 19th | Categories in Lean 3 | S. Morel
+| Feb 26th  | Introduction to Metaprogramming 1 | F. Nuccio |
+| Mar 5th | _Holidays_ | ---
+| Mar 12th | Introduction to Metaprogramming 2 | F. Nuccio |
+
+## Exams
 
