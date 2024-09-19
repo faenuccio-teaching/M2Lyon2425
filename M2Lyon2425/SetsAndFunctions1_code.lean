@@ -11,31 +11,31 @@ section Definitions
 
 -- # §1: Definitions
 
-/- **§ Basics** -/
-
 -- **A tautology**
+
 example (α : Type) (x : α) (S : Set α) : x ∈ S ↔ S x := by
   sorry
 
-
 -- **The positive integers**
+
 def PositiveIntegers : Set ℤ := by
   sorry
 
-example : 1 ∈ PositiveIntegers := by
-  sorry
+lemma one_pos : 1 ∈ PositiveIntegers := by sorry
+
+def PositiveNaturals : Set ℕ := by sorry
+
+example : 1 ∈ PositiveNaturals := by sorry
+
+-- Why does this *fail*? How to fix it?
+example : (-1) ∉ PositiveNaturals := sorry
 
 -- **The even naturals**
+
 def EvenNaturals : Set ℕ := by
   sorry
 
-def EvenNaturals' : Set ℕ := by
-  sorry
-
 example (n : ℕ) : n ∈ EvenNaturals → (n+2) ∈ EvenNaturals := by
-  sorry
-
-lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ n ∈ EvenNaturals' := by
   sorry
 
 
@@ -48,7 +48,7 @@ example {α : Type} (P : α → Prop) : AbstractSet P = AbstractSet' P := sorry
 
 
 
-/- **§ Subsets** -/
+-- `⌘`
 
 -- **A double inclusion**
 
@@ -56,6 +56,7 @@ example (α : Type) (S T W : Set α) (hST : S ⊆ T) (hTW : T ⊆ W) : S ⊆ W :
   sorry
 
 -- **Another take on subsets and sets as types**
+
 def subsub {α : Type} {S : Set α} (P : S → Prop) : Set (S : Type) := sorry
 
 def subsub' {α : Type} {S : Set α} (P : α → Prop) : Set (S : Type) := sorry
@@ -109,29 +110,35 @@ end Definitions
 section Operations
 
 -- **Self-intersection is the identity, proven with extensionality**
+
 example (α : Type) (S : Set α) : S ∩ S = S := by
   sorry
 
 -- **The union**
+
 example (α : Type) (S T : Set α) (H : S ⊆ T) : S ∪ T = T := by
   sorry
 
 
 -- **An _unfixable_ problem**
+
 example (α β : Type) (S : Set α) (T : Set β) : S ⊆ S ∪ T := sorry
 
 
 -- **Empty set**
+
 example : (setOf (0 < ·) : Set ℤ) ∩ setOf (· < 0) = ∅ := by
   sorry
 
 
 -- **Complement and difference**
+
 example (α : Type) (S : Set α) : Sᶜ ∪ S = univ := by
   sorry
 
 
 -- **§ Indexed unions**
+
 example {α I : Type} (A : I → Set α) (x : α) : x ∈ ⋃ i, A i ↔ ∃ i, x ∈ A i := by
   sorry
 
@@ -154,6 +161,9 @@ example (α : Type) (S T R : Set α) : S ∩ (T ∪ R) = (S ∩ T) ∪ (S ∩ R)
 example : (setOf (0 ≤ ·) : Set ℤ) ∩ setOf (· ≤ 0) = {0} := by
   sorry
 
+-- Using your definition of `OddNaturals` prove the following:
+example : EvenNaturals ∪ OddNaturals = univ := by
+  sorry
 
 -- A bit of difference, inclusion and intersection
 example (α : Type) (S T : Set α) (h : T ⊆ S) : T \ S = ∅ := by
