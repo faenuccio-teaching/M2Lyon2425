@@ -1,4 +1,5 @@
 import Mathlib.Algebra.Group.Nat
+import Mathlib.Algebra.Field.Basic
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Operations
 import Mathlib.Tactic.Common
@@ -195,37 +196,145 @@ example : Surjective f ↔ (range f)ᶜ = ∅ := by
 
 end Operations
 
-section InductiveTypes
-
 -- # §3 : Inductive types and inductive predicates
 
--- def EvenNaturals' : Set ℕ
---   | 0 => True
---   | Nat.succ m => ¬ EvenNaturals' m
+namespace InductiveTypes
 
--- lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ n ∈ EvenNaturals' := by
---   induction' n with m h_ind
---   · constructor
---     · intro _
---       trivial
---     · intro _
---       trivial
---   · constructor
---     · intro hm
---       replace hm : (m + 1) % 2 = 0 := hm --try to comment it out
---       replace hm : m % 2 = 1 :=by
---         rwa [Nat.succ_mod_two_eq_zero_iff] at hm
---       replace hm : ¬ EvenNaturals m := by
---         rw [EvenNaturals]
---         rw [hm]
---         exact Nat.one_ne_zero
---       replace h_ind := (h_ind.mpr).mt hm
---       exact h_ind
---     · intro hm
---       replace hm : ¬ EvenNaturals' m := by
---         trivial
---       replace h_ind := (h_ind.mp).mt hm
---       replace h_ind : ¬ (m % 2) = 0 := h_ind
---       rwa [Nat.mod_two_ne_zero, ← Nat.succ_mod_two_eq_zero_iff] at h_ind
+inductive ENS_Nat
+| zero : ENS_Nat
+| succ : ENS_Nat → ENS_Nat
+
+#print ENS_Nat
+#check ENS_Nat
+
+def JustOne_fun : ℕ → ENS_Nat
+  | 0 => ENS_Nat.zero
+  | Nat.succ m => ENS_Nat.succ (JustOne_fun m)
+
+def JustOne_inv : ENS_Nat → ℕ
+  | ENS_Nat.zero => 0
+  | ENS_Nat.succ a => Nat.succ (JustOne_inv a)
+
+def JustOne_Left : LeftInverse JustOne_inv JustOne_fun := by
+  intro n
+  match n with
+  | 0 => rfl
+  | Nat.succ m =>
+      rw [JustOne_fun, JustOne_inv, JustOne_Left]
+
+
+def JustOne_Right : RightInverse JustOne_inv JustOne_fun
+  | ENS_Nat.zero => rfl
+  | ENS_Nat.succ m => by rw [JustOne_inv, JustOne_fun, JustOne_Right]
+
+def JustOne : ℕ ≃ ENS_Nat where
+  toFun := JustOne_fun
+  invFun := JustOne_inv
+  left_inv := JustOne_Left
+    -- have : JustOne.invFun = JustOne_inv := by
+    --   unfold JustOne.invFun
+    -- intro n
+    -- match n with
+    -- | 0 => rfl
+    -- | Nat.succ m =>
+    --     have := JustOne.left_inv m
+    --     rw [JustOne_fun, JustOne_inv]
+    --     simp
+    --     convert JustOne.left_inv m
+  right_inv := JustOne_Right
+
+
+
+inductive Lor (p q : Prop) : Prop
+| left : p → Lor p q
+| right : q → Lor p q
+
+#print Lor
+
+inductive IsEven : ℕ → Prop
+| zero_even : IsEven 0
+| succ_succ (n : ℕ) : IsEven n → IsEven (n+2)
+
+example : IsEven 4 := by
+  repeat apply IsEven.succ_succ
+  exact IsEven.zero_even
+
+example : ¬ IsEven 5 := by
+  intro h
+  cases h with
+  | succ_succ n hn =>
+    cases hn with
+    | succ_succ m hm =>
+      cases hm
+
+example : ¬ IsEven 111 := by
+  intro h
+  repeat rcases h with _ | ⟨-, h⟩
+
+
+lemma not_isEven_succ_succ (n : ℕ) : ¬ IsEven n ↔ ¬ IsEven (n + 2) := by
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · intro hf
+    cases hf
+    trivial
+  · intro hf
+    have := IsEven.succ_succ n hf
+    trivial
+
+lemma not_IsEven_succ : ∀ n : ℕ, IsEven n ↔ ¬ IsEven (n + 1) := by
+  intro n
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · rcases h with _ | ⟨n, hn⟩ -- what are the new cases? how many? why?
+    · intro hf
+      cases hf
+    · intro hf
+      rcases hf with _ | ⟨-, H⟩
+      exact (not_IsEven_succ n).mp hn H
+  · induction' n with d hd
+    · exact IsEven.zero_even
+    · rw [← not_isEven_succ_succ] at h
+      replace hd := hd.mt
+      simp only [Decidable.not_not] at hd
+      apply hd
+      exact h
+
+
+lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ IsEven n := by
+  induction' n with m h_ind
+  · refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+    · exact IsEven.zero_even
+    · trivial--rfl -- notice the difference!
+  · refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+    · rw [not_IsEven_succ]
+      replace h : (m + 1) % 2 = 0 := h
+      replace h : m % 2 = 1 := by
+        rwa [Nat.succ_mod_two_eq_zero_iff] at h
+      replace h : m ∉ EvenNaturals := by
+        intro hm
+        replace hm := hm.out
+        rw [hm] at h
+        exact zero_ne_one h
+      replace h_ind : ¬ IsEven m := sorry
+      rcases m with _ | ⟨n, hn⟩
+      · exfalso
+        apply h
+        rfl
+      · intro h
+        rcases h with _ | ⟨-, h⟩
+        cases h
+      · rwa [Nat.add_assoc, ← not_isEven_succ_succ]
+    · rw [not_IsEven_succ] at h
+      replace h : ¬ IsEven m := by
+        intro h
+        replace h := h.succ_succ
+        trivial
+      replace h_ind := h_ind.mp.mt h
+      replace h_ind : ¬ m % 2 = 0 := h_ind
+      rw [Nat.mod_two_ne_zero] at h_ind
+      rw [← Nat.succ_mod_two_eq_zero_iff] at h_ind
+      exact h_ind
+
+
+
 
 end InductiveTypes
