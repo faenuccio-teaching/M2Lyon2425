@@ -21,6 +21,8 @@ example (α : Type) (x : α) (S : Set α) : x ∈ S ↔ S x := by
 def PositiveIntegers : Set ℤ := by
   sorry
 
+-- `⌘`
+
 lemma one_pos : 1 ∈ PositiveIntegers := by sorry
 
 def PositiveNaturals : Set ℕ := by sorry
@@ -47,6 +49,12 @@ def AbstractSet' {α : Type} (P : α → Prop) : Set α := by sorry
 example {α : Type} (P : α → Prop) : AbstractSet P = AbstractSet' P := sorry
 
 
+-- `⌘`
+
+-- **Subsets as implication**
+example {α : Type} (S T : Set α) (s : α) (hST : S ⊆ T) (hs : s ∈ S) : s ∈ T := by sorry
+
+
 
 -- `⌘`
 
@@ -67,11 +75,13 @@ def subsub' {α : Type} {S : Set α} (P : α → Prop) : Set (S : Type) := sorry
 example (α : Type) (S : Set α) (P : S → Prop) (x : ↑S) (hx : x ∈ subsub P) : x ∈ S := sorry
 
 
--- **What is really this "injection"  `Set α ↪ Type*`?**
+-- **What is really this "injection"  `Set α ↪ Type`?**
 
 -- Why does this *fail*? How to fix it?
 example : ∀ n : PositiveIntegers, 0 ≤ n := by sorry
 
+
+-- `⌘`
 
 /- **§ Some exercises** -/
 
@@ -114,6 +124,10 @@ section Operations
 example (α : Type) (S : Set α) : S ∩ S = S := by
   sorry
 
+
+-- `⌘`
+
+
 -- **The union**
 
 example (α : Type) (S T : Set α) (H : S ⊆ T) : S ∪ T = T := by
@@ -124,6 +138,8 @@ example (α : Type) (S T : Set α) (H : S ⊆ T) : S ∪ T = T := by
 
 example (α β : Type) (S : Set α) (T : Set β) : S ⊆ S ∪ T := sorry
 
+-- `⌘`
+
 
 -- **Empty set**
 
@@ -131,11 +147,15 @@ example : (setOf (0 < ·) : Set ℤ) ∩ setOf (· < 0) = ∅ := by
   sorry
 
 
+-- `⌘`
+
+
 -- **Complement and difference**
 
 example (α : Type) (S : Set α) : Sᶜ ∪ S = univ := by
   sorry
 
+-- `⌘`
 
 -- **§ Indexed unions**
 
