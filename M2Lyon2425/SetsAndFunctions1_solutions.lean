@@ -27,6 +27,8 @@ def PositiveIntegers : Set ℤ := by
   -- *5* exact (fun d ↦ 0 < d)
   exact (0 < ·) -- keep this
 
+-- `⌘`
+
 lemma one_pos : 1 ∈ PositiveIntegers := by
   have := Nat.zero_lt_of_ne_zero (Nat.one_ne_zero)
   -- exact this -- *why does it fail?*
@@ -79,6 +81,15 @@ example {α : Type} (P : α → Prop) : AbstractSet P = AbstractSet' P := by
 
 -- `⌘`
 
+-- **Subsets as implication**
+example {α : Type} (S T : Set α) (s : α) (hST : S ⊆ T) (hs : s ∈ S) : s ∈ T := by
+  apply hST
+  exact hs
+
+
+
+-- `⌘`
+
 -- **A double inclusion**
 
 example (α : Type) (S T W : Set α) (hST : S ⊆ T) (hTW : T ⊆ W) : S ⊆ W := by
@@ -111,7 +122,7 @@ example (α : Type) (S : Set α) (P : S → Prop) (x : ↑S) (hx : x ∈ subsub 
   exact hx
 
 
--- **What is really this "injection"  `Set α ↪ Type*`?**
+-- **What is really this "injection"  `Set α ↪ Type`?**
 
 -- Why does this *fail*? How to fix it?
 -- example : ∀ n : PositiveIntegers, 0 ≤ n := sorry
@@ -122,6 +133,8 @@ example : ∀ n : PositiveIntegers, 0 < n.1 := by
   rintro ⟨-, hn⟩ --use first `rintro ⟨n, hn⟩` and then `rintro ⟨_, hn⟩`
   exact hn
 
+
+-- `⌘`
 
 /- **§ Some exercises** -/
 
@@ -194,6 +207,9 @@ example (α : Type) (S : Set α) : S ∩ S = S := by
   -- rw [← eq_iff_iff]
   -- exact and_self _
 
+-- `⌘`
+
+
 -- **The union**
 
 example (α : Type) (S T : Set α) (H : S ⊆ T) : S ∪ T = T := by
@@ -206,6 +222,9 @@ example (α : Type) (S T : Set α) (H : S ⊆ T) : S ∪ T = T := by
 
 -- example (α β : Type) (S : Set α) (T : Set β) : S ⊆ S ∪ T := sorry
 /- *Sol.:*  Well, it was unfixable, so there is no solution...-/
+
+
+-- `⌘`
 
 
 -- **Empty set**
@@ -224,6 +243,9 @@ example : (setOf (0 < ·) : Set ℤ) ∩ setOf (· < 0) = ∅ := by
     exact h
 
 
+-- `⌘`
+
+
 -- **Complement and difference**
 
 example (α : Type) (S : Set α) : Sᶜ ∪ S = univ := by
@@ -238,7 +260,7 @@ example (α : Type) (S : Set α) : Sᶜ ∪ S = univ := by
     · exact Or.intro_left _ hx
 
 
-
+-- `⌘`
 
 -- **§ Indexed unions**
 

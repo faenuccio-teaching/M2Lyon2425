@@ -1,13 +1,17 @@
 # Sets
 
 ## Introduction
-Sets are **primitive** objects when doing classical, old-school, pen-and-paper mathematics: there is no *definition* of what a set is, there are only *rules* about how these objects work, governing their behaviour under unions, intersections, etc. 
+Sets are **primitive** objects when doing classical, old-school, pen-and-paper mathematics: 
+* no *definition*;
+* only *rules* about how these objects work (unions, intersections, etc.).
 
-Concretely, that's all you need: one rarely (never?) uses that in set-theoretic language a function between $S$ and $T$ is really a subset of $S\times T$ satisfying some property.
+That's all you need: do you look at $f\colon S \to T$ as $f\subseteq S\times T$?
 
-Mathematical objects that are normally represented by a set (like a group, a ring, a differentiable manifold, the set of prime numbers, a Riemann surface, the positive reals, etc...) are formalised in Lean as *types* endowed with some extra-structure.
+Objects normally represented by a set are formalised in Lean as *types* with some extra-structure.
 
-So, for Lean, sets are **no longer primitive objects**; yet sometimes we really want to speak about *sets* as collections of elements and to play the usual games. This is possible, and the same ``working'' rules hold.
+So, for Lean, sets are **no longer primitive objects**; yet
+* sometimes we still want to speak about *sets* as collections of elements 
+* we want then to play the usual games.
 
 
 ## Definitions
@@ -23,7 +27,7 @@ variable (S : Set)
 does not mean "let `S` be a set": it means nothing and it is an error.
 +++
 
-+++ A set **coincides** with the test-function defining it.
++++ A set coincides with the test-function defining it.
 
  Given a type `α`, a set `S` (of elements/terms of `α`) is a *function*
 ```lean
@@ -31,71 +35,81 @@ S : α → Prop
 ```
 so `(Set α) = (α → Prop)`.
 
-You can think of this function as being the characteristic function of `S`; indeed, the `∈` symbol means that the value of `S` is `True`. So `x ∈ S` is the proposition that is true when `x` belongs to `S` and is false otherwise. So, the positive integers are a *function*!
+* This function is the "characteristic function" of the set `S`; 
+* the `a ∈ S` symbol means that the value of `S` is `True` when evaluated  at the element `a`;
+* So, the positive integers are a *function*!
+
+    `⌘`
 
 Yet, given a function `P : α → Prop` we prefer to write `setOf P : Set α` rather then `P : Set α` to avoid _abusing definitional equality_.
 
 ### Some examples: 
 1. How to prove that something belongs to a set?
-1. Positive integers;
+1. Positive naturals;
 1. Even numbers;
 1. An abstract set of `α` given by some `P`.
+
+`⌘`
 +++
 
 +++ Sub(sub-sub-sub)sets are not treated as sets-inside-sets.
 
-Let's think old-stylish for a moment:
-
-Given a set $S$, what is a subset $T$ of $S$ *for you*?
+Given a (old-style) set $S$, what is a subset $T$ of $S$ *for you*?
 1. Another set such that $x\in T\Rightarrow x \in S$.
 1. A collection of elements of $S$.
-1. ... is there _any difference_ whatsoever?!
 
-*Yes and No*: you can either stress the fact that $T$ is a honest set satisfying some property; or the fact that it is a set whose elements "come from" $S$. We take the **first approach**.
+Now,
+1. stresses that $T$ is a honest set satisfying some property;
+1. stresses that it is a set whose elements "come from" $S$.
 
-
-So, given two sets  `S T : Set α`, the property that `T` is a subset of `S` is *an implication*
+We take the **first approach**: being a subset is *an implication*
 ```lean
-def (T ⊆ S : Prop) := ∀ a, a ∈ T → a ∈ S
+    def (T ⊆ S : Prop) := ∀ a, a ∈ T → a ∈ S
 ```
+`⌘`
 
-Yet, we can _upgrade_ sets to types and we can speak of a `T : Set S` for some `S : Set α`, where we 
-really mean `T : Set ↑S = Set (S : Type*)`.
+* Can also _upgrade_ sets to types: `T : Set S` for `S : Set α` means `T : Set ↑S = Set (S : Type*)`.
 
 ### Some examples: 
 1. Double inclusions;
 1. Subsets as sets;
 1. This upgrade (_coercion_) from `Set α` to `Type*`.
 
+`⌘`
 +++
 
 ## Operations on Sets
-+++ Intersection
-Given sets `S T : Set α` we have the
++++ **Intersection**
+Given sets `S T : Set α`  have the
 ```lean
 def (S ∩ T : Set α) := fun a ↦ a ∈ S ∧ a ∈ T
 ```
-On the way of proving a simple statement about self-intersection, we encounter **extensionality**: this is the principle saying that equality of sets (or set-like objects...) can be checked on elements. It is really based on _Propositional extensionality_ saying that two propotions are equal if and only if they have the same truth values.
+* Often need **extensionality**: equality of sets can be tested on elements;
+* based on _Propositional extensionality_ : two propotions are equal if and only they have if same truth values.
+
+`⌘`
 
 +++
 
-+++ Union
++++ **Union**
 Given sets `S T : Set α` we have the
 ```lean
 def (S ∪ T : Set α) := fun a ↦ a ∈ S ∨ a ∈ T
 ```
 
 And if `S : Set α` but `T : Set β`? **ERROR!**
+
+`⌘`
 +++
 
-+++ The empty set and the universal set
-The first is the constant function `False : Prop` (and not `false : Bool`!)
-```lean
-def (∅ : Set α) := fun a ↦ False
-```
-While the second (containing all terms of `α`) is the constant function `True`
++++ **Universal set & Empty set**
+* The first (containing all terms of `α`) is the constant function `True : Prop`
 ```lean
 def (univ : Set α) := fun a ↦ True
+```
+* The second is the constant function `False : Prop`
+```lean
+def (∅ : Set α) := fun a ↦ False
 ```
 **Bonus**: There are infinitely many empty sets!
 
@@ -103,24 +117,25 @@ def (univ : Set α) := fun a ↦ True
 
 
 
-+++ Set complement and difference
-Given a set `S : Set α`, its complement is defined by the negation of the membership property, and it is denoted `Sᶜ`.
++++ **Complement and Difference**
+* The complement is defined by the negation of the defining property, denoted `Sᶜ`.
 ```lean
 Sᶜ = {a : α | ¬a ∈ S}
 ```
 
-Similarly, given sets `S T : Set α`, we can define their difference `S \ T : Set α`, that corresponds to the property (where `a ∉ T` means of course `¬ a ∈ T`)
+* The difference `S \ T : Set α`, corresponds to the property
 ```lean
 def (S \ T : Set α) = fun a ↦ a ∈ S ∧ a ∉ T
 ```
 
-Let's see now some examples about all this.
+`⌘`
 +++
 
-+++ Indexed intersection and union
-Instead of intersecting and taking unions of just two sets, we can allow for fancier indexing sets (that will actually be *types*, *ça va sans dire*): given an indexing type `I : Type → Set α`, we can
-construct `(⋃ i, A i) : Set α` consisting of the union of all the sets `A i` for `i : I`. Similarly,
-`(⋂ i, A i) : Set α` is the intersection of all the sets `A i` for `i : I`. These symbols can be typed
-as `\U = ⋃` and `\I = ⋂`.
++++ **Indexed Intersection & Indexed Unions**
+* Can allow for fancier indexing sets (that will actually be *types*, *ça va sans dire*): given an index `I : Type → Set α`, the union `(⋃ i, A i) : Set α` consists of the union of all the sets `A i` for `i : I`.
+* Similarly, `(⋂ i, A i) : Set α` is the intersection of all the sets `A i` for `i : I`.
+* These symbols can be typed as `\U = ⋃` and `\I = ⋂`.
+
+`⌘`
 +++
 
