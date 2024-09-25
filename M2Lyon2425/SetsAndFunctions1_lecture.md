@@ -85,7 +85,8 @@ Given sets `S T : Set α`  have the
 def (S ∩ T : Set α) := fun a ↦ a ∈ S ∧ a ∈ T
 ```
 * Often need **extensionality**: equality of sets can be tested on elements;
-* based on _Propositional extensionality_ : two propotions are equal if and only they have if same truth values.
+* realted to _functional extensionality_ : two functions are equal if and only they have if they take the same values on same arguments;
+* not strange: sets *are* functions.
 
 `⌘`
 
@@ -122,6 +123,7 @@ def (∅ : Set α) := fun a ↦ False
 ```lean
 Sᶜ = {a : α | ¬a ∈ S}
 ```
+The superscript `ᶜ` can be typed as `\^c`.
 
 * The difference `S \ T : Set α`, corresponds to the property
 ```lean
@@ -131,8 +133,8 @@ def (S \ T : Set α) = fun a ↦ a ∈ S ∧ a ∉ T
 `⌘`
 +++
 
-+++ **Indexed Intersection & Indexed Unions**
-* Can allow for fancier indexing sets (that will actually be *types*, *ça va sans dire*): given an index `I : Type → Set α`, the union `(⋃ i, A i) : Set α` consists of the union of all the sets `A i` for `i : I`.
++++ **Indexed Intersections & Indexed Unions**
+* Can allow for fancier indexing sets (that will actually be *types*, *ça va sans dire*): given an index type `I` and a collection `A : I → Set α`, the union `(⋃ i, A i) : Set α` consists of the union of all the sets `A i` for `i : I`.
 * Similarly, `(⋂ i, A i) : Set α` is the intersection of all the sets `A i` for `i : I`.
 * These symbols can be typed as `\U = ⋃` and `\I = ⋂`.
 
