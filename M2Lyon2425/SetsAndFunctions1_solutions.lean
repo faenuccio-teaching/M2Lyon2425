@@ -11,6 +11,9 @@ section Definitions
 
 -- # §1: Definitions
 
+-- **An error**
+example (S : Set) := sorry
+
 -- **A tautology**
 
 example (α : Type) (x : α) (S : Set α) : x ∈ S ↔ S x := by
