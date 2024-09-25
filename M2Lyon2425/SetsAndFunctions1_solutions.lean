@@ -28,17 +28,19 @@ def PositiveIntegers : Set ℤ := by
   -- *1* intro d
   -- *2* use if 0 < d then True else False
   -- *3* exact (0 < ·) d
-  -- *4* exact @LT.lt ℤ _ 0
+  -- *4* exact LT.lt _ 0
   -- *5* exact (fun d ↦ 0 < d)
   exact (0 < ·) -- keep this
 
 -- `⌘`
 
 lemma one_pos : 1 ∈ PositiveIntegers := by
-  have := Nat.zero_lt_of_ne_zero (Nat.one_ne_zero)
-  -- exact this -- *why does it fail?*
-  rw [← Int.ofNat_lt] at this
-  exact this --*Or also* rwa
+  -- have := Nat.one_pos
+  -- exact this -- why does this fail?
+  -- rw [← Int.ofNat_lt] at this
+  -- exact this (or rwa)
+  -- *2* better proof
+  exact Int.one_pos
 
 def PositiveNaturals : Set ℕ := by
   exact (0 < ·)
