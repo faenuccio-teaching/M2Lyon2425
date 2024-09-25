@@ -457,44 +457,130 @@ example : ¬(P ↔ ¬P) := by
 
 -- Use of the `left` tactic
 example : P → P ∨ Q := by
-  sorry
+  intro hP
+  left
+  exact hP
 
 -- Use of the `right` tactic
 example : Q → P ∨ Q := by
-  sorry
+  intro hQ
+  right
+  exact hQ
 
 -- symmetry of `∨`
 example : P ∨ Q → Q ∨ P := by
-  sorry
+  intro h
+  cases h with
+  | inl hP =>
+    right
+    exact hP
+  | inr hQ =>
+    left
+    exact hQ
 
 -- The law of excluded middle is not by default in Lean but we included some conventions
 -- from Mathlib including this law (and we actually already used it.)
 example : P ∨ ¬ P := by
-  sorry
+  by_cases hP : P
+  ·
+    sorry
+  ·
+    sorry
 
 /- TODO -/
 
 example : P ∨ Q → (P → R) → (Q → R) → R := by
-  sorry
+  intro h1 h2 h3
+  cases h1 with
+  | inl h =>
+    exact h2 h
+  | inr h =>
+    exact h3 h
 
 -- associativity of `∨`
 example : (P ∨ Q) ∨ R ↔ P ∨ Q ∨ R := by
-  sorry
+--  tauto
+  constructor
+  · intro h
+    cases h with
+    | inl h =>
+      cases h with
+      | inl h =>
+        left
+        exact h
+      | inr h =>
+        right
+        left
+        exact h
+    | inr h =>
+      right
+      right
+      exact h
+  · intro h
+    cases h with
+    | inl h =>
+      left
+      left
+      exact h
+    | inr h =>
+      cases h with
+      | inl h =>
+        left
+        right
+        exact h
+      | inr h =>
+        right
+        exact h
 
 example : (P → R) → (Q → S) → P ∨ Q → R ∨ S := by
-  sorry
+  intro h1 h2 h3
+  cases h3 with
+  | inl h =>
+    left
+    apply h1
+    exact h
+  | inr h =>
+    right
+    apply h2
+    exact h
 
 example : (P → Q) → P ∨ R → Q ∨ R := by
-  sorry
+  intro h1 h2
+  cases h2 with
+  | inl h =>
+    left
+    apply h1
+    exact h
+  | inr h =>
+    right
+    exact h
 
 example : (P ↔ R) → (Q ↔ S) → (P ∨ Q ↔ R ∨ S) := by
-  sorry
+  intro h1 h2
+  constructor
+  · intro h3
+    cases h3 with
+    | inl h =>
+      left
+      exact h1.mp h
+    | inr h =>
+      right
+      exact h2.mp h
+  · intro h3
+    cases h3 with
+    | inl h =>
+      left
+      exact h1.mpr h
+    | inr h =>
+      right
+      exact h2.mpr h
 
 -- de Morgan's laws
 example : ¬(P ∨ Q) ↔ ¬P ∧ ¬Q := by
-  sorry
+  push_neg
+  rfl
 
 example : ¬(P ∧ Q) ↔ ¬P ∨ ¬Q := by
-  sorry
+  tauto
 
 /- END TODO -/
