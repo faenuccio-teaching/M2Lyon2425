@@ -12,7 +12,8 @@ section Definitions
 -- # §1: Definitions
 
 -- **An error**
-example (S : Set) := sorry
+-- example (S : Set) := sorry
+example {α : Type} (S : Set α) : S = S := rfl
 
 -- `⌘`
 
@@ -25,21 +26,20 @@ example (α : Type) (x : α) (S : Set α) : x ∈ S ↔ S x := by
 -- **The positive integers**
 
 def PositiveIntegers : Set ℤ := by
-  -- *1* intro d
-  -- *2* use if 0 < d then True else False
-  -- *3* exact (0 < ·) d
-  -- *4* exact LT.lt _ 0
-  -- *5* exact (fun d ↦ 0 < d)
-  exact (0 < ·) -- keep this
+  -- intro d
+  --  use if 0 < d then True else False
+  -- *or* exact (fun d ↦ 0 < d)
+  -- *or* exact (0 < ·) d
+  exact (0 < ·)
 
 -- `⌘`
 
 lemma one_pos : 1 ∈ PositiveIntegers := by
   -- have := Nat.one_pos
-  -- exact this -- why does this fail?
+  -- exact this -- *why does this fail?*
   -- rw [← Int.ofNat_lt] at this
   -- exact this (or rwa)
-  -- *2* better proof
+  -- *A better proof*
   exact Int.one_pos
 
 def PositiveNaturals : Set ℕ := by
@@ -61,10 +61,9 @@ example : (-1) ∉ PositiveIntegers := by
 -- **The even naturals**
 
 def EvenNaturals : Set ℕ := by
-  -- -- *1*
   -- intro d
   -- exact if d % 2 = 0 then True else False
-  exact (· % 2 = 0) -- keep this
+  exact (· % 2 = 0)
 
 example (n : ℕ) : n ∈ EvenNaturals → (n+2) ∈ EvenNaturals := by
   intro h
@@ -164,8 +163,9 @@ def EvenPositiveNaturals : Set PositiveIntegers := by
 -- example : 1 ∉ EvenPositiveNaturals := sorry
 /- *Sol.:* Lean complains because `3` is not a term of `EvenNaturals`, so it does not make sense
 to check whether it satisifies a property defined on them. It can be made to work by writing -/
-example : ⟨1, Int.zero_lt_one⟩ ∉ EvenPositiveNaturals := sorry
-
+example : ⟨1, Int.zero_lt_one⟩ ∉ EvenPositiveNaturals := by
+  intro h
+  cases h
 
 -- Define the set of odd numbers and prove some properties
 def OddNaturals : Set ℕ := (· % 2 = 1)

@@ -30,7 +30,16 @@ example (α β : Type) (S : Set α) (T : Set β) (f g : S → β) :
     -- exact h --why?
     apply h -- or exact h _ _
 
--- **⌘**
+example : 1 ∈ Nat.succ '' univ := by
+  -- use 0
+  -- constructor
+  -- · trivial
+  -- · rfl
+-- *An alternative proof*
+  exact ⟨0, ⟨trivial, rfl⟩⟩
+
+
+-- `⌘`
 
 end FirstTrap
 
@@ -40,21 +49,13 @@ section Operations
 
 variable (α β : Type) (f : α → β)
 
--- We can upgrade a function `f` to a function between sets, using the image:
+-- The **image**
+
+-- We can upgrade a function `f` to a function between sets, using the *image*:
 example : Set α → Set β := by
   intro S
   exact f '' S
 
-example : 1 ∈ Nat.succ '' univ := by
-  use 0
-  constructor
-  · trivial
-  · rfl
--- *An alternative proof*
-
--- `⌘`
-
--- The **image**
 
 example (α β: Type) (f : α → β) (S : Set α) : S ≠ ∅ → f '' S ≠ ∅ := by
   intro hS hfS
@@ -65,7 +66,10 @@ example (α β: Type) (f : α → β) (S : Set α) : S ≠ ∅ → f '' S ≠ �
   apply hfS
   use x
 
+
 -- `⌘`
+
+
 
 -- The **preimage**
 
@@ -76,6 +80,7 @@ example : 2 ∈ Nat.succ ⁻¹' {2, 3} ∧ 1 ∉ .succ ⁻¹' {0, 3} := by
   · intro h
     rw [mem_preimage] at h
     trivial
+
 
 -- `⌘`
 
@@ -93,10 +98,6 @@ example : InjOn (fun n : ℤ ↦ n ^ 2) PositiveIntegers := by
   · exfalso
     exact ((ne_of_lt <| Int.mul_lt_mul h_nlt (le_of_lt h_nlt) hn.out (le_of_lt hm.out))) H.symm
   exact eq_of_le_of_not_lt (le_of_not_lt h_nlt) h_mlt
-
-
-
-
 
 
 
@@ -150,6 +151,7 @@ example (N : OddNaturals) :  N.1 ∈ Nat.succ ⁻¹' (EvenNaturals) := by
     rw [Nat.succ_mod_two_eq_one_iff] at hn'
     show n.succ % 2 = 0 --`show` changes the goal to something definitionally equivalent
     omega
+    -- *Alternative proof* if you forgot about `omega`:
     -- rw [hm]
     -- simp only [Nat.succ_eq_add_one]
     -- rwa [add_assoc, Nat.add_mod_right]
@@ -175,8 +177,8 @@ example : Injective f ↔ InjOn f univ := by
 
 
 
-/- With the obvious definition of surjective, prove the following result: the complement is
-  abreviated `compl` in the library -/
+/- With the obvious definition of surjective, prove the following result: the complement `Sᶜ` is
+  referred to with the abbreviation `compl` in the library -/
 example : Surjective f ↔ (range f)ᶜ = ∅ := by
   refine ⟨fun h ↦ ?_ , fun h ↦ ?_⟩
   · rw [Set.compl_empty_iff]
@@ -193,7 +195,6 @@ example : Surjective f ↔ (range f)ᶜ = ∅ := by
     replace h := h x
     exact h
 
-
 end Operations
 
 -- # §3 : Inductive types and inductive predicates
@@ -201,19 +202,20 @@ end Operations
 namespace InductiveTypes
 
 inductive ENS_Nat
-| zero : ENS_Nat
-| succ : ENS_Nat → ENS_Nat
+| ENS_zero : ENS_Nat
+| ENS_succ : ENS_Nat → ENS_Nat
 
+open ENS_Nat
 #print ENS_Nat
 #check ENS_Nat
 
 def JustOne_fun : ℕ → ENS_Nat
-  | 0 => ENS_Nat.zero
-  | Nat.succ m => ENS_Nat.succ (JustOne_fun m)
+  | 0 => ENS_zero
+  | Nat.succ m => ENS_succ (JustOne_fun m)
 
 def JustOne_inv : ENS_Nat → ℕ
-  | ENS_Nat.zero => 0
-  | ENS_Nat.succ a => Nat.succ (JustOne_inv a)
+  | ENS_zero => 0
+  | ENS_succ a => Nat.succ (JustOne_inv a)
 
 def JustOne_Left : LeftInverse JustOne_inv JustOne_fun := by
   intro n
@@ -224,23 +226,13 @@ def JustOne_Left : LeftInverse JustOne_inv JustOne_fun := by
 
 
 def JustOne_Right : RightInverse JustOne_inv JustOne_fun
-  | ENS_Nat.zero => rfl
-  | ENS_Nat.succ m => by rw [JustOne_inv, JustOne_fun, JustOne_Right]
+  | ENS_zero => rfl
+  | ENS_succ m => by rw [JustOne_inv, JustOne_fun, JustOne_Right]
 
 def JustOne : ℕ ≃ ENS_Nat where
   toFun := JustOne_fun
   invFun := JustOne_inv
   left_inv := JustOne_Left
-    -- have : JustOne.invFun = JustOne_inv := by
-    --   unfold JustOne.invFun
-    -- intro n
-    -- match n with
-    -- | 0 => rfl
-    -- | Nat.succ m =>
-    --     have := JustOne.left_inv m
-    --     rw [JustOne_fun, JustOne_inv]
-    --     simp
-    --     convert JustOne.left_inv m
   right_inv := JustOne_Right
 
 
@@ -250,6 +242,92 @@ inductive Lor (p q : Prop) : Prop
 | right : q → Lor p q
 
 #print Lor
+
+example (n : ENS_Nat) : Lor (n = ENS_zero) (∃ m, n = ENS_succ m) := by
+  cases' n with m -- this is a case-splitting on the way an `ENS_succ` can be constructed
+  · apply Lor.left
+    rfl
+  · apply Lor.right
+    cases' m with d
+    · use ENS_zero
+    · use ENS_succ d
+
+/- **§ An exercise** -/
+
+/-Define a type whose terms represent how one can reach the ENS: one can use a car, a bike, the
+metro or any combination of those (with no repetition).-/
+inductive TripToENS
+| car : TripToENS
+| bike : TripToENS
+| metro : TripToENS
+| one_change : TripToENS → TripToENS → TripToENS
+| two_changes : TripToENS → TripToENS → TripToENS → TripToENS
+
+-- The following two lines are needed for the file to work: *leave* them as they are, please.
+deriving Repr
+open TripToENS
+
+/- State that if you're not simply coming by bike nor by car, then either you come by metro or you
+need at least one change.-/
+example (a : TripToENS) (h1 : a ≠ bike) (h1 : a ≠ car) :
+  a = metro
+  ∨ (∃ b₁ b₂ , a = one_change b₁ b₂)
+  ∨ (∃ c₁ c₂ c₃, a = two_changes c₁ c₂ c₃) := by
+  -- cases' a with b1 b2 c1 c2 c3
+  rcases a with _ | _ | _ | ⟨b1, b2⟩ | ⟨c1, c2, c3⟩
+  · trivial
+  · trivial
+  · apply Or.inl
+    rfl
+  · apply Or.inr
+    apply Or.inl
+    use b1, b2
+  · apply Or.inr
+    apply Or.inr
+    use c1, c2, c3
+
+/- Define a function that expects a trip and outputs the *last* means of transportation -/
+def lastTrip (a : TripToENS) : TripToENS :=
+match a with
+| one_change b c => c
+| two_changes b c d => d
+| x => x
+
+/-Evaluate your function agains three or four trips and see if it works-/
+#eval (lastTrip (one_change car car))
+#eval (lastTrip (one_change car bike))
+#eval (lastTrip (two_changes bike car bike))
+#eval (lastTrip (metro))
+#eval (lastTrip (two_changes metro bike metro))
+
+-- `⌘`
+
+inductive NiceType : Type
+| Tom : NiceType
+| Jerry : NiceType
+| f : NiceType → NiceType
+| g : ℕ → NiceType → NiceType → NiceType
+
+inductive NiceProp : Prop
+| Tom : NiceProp
+| Jerry : NiceProp
+| f : NiceProp → NiceProp
+| g : ℕ → NiceProp → NiceProp → NiceProp
+
+#check NiceType
+#check NiceProp
+
+inductive NiceFamily : ℕ → Prop
+| Tom : NiceFamily 0
+| Jerry : NiceFamily 1
+| F (n : ℕ) : NiceFamily n → NiceFamily (n + 3)
+| G : ∀ n : ℕ, ℕ → NiceFamily n → NiceFamily n + 1 → NiceFamily n + 37
+
+#check NiceFamily
+#check NiceFamily 2
+#check NiceFamily 21
+
+
 
 inductive IsEven : ℕ → Prop
 | zero_even : IsEven 0
@@ -306,7 +384,7 @@ lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ IsEven n := by
     · trivial--rfl -- notice the difference!
   · refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
     · rw [not_IsEven_succ]
-      replace h : (m + 1) % 2 = 0 := h
+      replace h : (m + 1) % 2 = 0 := h.out
       replace h : m % 2 = 1 := by
         rwa [Nat.succ_mod_two_eq_zero_iff] at h
       replace h : m ∉ EvenNaturals := by
@@ -314,7 +392,7 @@ lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ IsEven n := by
         replace hm := hm.out
         rw [hm] at h
         exact zero_ne_one h
-      replace h_ind : ¬ IsEven m := sorry
+      replace h_ind : ¬ IsEven m := (h_ind.mpr).mt h
       rcases m with _ | ⟨n, hn⟩
       · exfalso
         apply h
@@ -334,7 +412,17 @@ lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ IsEven n := by
       rw [← Nat.succ_mod_two_eq_zero_iff] at h_ind
       exact h_ind
 
+/- **§ An exercise** -/
 
+/- Define the set of `TripToENS` that entail no chages:-/
+inductive NoChangesTrip' : TripToENS → Prop :=
+| only_car : NoChangesTrip' car
+| only_metro : NoChangesTrip' metro
+| only_bike : NoChangesTrip' bike
+
+def NoChangesTrip := setOf NoChangesTrip'
+
+example : car ∈ NoChangesTrip := sorry
 
 
 end InductiveTypes
