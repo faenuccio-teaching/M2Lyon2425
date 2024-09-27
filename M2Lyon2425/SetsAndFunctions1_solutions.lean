@@ -34,7 +34,7 @@ def PositiveIntegers : Set ℤ := by
 
 -- `⌘`
 
-lemma one_pos : 1 ∈ PositiveIntegers := by
+lemma one_posint : 1 ∈ PositiveIntegers := by
   -- have := Nat.one_pos
   -- exact this -- *why does this fail?*
   -- rw [← Int.ofNat_lt] at this

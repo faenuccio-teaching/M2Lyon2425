@@ -28,7 +28,7 @@ def PositiveIntegers : Set ℤ := by
 
 -- `⌘`
 
-lemma one_pos : 1 ∈ PositiveIntegers := by sorry
+lemma one_posint : 1 ∈ PositiveIntegers := by sorry
 
 def PositiveNaturals : Set ℕ := by sorry
 

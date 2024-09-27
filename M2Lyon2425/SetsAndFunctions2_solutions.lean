@@ -3,6 +3,7 @@ import Mathlib.Algebra.Field.Basic
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Operations
 import Mathlib.Tactic.Common
+import Mathlib.Data.Set.Finite
 import Mathlib.Order.Basic
 import Mathlib.Logic.Function.Defs
 import «M2Lyon2425».«SetsAndFunctions1_solutions»
@@ -376,14 +377,16 @@ lemma not_IsEven_succ : ∀ n : ℕ, IsEven n ↔ ¬ IsEven (n + 1) := by
       apply hd
       exact h
 
+-- To translate `IsEven d` into `d ∈ Even` you can use `mem_setOf_eq`
+abbrev Evens := setOf IsEven
 
-lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ IsEven n := by
+lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ n ∈ Evens := by
   induction' n with m h_ind
   · refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
     · exact IsEven.zero_even
     · trivial--rfl -- notice the difference!
   · refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
-    · rw [not_IsEven_succ]
+    · rw [mem_setOf_eq, not_IsEven_succ]
       replace h : (m + 1) % 2 = 0 := h.out
       replace h : m % 2 = 1 := by
         rwa [Nat.succ_mod_two_eq_zero_iff] at h
@@ -401,7 +404,7 @@ lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ IsEven n := by
         rcases h with _ | ⟨-, h⟩
         cases h
       · rwa [Nat.add_assoc, ← not_isEven_succ_succ]
-    · rw [not_IsEven_succ] at h
+    · rw [mem_setOf_eq, not_IsEven_succ] at h
       replace h : ¬ IsEven m := by
         intro h
         replace h := h.succ_succ
@@ -411,6 +414,40 @@ lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ IsEven n := by
       rw [Nat.mod_two_ne_zero] at h_ind
       rw [← Nat.succ_mod_two_eq_zero_iff] at h_ind
       exact h_ind
+
+lemma exists_half (n : Evens) : ∃ d : ℕ, n = 2 * d := by
+  have hn := n.2
+  replace hn : n.1 % 2 = 0 := by
+    rwa [← EvenEq] at hn
+  replace hn := Nat.dvd_of_mod_eq_zero hn
+  exact ⟨hn.choose, hn.choose_spec⟩
+
+noncomputable def half : Evens → (univ : Set ℕ) := fun n ↦ ⟨(exists_half n).choose, trivial⟩
+
+-- example (n : Evens) : n = 2 * (half n) := by
+lemma double_half (n : Evens) : n = 2 * (half n).1 := by
+  exact (exists_half n).choose_spec
+
+example : InjOn half univ := by
+  rintro ⟨n, hn⟩ - ⟨m, hm⟩ - h
+  simp only [coe_setOf, mem_setOf_eq, Subtype.mk.injEq]
+  have hhn := double_half ⟨n, hn⟩
+  rw [h, ← double_half] at hhn
+  exact hhn
+
+example : Surjective half := by
+  rintro ⟨n, -⟩
+  have hn : 2 * n ∈ Evens := by
+    rw [← EvenEq]
+    show 2 * n % 2 = 0
+    omega
+  let a : Evens := ⟨2 * n , hn⟩
+  use a
+  have := double_half a
+  rw [Nat.mul_right_inj] at this
+  rw [this]
+  omega
+
 
 /- **§ An exercise** -/
 
@@ -430,5 +467,38 @@ example : car ∈ NoChangesTrip := by
 example : one_change car bike ∉ NoChangesTrip := by
   intro h
   cases h
+
+
+/- The cofinite topology as inductive type -/
+inductive CofTop {α : Type} : Set α → Prop
+| open_empty : CofTop ∅
+| open_univ : CofTop univ
+| open_cofinite (S : Set α) : Finite ↑(Sᶜ) → CofTop S
+open CofTop
+
+variable {α : Type}
+
+lemma interCofTop (S T : Set α) : CofTop S → CofTop T → CofTop (S ∩ T) := by
+  intro hs ht
+  rcases hs with _ | _ | ⟨_, hs⟩
+  · rw [empty_inter]
+    exact open_empty
+  · rwa [univ_inter]
+  · rcases ht with _ | _ | ⟨_, ht⟩
+    · rw [inter_empty]
+      exact open_empty
+    · rw [inter_univ]
+      apply open_cofinite
+      exact hs
+    · apply open_cofinite
+      rw [compl_inter]
+      apply Set.Finite.union
+      exact hs
+      exact ht
+
+lemma iUnionCofTop (I : Type) (S : I → Set α) (hs : ∀ i, CofTop (S i)) :
+  CofTop (⋃ i : I, S i) := by
+  sorry
+
 
 end InductiveTypes
