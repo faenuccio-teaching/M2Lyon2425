@@ -496,9 +496,36 @@ lemma interCofTop (S T : Set α) : CofTop S → CofTop T → CofTop (S ∩ T) :=
       exact hs
       exact ht
 
-lemma iUnionCofTop (I : Type) (S : I → Set α) (hs : ∀ i, CofTop (S i)) :
+lemma iUnionCofTop (I : Type) (S : I → Set α) (hs : (i : I) → CofTop (S i)) :
   CofTop (⋃ i : I, S i) := by
-  sorry
+  classical
+  by_cases h : ∃ i, S i ≠ ∅
+  · --let i := h.choose
+    obtain ⟨i, hi⟩ := h
+    let T := S i
+    have ht1 : T ≠ ∅ := hi
+    -- revert T
+    have ht : CofTop T := hs i
+    -- clear hi
+    -- clear hs
+    -- cases ht
+    -- rcases ht with
+    -- have : Finite (↑()ᶜ) := by
+      -- cases hs i
+
+
+
+  -- by_cases h : ∀ i, S i = ∅
+  -- · rw [← iUnion_eq_empty] at h
+  --   rw [h]
+  --   exact open_empty
+  -- · rw [not_forall] at h
+  --   obtain ⟨i, hi⟩ := h
+  --   specialize hs i
+  --   have : Finite (↑(S i)ᶜ) := by
+  --     cases hs
+
+
 
 
 end InductiveTypes
