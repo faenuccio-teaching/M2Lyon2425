@@ -85,10 +85,10 @@ How can we actually *construct* new types? For instance, `ℕ`, or "the" subtype
 For example
 ```lean
 inductive NiceType
-| Tom : NiceType
-| Jerry : NiceType
-| f : NiceType → NiceType
-| g : ℕ → NiceType → NiceType → NiceType
+    | Tom : NiceType
+    | Jerry : NiceType
+    | f : NiceType → NiceType
+    | g : ℕ → NiceType → NiceType → NiceType
 ```
 constructs the "minimal/smallest" type `NiceType` whose terms are 
 1. Either `Tom`;
@@ -121,19 +121,19 @@ def EvenNaturals : Set ℕ := (· % 2 = 0)
 When defining `inductive NiceType` one can specify where the output lives:
 ```lean
 inductive NiceType : Type
-| Tom : NiceType
-| Jerry : NiceType 
-| f : NiceType → NiceType 
-| g : ℕ → NiceType → NiceType → NiceType
+    | Tom : NiceType
+    | Jerry : NiceType 
+    | f : NiceType → NiceType 
+    | g : ℕ → NiceType → NiceType → NiceType
 ```
 
 or 
 ```
 inductive NiceProp : Prop
-| Tom : NiceProp
-| Jerry : NiceProp
-| f : NiceProp → Prop
-| g : ℕ → NiceProp → NiceProp → NiceProp
+    | Tom : NiceProp
+    | Jerry : NiceProp
+    | f : NiceProp → Prop
+    | g : ℕ → NiceProp → NiceProp → NiceProp
 ```
 * The default is `Type`.
 
@@ -141,10 +141,10 @@ inductive NiceProp : Prop
 If you want a *family* of types (say, of propositions), you simply say it straight away!
 ```lean
 inductive NiceFamily : ℕ → Prop
-| Tom : NiceFamily 0
-| Jerry : NiceFamily 1
-| F (n : ℕ) : NiceFamily n → NiceFamily (n + 3)
-| G : ∀ n, ℕ → NiceFamily n → NiceFamily n + 1 → NiceFamily n + 37
+    | Tom : NiceFamily 0
+    | Jerry : NiceFamily 1
+    | F (n : ℕ) : NiceFamily n → NiceFamily (n + 3)
+    | G  : ∀n : ℕ, ℕ → NiceFamily n → NiceFamily (n + 1) → NiceFamily (n + 37)
 
 ```
 

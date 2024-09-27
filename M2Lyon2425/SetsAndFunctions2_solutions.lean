@@ -257,11 +257,11 @@ example (n : ENS_Nat) : Lor (n = ENS_zero) (∃ m, n = ENS_succ m) := by
 /-Define a type whose terms represent how one can reach the ENS: one can use a car, a bike, the
 metro or any combination of those (with no repetition).-/
 inductive TripToENS
-| car : TripToENS
-| bike : TripToENS
-| metro : TripToENS
-| one_change : TripToENS → TripToENS → TripToENS
-| two_changes : TripToENS → TripToENS → TripToENS → TripToENS
+  | car : TripToENS
+  | bike : TripToENS
+  | metro : TripToENS
+  | one_change : TripToENS → TripToENS → TripToENS
+  | two_changes : TripToENS → TripToENS → TripToENS → TripToENS
 
 -- The following two lines are needed for the file to work: *leave* them as they are, please.
 deriving Repr
@@ -289,9 +289,9 @@ example (a : TripToENS) (h1 : a ≠ bike) (h1 : a ≠ car) :
 /- Define a function that expects a trip and outputs the *last* means of transportation -/
 def lastTrip (a : TripToENS) : TripToENS :=
 match a with
-| one_change b c => c
-| two_changes b c d => d
-| x => x
+  | one_change b c => c
+  | two_changes b c d => d
+  | x => x
 
 /-Evaluate your function agains three or four trips and see if it works-/
 #eval (lastTrip (one_change car car))
@@ -303,25 +303,25 @@ match a with
 -- `⌘`
 
 inductive NiceType : Type
-| Tom : NiceType
-| Jerry : NiceType
-| f : NiceType → NiceType
-| g : ℕ → NiceType → NiceType → NiceType
+  | Tom : NiceType
+  | Jerry : NiceType
+  | f : NiceType → NiceType
+  | g : ℕ → NiceType → NiceType → NiceType
 
 inductive NiceProp : Prop
-| Tom : NiceProp
-| Jerry : NiceProp
-| f : NiceProp → NiceProp
-| g : ℕ → NiceProp → NiceProp → NiceProp
+  | Tom : NiceProp
+  | Jerry : NiceProp
+  | f : NiceProp → NiceProp
+  | g : ℕ → NiceProp → NiceProp → NiceProp
 
 #check NiceType
 #check NiceProp
 
 inductive NiceFamily : ℕ → Prop
-| Tom : NiceFamily 0
-| Jerry : NiceFamily 1
-| F (n : ℕ) : NiceFamily n → NiceFamily (n + 3)
-| G : ∀ n : ℕ, ℕ → NiceFamily n → NiceFamily n + 1 → NiceFamily n + 37
+  | Tom : NiceFamily 0
+  | Jerry : NiceFamily 1
+  | F (n : ℕ) : NiceFamily n → NiceFamily (n + 3)
+  | G  : ∀n : ℕ, ℕ → NiceFamily n → NiceFamily (n + 1) → NiceFamily (n + 37)
 
 #check NiceFamily
 #check NiceFamily 2
@@ -330,8 +330,8 @@ inductive NiceFamily : ℕ → Prop
 
 
 inductive IsEven : ℕ → Prop
-| zero_even : IsEven 0
-| succ_succ (n : ℕ) : IsEven n → IsEven (n+2)
+  | zero_even : IsEven 0
+  | succ_succ (n : ℕ) : IsEven n → IsEven (n+2)
 
 example : IsEven 4 := by
   repeat apply IsEven.succ_succ
@@ -416,13 +416,19 @@ lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ IsEven n := by
 
 /- Define the set of `TripToENS` that entail no chages:-/
 inductive NoChangesTrip' : TripToENS → Prop :=
-| only_car : NoChangesTrip' car
-| only_metro : NoChangesTrip' metro
-| only_bike : NoChangesTrip' bike
+  | only_car : NoChangesTrip' car
+  | only_metro : NoChangesTrip' metro
+  | only_bike : NoChangesTrip' bike
+
+open NoChangesTrip'
 
 def NoChangesTrip := setOf NoChangesTrip'
 
-example : car ∈ NoChangesTrip := sorry
+example : car ∈ NoChangesTrip := by
+  exact only_car
 
+example : one_change car bike ∉ NoChangesTrip := by
+  intro h
+  cases h
 
 end InductiveTypes
