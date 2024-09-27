@@ -472,7 +472,7 @@ example : one_change car bike ∉ NoChangesTrip := by
 /- The cofinite topology as inductive type -/
 inductive CofTop {α : Type} : Set α → Prop
 | open_empty : CofTop ∅
-| open_univ : CofTop univ
+-- | open_univ : CofTop univ
 | open_cofinite (S : Set α) : Finite ↑(Sᶜ) → CofTop S
 open CofTop
 
@@ -480,16 +480,16 @@ variable {α : Type}
 
 lemma interCofTop (S T : Set α) : CofTop S → CofTop T → CofTop (S ∩ T) := by
   intro hs ht
-  rcases hs with _ | _ | ⟨_, hs⟩
+  rcases hs with _ |/-  _ | -/ ⟨_, hs⟩
   · rw [empty_inter]
     exact open_empty
-  · rwa [univ_inter]
-  · rcases ht with _ | _ | ⟨_, ht⟩
+  -- · rwa [univ_inter]
+  · rcases ht with /- _ |  -/_ | ⟨_, ht⟩
     · rw [inter_empty]
       exact open_empty
-    · rw [inter_univ]
-      apply open_cofinite
-      exact hs
+    -- · rw [inter_univ]
+    --   apply open_cofinite
+    --   exact hs
     · apply open_cofinite
       rw [compl_inter]
       apply Set.Finite.union
