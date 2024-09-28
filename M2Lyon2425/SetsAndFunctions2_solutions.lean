@@ -3,7 +3,6 @@ import Mathlib.Algebra.Field.Basic
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Set.Operations
 import Mathlib.Tactic.Common
-import Mathlib.Data.Set.Finite
 import Mathlib.Order.Basic
 import Mathlib.Logic.Function.Defs
 import «M2Lyon2425».«SetsAndFunctions1_solutions»
@@ -32,14 +31,6 @@ example (α β : Type) (S : Set α) (T : Set β) (f g : S → β) :
     -- exact h --why?
     apply h -- or exact h _ _
 
-example : 1 ∈ Nat.succ '' univ := by
-  -- use 0
-  -- constructor
-  -- · trivial
-  -- · rfl
--- *An alternative proof*
-  exact ⟨0, ⟨trivial, rfl⟩⟩
-
 
 -- `⌘`
 
@@ -53,7 +44,16 @@ variable (α β : Type) (f : α → β)
 
 -- The **image**
 
--- We can upgrade a function `f` to a function between sets, using the *image*:
+
+example : 1 ∈ Nat.succ '' univ := by
+  -- use 0
+  -- constructor
+  -- · trivial
+  -- · rfl
+-- *An alternative proof*
+  exact ⟨0, ⟨trivial, rfl⟩⟩
+
+-- We can upgrade a function `f` to a function between sets, using its *image*:
 example : Set α → Set β := by
   intro S
   exact f '' S
@@ -70,7 +70,6 @@ example (α β: Type) (f : α → β) (S : Set α) : S ≠ ∅ → f '' S ≠ �
 
 
 -- `⌘`
-
 
 
 -- The **preimage**
@@ -108,7 +107,8 @@ example : InjOn (fun n : ℤ ↦ n ^ 2) PositiveIntegers := by
 
 
 
--- The range is not *definitionally equal* to the image of the universal set: use extensionality!
+/- **1** The range is not *definitionally equal* to the image of the universal set:
+  use extensionality! -/
 example : range f = f '' univ := by
   ext x
   refine ⟨fun h ↦ ?_ , fun h ↦ ?_⟩
@@ -123,7 +123,7 @@ example : range f = f '' univ := by
     exact (Exists.choose_spec h).2
 
 
--- Why does this code *fail*? Fix it, and then prove the statement
+-- **2** Why does this code *fail*? Fix it, and then prove the statement
 -- example (N : OddNaturals) : N ∈ Nat.succ '' (EvenNaturals) ∧ N ∈ Nat.succ ⁻¹' (EvenNaturals):=
 example (N : OddNaturals) : N.1 ∈ Nat.succ '' (EvenNaturals) := by
   rcases N with ⟨n, hn⟩
@@ -138,7 +138,7 @@ example (N : OddNaturals) : N.1 ∈ Nat.succ '' (EvenNaturals) := by
     · exact hn'
     · exact Nat.succ_eq_add_one _
 
--- Why does this code *fail*? Fix it, and then prove the statement
+-- **3** Why does this code *fail*? Fix it, and then prove the statement
 -- example (N : OddNaturals) :  N ∈ Nat.succ ⁻¹' (EvenNaturals) := by
 example (N : OddNaturals) :  N.1 ∈ Nat.succ ⁻¹' (EvenNaturals) := by
   rcases N with ⟨n, hn⟩
@@ -158,8 +158,7 @@ example (N : OddNaturals) :  N.1 ∈ Nat.succ ⁻¹' (EvenNaturals) := by
     -- simp only [Nat.succ_eq_add_one]
     -- rwa [add_assoc, Nat.add_mod_right]
 
-
-
+-- **4** Not every `n : ℕ` is the successor or something...
 example : range Nat.succ ≠ univ := by
   intro h
   rw [Set.eq_univ_iff_forall] at h
@@ -169,7 +168,8 @@ example : range Nat.succ ≠ univ := by
 
 
 
--- The following is a *statement* and not merely the *definition* of being injective; prove it.
+/- **5** The following is a *statement* and not merely the *definition* of being injective;
+  prove it. -/
 example : Injective f ↔ InjOn f univ := by
   refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
   · intro a ha b hb H
@@ -179,8 +179,8 @@ example : Injective f ↔ InjOn f univ := by
 
 
 
-/- With the obvious definition of surjective, prove the following result: the complement `Sᶜ` is
-  referred to with the abbreviation `compl` in the library -/
+/- **6** With the obvious definition of surjective, prove the following result: the
+ complement `Sᶜ` is referred to with the abbreviation `compl` in the library -/
 example : Surjective f ↔ (range f)ᶜ = ∅ := by
   refine ⟨fun h ↦ ?_ , fun h ↦ ?_⟩
   · rw [Set.compl_empty_iff]
@@ -199,15 +199,25 @@ example : Surjective f ↔ (range f)ᶜ = ∅ := by
 
 end Operations
 
--- # §3 : Inductive types and inductive predicates
+-- # §3 : Inductive types
 
-namespace InductiveTypes
+section InductiveTypes
+
+inductive NiceType : Type
+  | Tom : NiceType
+  | Jerry : NiceType
+  | f : NiceType → NiceType
+  | g : ℕ → NiceType → NiceType → NiceType
+open NiceType
+
+#check NiceType
+#check f (g 37 Tom Tom)
 
 inductive ENS_Nat
 | ENS_zero : ENS_Nat
 | ENS_succ : ENS_Nat → ENS_Nat
-
 open ENS_Nat
+
 #print ENS_Nat
 #check ENS_Nat
 
@@ -221,22 +231,26 @@ def JustOne_inv : ENS_Nat → ℕ
 
 def JustOne_Left : LeftInverse JustOne_inv JustOne_fun := by
   intro n
-  match n with
-  | 0 => rfl
-  | Nat.succ m =>
-      rw [JustOne_fun, JustOne_inv, JustOne_Left]
+  induction' n with m hm
+  · rfl
+  · rw [JustOne_fun, JustOne_inv, hm]
+  -- *Alternative, **recursive**, proof*, without induction
+  -- match n with
+  -- | 0 => rfl
+  -- | Nat.succ m =>
+  --     rw [JustOne_fun, JustOne_inv, JustOne_Left]
 
 
 def JustOne_Right : RightInverse JustOne_inv JustOne_fun
   | ENS_zero => rfl
   | ENS_succ m => by rw [JustOne_inv, JustOne_fun, JustOne_Right]
 
+
 def JustOne : ℕ ≃ ENS_Nat where
   toFun := JustOne_fun
   invFun := JustOne_inv
   left_inv := JustOne_Left
   right_inv := JustOne_Right
-
 
 
 inductive Lor (p q : Prop) : Prop
@@ -254,61 +268,41 @@ example (n : ENS_Nat) : Lor (n = ENS_zero) (∃ m, n = ENS_succ m) := by
     · use ENS_zero
     · use ENS_succ d
 
-/- **§ An exercise** -/
+/- **§ Exercises** -/
 
-/-Define a type whose terms represent how one can reach the ENS: one can use a car, a bike, the
-metro or any combination of those (with no repetition).-/
-inductive TripToENS
-  | car : TripToENS
-  | bike : TripToENS
-  | metro : TripToENS
-  | one_change : TripToENS → TripToENS → TripToENS
-  | two_changes : TripToENS → TripToENS → TripToENS → TripToENS
+-- **1** : Fill in the `sorry` in `JustOne_inv` and in `JustOne_Right`.
+-- *Solutions* are above
 
--- The following two lines are needed for the file to work: *leave* them as they are, please.
-deriving Repr
-open TripToENS
+-- **2** The successor is not surjective, but you can't rely on the library this time.
+example : ¬ Surjective ENS_succ := by
+  intro habs
+  obtain ⟨a, ha⟩ := habs ENS_zero
+  cases ha
 
-/- State that if you're not simply coming by bike nor by car, then either you come by metro or you
-need at least one change.-/
-example (a : TripToENS) (h1 : a ≠ bike) (h1 : a ≠ car) :
-  a = metro
-  ∨ (∃ b₁ b₂ , a = one_change b₁ b₂)
-  ∨ (∃ c₁ c₂ c₃, a = two_changes c₁ c₂ c₃) := by
-  -- cases' a with b1 b2 c1 c2 c3
-  rcases a with _ | _ | _ | ⟨b1, b2⟩ | ⟨c1, c2, c3⟩
-  · trivial
-  · trivial
-  · apply Or.inl
-    rfl
-  · apply Or.inr
-    apply Or.inl
-    use b1, b2
-  · apply Or.inr
-    apply Or.inr
-    use c1, c2, c3
+/- **3** Define an inductive type `Politics` with two terms : `Right` and `Left`-/
+inductive Politics
+  | Right : Politics
+  | Left : Politics
+open Politics
 
-/- Define a function that expects a trip and outputs the *last* means of transportation -/
-def lastTrip (a : TripToENS) : TripToENS :=
-match a with
-  | one_change b c => c
-  | two_changes b c d => d
-  | x => x
+/- **4** Define a function `swap : Politics → Politics` sending `Right` to `Left` and viceversa-/
+def swap : Politics → Politics
+  | Right => Left
+  | Left => Right
 
-/-Evaluate your function agains three or four trips and see if it works-/
-#eval (lastTrip (one_change car car))
-#eval (lastTrip (one_change car bike))
-#eval (lastTrip (two_changes bike car bike))
-#eval (lastTrip (metro))
-#eval (lastTrip (two_changes metro bike metro))
+/- **5** Prove that if someone is not on the `Right`, they are on the `Left` -/
+example (a : Politics) : a ≠ Right → a = Left := by
+  intro ha
+  cases a
+  · exfalso
+    trivial
+  · rfl
 
--- `⌘`
+end InductiveTypes
 
-inductive NiceType : Type
-  | Tom : NiceType
-  | Jerry : NiceType
-  | f : NiceType → NiceType
-  | g : ℕ → NiceType → NiceType → NiceType
+-- # §3 : Inductive types
+
+section InductiveFamilies
 
 inductive NiceProp : Prop
   | Tom : NiceProp
@@ -316,27 +310,30 @@ inductive NiceProp : Prop
   | f : NiceProp → NiceProp
   | g : ℕ → NiceProp → NiceProp → NiceProp
 
-#check NiceType
 #check NiceProp
+
 
 inductive NiceFamily : ℕ → Prop
   | Tom : NiceFamily 0
   | Jerry : NiceFamily 1
-  | F (n : ℕ) : NiceFamily n → NiceFamily (n + 3)
-  | G  : ∀n : ℕ, ℕ → NiceFamily n → NiceFamily (n + 1) → NiceFamily (n + 37)
+  | F : ∀n : ℕ, NiceFamily n → NiceFamily (n + 37)
+  | G (n : ℕ) : ℕ → NiceFamily n → NiceFamily (n + 1) → NiceFamily (n + 3)
 
 #check NiceFamily
 #check NiceFamily 2
 #check NiceFamily 21
+#print NiceFamily
 
-
+-- # §4 : Inductive predicates
 
 inductive IsEven : ℕ → Prop
   | zero_even : IsEven 0
   | succ_succ (n : ℕ) : IsEven n → IsEven (n+2)
 
 example : IsEven 4 := by
-  repeat apply IsEven.succ_succ
+  apply IsEven.succ_succ
+  apply IsEven.succ_succ
+  -- *Alternative proof* repeat apply IsEven.succ_succ
   exact IsEven.zero_even
 
 example : ¬ IsEven 5 := by
@@ -346,11 +343,6 @@ example : ¬ IsEven 5 := by
     cases hn with
     | succ_succ m hm =>
       cases hm
-
-example : ¬ IsEven 111 := by
-  intro h
-  repeat rcases h with _ | ⟨-, h⟩
-
 
 lemma not_isEven_succ_succ (n : ℕ) : ¬ IsEven n ↔ ¬ IsEven (n + 2) := by
   refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
@@ -378,9 +370,19 @@ lemma not_IsEven_succ : ∀ n : ℕ, IsEven n ↔ ¬ IsEven (n + 1) := by
       apply hd
       exact h
 
--- To translate `IsEven d` into `d ∈ Even` you can use `mem_setOf_eq`
+/- **§ Some exercises** -/
+
+-- **1** Recall the `repeat` tactic
+example : ¬ IsEven 111 := by
+  intro h
+  repeat rcases h with _ | ⟨-, h⟩
+
+
+-- Let's consider the *set* of even numbers satisfying `IsEven`
 abbrev Evens := setOf IsEven
 
+/- **2** Show that the two set of even numbers we defined are actually the same.
+To translate `IsEven d` into `d ∈ Even` you can use `mem_setOf_eq`. -/
 lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ n ∈ Evens := by
   induction' n with m h_ind
   · refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
@@ -416,6 +418,7 @@ lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ n ∈ Evens := by
       rw [← Nat.succ_mod_two_eq_zero_iff] at h_ind
       exact h_ind
 
+-- **3** Prove that every even number can be divided by `2`.
 lemma exists_half (n : Evens) : ∃ d : ℕ, n = 2 * d := by
   have hn := n.2
   replace hn : n.1 % 2 = 0 := by
@@ -423,12 +426,14 @@ lemma exists_half (n : Evens) : ∃ d : ℕ, n = 2 * d := by
   replace hn := Nat.dvd_of_mod_eq_zero hn
   exact ⟨hn.choose, hn.choose_spec⟩
 
-noncomputable def half : Evens → (univ : Set ℕ) := fun n ↦ ⟨(exists_half n).choose, trivial⟩
+noncomputable
+def half : Evens → (univ : Set ℕ) := fun n ↦ ⟨(exists_half n).choose, trivial⟩
 
--- example (n : Evens) : n = 2 * (half n) := by
+-- **4** Doubling and halving is the identity.
 lemma double_half (n : Evens) : n = 2 * (half n).1 := by
   exact (exists_half n).choose_spec
 
+-- **5** Some more fun with functions.
 example : InjOn half univ := by
   rintro ⟨n, hn⟩ - ⟨m, hm⟩ - h
   simp only [coe_setOf, mem_setOf_eq, Subtype.mk.injEq]
@@ -436,6 +441,7 @@ example : InjOn half univ := by
   rw [h, ← double_half] at hhn
   exact hhn
 
+-- **6** Even more fun!
 example : Surjective half := by
   rintro ⟨n, -⟩
   have hn : 2 * n ∈ Evens := by
@@ -450,76 +456,7 @@ example : Surjective half := by
   omega
 
 
-/- **§ Some exercises** -/
+end InductiveFamilies
 
-/- Define the set of `TripToENS` that entail no chages:-/
-inductive NoChangesTrip' : TripToENS → Prop :=
-  | only_car : NoChangesTrip' car
-  | only_metro : NoChangesTrip' metro
-  | only_bike : NoChangesTrip' bike
-
-open NoChangesTrip'
-
-def NoChangesTrip := setOf NoChangesTrip'
-
-example : car ∈ NoChangesTrip := by
-  exact only_car
-
-example : one_change car bike ∉ NoChangesTrip := by
-  intro h
-  cases h
-
-
-/- The cofinite topology as inductive type -/
-inductive CofTop {α : Type} : Set α → Prop
-| open_empty : CofTop ∅
-| open_cofinite (S : Set α) : Finite ↑(Sᶜ) → CofTop S
-open CofTop
-
-variable {α : Type}
-
-lemma interCofTop (S T : Set α) : CofTop S → CofTop T → CofTop (S ∩ T) := by
-  intro hs ht
-  rcases hs with _ | ⟨_, hs⟩
-  · rw [empty_inter]
-    exact open_empty
-  · rcases ht with _ | ⟨_, ht⟩
-    · rw [inter_empty]
-      exact open_empty
-    · apply open_cofinite
-      rw [compl_inter]
-      apply Set.Finite.union
-      exact hs
-      exact ht
-
-lemma cofinite_of_Notempty (S : Set α) (hS : S ≠ ∅) : CofTop S → Finite ↑(Sᶜ) := by
-  rintro ⟨h, h2⟩
-  · trivial
-  assumption
-
-lemma iUnionCofTop (I : Type) (S : I → Set α) (hs : (i : I) → CofTop (S i)) :
-  CofTop (⋃ i : I, S i) := by
-  classical
-  by_cases h : ∃ i, S i ≠ ∅
-  · obtain ⟨i, hi⟩ := h
-    let T := S i
-    have := cofinite_of_Notempty T hi (hs i)
-    apply open_cofinite
-    rw [compl_iUnion]
-    apply Finite.subset this
-    refine iInter_subset_of_subset i (by rfl)
-  · simp only [not_exists, ne_eq, not_not, ← iUnion_eq_empty] at h
-    rw [h]
-    exact open_empty
-
-lemma univ_CofTop : CofTop (univ : (Set α)) := by
-  apply open_cofinite
-  rw [compl_univ]
-  exact finite_empty
-
-lemma empty_CofTop : CofTop (∅ : Set α) := open_empty
-
-
-end InductiveTypes
 
 end ENS
