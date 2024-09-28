@@ -10,6 +10,7 @@ import «M2Lyon2425».«SetsAndFunctions1_solutions»
 
 set_option linter.unusedVariables false
 
+namespace ENS
 
 open Set Classical Function
 section FirstTrap
@@ -449,7 +450,7 @@ example : Surjective half := by
   omega
 
 
-/- **§ An exercise** -/
+/- **§ Some exercises** -/
 
 /- Define the set of `TripToENS` that entail no chages:-/
 inductive NoChangesTrip' : TripToENS → Prop :=
@@ -472,7 +473,6 @@ example : one_change car bike ∉ NoChangesTrip := by
 /- The cofinite topology as inductive type -/
 inductive CofTop {α : Type} : Set α → Prop
 | open_empty : CofTop ∅
--- | open_univ : CofTop univ
 | open_cofinite (S : Set α) : Finite ↑(Sᶜ) → CofTop S
 open CofTop
 
@@ -480,52 +480,46 @@ variable {α : Type}
 
 lemma interCofTop (S T : Set α) : CofTop S → CofTop T → CofTop (S ∩ T) := by
   intro hs ht
-  rcases hs with _ |/-  _ | -/ ⟨_, hs⟩
+  rcases hs with _ | ⟨_, hs⟩
   · rw [empty_inter]
     exact open_empty
-  -- · rwa [univ_inter]
-  · rcases ht with /- _ |  -/_ | ⟨_, ht⟩
+  · rcases ht with _ | ⟨_, ht⟩
     · rw [inter_empty]
       exact open_empty
-    -- · rw [inter_univ]
-    --   apply open_cofinite
-    --   exact hs
     · apply open_cofinite
       rw [compl_inter]
       apply Set.Finite.union
       exact hs
       exact ht
 
+lemma cofinite_of_Notempty (S : Set α) (hS : S ≠ ∅) : CofTop S → Finite ↑(Sᶜ) := by
+  rintro ⟨h, h2⟩
+  · trivial
+  assumption
+
 lemma iUnionCofTop (I : Type) (S : I → Set α) (hs : (i : I) → CofTop (S i)) :
   CofTop (⋃ i : I, S i) := by
   classical
   by_cases h : ∃ i, S i ≠ ∅
-  · --let i := h.choose
-    obtain ⟨i, hi⟩ := h
+  · obtain ⟨i, hi⟩ := h
     let T := S i
-    have ht1 : T ≠ ∅ := hi
-    -- revert T
-    have ht : CofTop T := hs i
-    -- clear hi
-    -- clear hs
-    -- cases ht
-    -- rcases ht with
-    -- have : Finite (↑()ᶜ) := by
-      -- cases hs i
+    have := cofinite_of_Notempty T hi (hs i)
+    apply open_cofinite
+    rw [compl_iUnion]
+    apply Finite.subset this
+    refine iInter_subset_of_subset i (by rfl)
+  · simp only [not_exists, ne_eq, not_not, ← iUnion_eq_empty] at h
+    rw [h]
+    exact open_empty
 
+lemma univ_CofTop : CofTop (univ : (Set α)) := by
+  apply open_cofinite
+  rw [compl_univ]
+  exact finite_empty
 
-
-  -- by_cases h : ∀ i, S i = ∅
-  -- · rw [← iUnion_eq_empty] at h
-  --   rw [h]
-  --   exact open_empty
-  -- · rw [not_forall] at h
-  --   obtain ⟨i, hi⟩ := h
-  --   specialize hs i
-  --   have : Finite (↑(S i)ᶜ) := by
-  --     cases hs
-
-
+lemma empty_CofTop : CofTop (∅ : Set α) := open_empty
 
 
 end InductiveTypes
+
+end ENS

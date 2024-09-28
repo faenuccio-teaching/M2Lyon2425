@@ -4,6 +4,8 @@ import Mathlib.Data.Set.Operations
 import Mathlib.Order.SetNotation
 import Mathlib.Tactic.Common
 
+namespace ENS
+
 open Set Classical
 
 open scoped Set
@@ -378,3 +380,5 @@ example {α I : Type} (A B : I → Set α) : (⋂ i, A i ∩ B i) = (⋂ i, A i)
   exact h2 i
 
 end Operations
+
+end ENS
