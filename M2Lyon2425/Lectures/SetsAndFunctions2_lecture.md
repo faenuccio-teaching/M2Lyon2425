@@ -63,7 +63,7 @@ In particular, the following equivalence is not a tautology:
 ```lean
 example : Injective f ↔ InjOn f univ
 ```
-it is rather _an exercise for you_...
+it is rather an exercise for you...
 
 `⌘`
 
@@ -71,21 +71,21 @@ it is rather _an exercise for you_...
 
 # Inductive Types and Inductive Predicates
 
-## Introduction
+## Inductive Types
 
 So far, we
 * met some abstact types `α, β, T : Type`, and variations like `α → T` or `β → Type`;
 * also met a lot of types `p, q, (1 = 2) ∧ (0 ≤ 5) : Prop`;
 * struggled a bit with `h : (2 = 3)` *versus* `(2 = 3) : Prop`;
 * also met `ℕ`, `ℤ`;
-* constructed the subytpe `{a : α // S a} = ↑S` corresponding to a set `S : α → Prop`.
+* considered the subytpe `{a : α // S a} = ↑S` corresponding to a set `S : α → Prop`.
 
 How can we *construct* new types? For instance, `ℕ`, or "the" subtype `↑S`, or `True : Prop`?
 
 +++ Using **inductive types**!
 
 * *Theoretical* perspective: this is (fun & interesting, but) hard: you'll see it in other courses.
-* *Practical* one: think of `ℕ` and surf the wave. It has two **constructors** `0 : ℕ` and `suc : ℕ → ℕ`, and every `n : ℕ` is of either form.
+* *Practical* one: think of `ℕ` and surf the wave. It has two **constructors**: the constant `0 : ℕ` and the function `succ : ℕ → ℕ`, and every `n : ℕ` is of either form.
 
 For example
 ```lean
@@ -98,12 +98,12 @@ inductive NiceType
 constructs the "minimal/smallest" type `NiceType` whose terms are 
 1. Either `Tom`;
 1. Or `Jerry`;
-1. Or an application of `f` to some previously-defined term (like `f g f Jerry` or `g Tom`);
+1. Or an application of `f` to some previously-defined term;
 1. Or an application of `g` to a natural and a pair of previously-defined terms.
 
 For example, `f (g 37 Tom Tom) : NiceType`.
 
-### Every type in Lean is a constructive type
+### Every type in Lean is an inductive type
 
 In order to
 1. construct terms of type `NiceType` you can use the ... *constructors*!;
@@ -113,7 +113,7 @@ In order to
 
 +++
 
-## Inductive Families
+## Inductive Families and Inductive Predicates
 
 Recall the 
 ```lean

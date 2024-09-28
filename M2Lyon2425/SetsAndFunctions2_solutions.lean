@@ -124,7 +124,8 @@ example : range f = f '' univ := by
 
 
 -- **2** Why does this code *fail*? Fix it, and then prove the statement
--- example (N : OddNaturals) : N ∈ Nat.succ '' (EvenNaturals) ∧ N ∈ Nat.succ ⁻¹' (EvenNaturals):=
+-- example (N : OddNaturals) : N ∈ Nat.succ '' (EvenNaturals) :=
+-- It *fails* because `N` is of the wrong type. `N.1` is a `ℕ`, and the following code compiles:
 example (N : OddNaturals) : N.1 ∈ Nat.succ '' (EvenNaturals) := by
   rcases N with ⟨n, hn⟩
   have hn' := hn.out
@@ -140,6 +141,7 @@ example (N : OddNaturals) : N.1 ∈ Nat.succ '' (EvenNaturals) := by
 
 -- **3** Why does this code *fail*? Fix it, and then prove the statement
 -- example (N : OddNaturals) :  N ∈ Nat.succ ⁻¹' (EvenNaturals) := by
+-- It *fails* because `N` is of the wrong type. `N.1` is a `ℕ`, and the following code compiles:
 example (N : OddNaturals) :  N.1 ∈ Nat.succ ⁻¹' (EvenNaturals) := by
   rcases N with ⟨n, hn⟩
   rw [mem_preimage]
@@ -283,6 +285,9 @@ example : ¬ Surjective ENS_succ := by
 inductive Politics
   | Right : Politics
   | Left : Politics
+
+
+-- leave this line as it is
 open Politics
 
 /- **4** Define a function `swap : Politics → Politics` sending `Right` to `Left` and viceversa-/
@@ -300,7 +305,7 @@ example (a : Politics) : a ≠ Right → a = Left := by
 
 end InductiveTypes
 
--- # §3 : Inductive types
+-- # §4 : Inductive families
 
 section InductiveFamilies
 
@@ -329,6 +334,7 @@ inductive NiceFamily : ℕ → Prop
 inductive IsEven : ℕ → Prop
   | zero_even : IsEven 0
   | succ_succ (n : ℕ) : IsEven n → IsEven (n+2)
+
 
 example : IsEven 4 := by
   apply IsEven.succ_succ
