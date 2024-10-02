@@ -164,7 +164,7 @@ def EvenPositiveNaturals : Set PositiveIntegers := by
 -- Why does this *fail*? How to fix it?
 -- example : 1 ∉ EvenPositiveNaturals := sorry
 /- *Sol.:* Lean complains because `3` is not a term of `EvenNaturals`, so it does not make sense
-to check whether it satisifies a property defined on them. It can be made to work by writing -/
+to check whether it satisfies a property defined on them. It can be made to work by writing -/
 example : ⟨1, Int.zero_lt_one⟩ ∉ EvenPositiveNaturals := by
   intro h
   cases h
@@ -191,7 +191,7 @@ example (n : ℕ) : n ∈ OddNaturals ↔ n ∉ EvenNaturals := by
 
 -- Why does this *fail*?
 -- example (α : Type) (S : Set α) : subsub = subsub' := sorry
-/- *Sol.:*  Lean complanins because in `subsub'` `P` is defined on the type `α` whereas in `subsub`
+/- *Sol.:*  Lean complains because in `subsub'` `P` is defined on the type `α` whereas in `subsub`
 it is defined on the type `↑S`. So this is an equality between functions defined on different types,
 that makes no sense. -/
 
@@ -336,7 +336,7 @@ example : (setOf (0 ≤ ·) : Set ℤ) ∩ setOf (· ≤ 0) = {0} := by
 -- Using your definition of `OddNaturals` prove the following:
 example : EvenNaturals ∪ OddNaturals = univ := by
   ext x
-  simp only [mem_union, mem_univ, iff_true] -- to be obtained by tipying `simp?`
+  simp only [mem_union, mem_univ, iff_true] -- to be obtained by typing `simp?`
   by_cases hx : x % 2 = 0
   · apply Or.inl
     exact hx
