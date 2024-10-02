@@ -41,7 +41,7 @@ I write *equivalent* because the defining property is
 ```lean
 range f := (fun b ↦ ∃ x, f x = b) : β → Prop = (Set β)
 ```
-This is not the verbatim definition of `f '' univ` : there will be an exercice about this.
+This is not the verbatim definition of `f '' univ` : there will be an exercise about this.
 +++
 
 +++ The **preimage** of `T` through `f`, denoted `f ⁻¹' T`.
@@ -54,7 +54,7 @@ This also comes with one accent and _two_ spaces; the symbol `⁻¹` can be type
 `⌘`
 +++
 
-+++ The function `f` is **injective on `S`**, denoted by `InjOn f S` if it is injective (a notion defined for functions **between types**) when restricted to `S`:
++++ The function `f` is **injective on `S`**, denoted by `InjOn f S` if it is injective (a notion defined for functions **between two types**) when restricted to `S`:
 ```lean
 def : InjOn f S := ∀ x₁ ∈ S, ∀ x₂ ∈ S, f x₁ = f x₂ → x₁ = x₂
 ```
@@ -103,7 +103,9 @@ constructs the "minimal/smallest" type `NiceType` whose terms are
 
 For example, `f (g 37 Tom Tom) : NiceType`.
 
-### Every type in Lean is an inductive type
+
+> **Every type in Lean is an inductive type**
+
 
 In order to
 1. construct terms of type `NiceType` you can use the ... *constructors*!;
@@ -142,7 +144,7 @@ inductive NiceProp : Prop
   | f : NiceProp → Prop
   | g : ℕ → NiceProp → NiceProp → NiceProp
 ```
-* The default is `Type`.
+> The default is `Type`.
 
 ### Families
 If you want a *family* of types (say, of propositions), you simply say it straight away!

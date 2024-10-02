@@ -44,12 +44,17 @@ example : Set α → Set β := by sorry
 example (α β: Type) (f : α → β) (S : Set α) : S ≠ ∅ → f '' S ≠ ∅ := by sorry
 
 
+
+
 -- `⌘`
 
 
 -- The **preimage**
 
 example : 2 ∈ Nat.succ ⁻¹' {2, 3} ∧ 1 ∉ .succ ⁻¹' {0, 3} := by sorry
+
+
+
 
 
 -- `⌘`
@@ -91,6 +96,7 @@ example : Surjective f ↔ (range f)ᶜ = ∅ := by sorry
 
 end Operations
 
+
 -- # §3 : Inductive types
 
 section InductiveTypes
@@ -113,26 +119,34 @@ open ENS_Nat
 #print ENS_Nat
 #check ENS_Nat
 
+-- We want to prove that `ENS_Nat = ℕ`: they are *constructed* in the same way!
 def JustOne_fun : ℕ → ENS_Nat := sorry
 
+--This we leave as an exercise...
 def JustOne_inv : ENS_Nat → ℕ := sorry
+
 
 def JustOne_Left : LeftInverse JustOne_inv JustOne_fun := by sorry
 
-
+--This we leave as an exercise...
 def JustOne_Right : RightInverse JustOne_inv JustOne_fun := sorry
 
 
 def JustOne : ℕ ≃ ENS_Nat := sorry
 
 
-inductive Lor (p q : Prop) : Prop
+inductive ENS_Or (p q : Prop) : Prop
 
-#print Lor
+#print ENS_Or
 
-example (n : ENS_Nat) : Lor (n = ENS_zero) (∃ m, n = ENS_succ m) := by sorry
+example (n : ENS_Nat) : ENS_Or (n = ENS_zero) (∃ m, n = ENS_succ m) := by sorry
 
-/- **§ Exercises** -/
+
+
+
+/- **§ Some exercises** -/
+
+
 
 -- **1** : Fill in the `sorry` in `JustOne_inv` and in `JustOne_Right`.
 -- *Solutions* are above
@@ -196,7 +210,10 @@ lemma not_IsEven_succ : ∀ n : ℕ, IsEven n ↔ ¬ IsEven (n + 1) := by sorry
 
 
 
+
 /- **§ Some exercises** -/
+
+
 
 -- **1** Recall the `repeat` tactic
 example : ¬ IsEven 111 := by sorry

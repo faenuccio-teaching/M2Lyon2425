@@ -92,6 +92,8 @@ example : InjOn (fun n : ℤ ↦ n ^ 2) PositiveIntegers := by
   simp only [Int.pow_succ', Int.pow_zero, Int.mul_one] at H
   by_cases h_mlt : m < n
   · exfalso
+    -- have := mul_lt_mul -- we can add a `@` before to let it compile anyhow
+    -- have := @Int.mul_lt_mul -- now we see who each `a,b,c,d` must be
     have := Int.mul_lt_mul h_mlt (le_of_lt h_mlt) hm.out (le_of_lt hn.out)
     replace this := ne_of_lt this
     exact this H
@@ -223,10 +225,13 @@ open ENS_Nat
 #print ENS_Nat
 #check ENS_Nat
 
+-- We want to prove that `ENS_Nat = ℕ`: they are *constructed* in the same way!
 def JustOne_fun : ℕ → ENS_Nat
   | 0 => ENS_zero
   | Nat.succ m => ENS_succ (JustOne_fun m)
 
+
+--This we leave as an exercise...
 def JustOne_inv : ENS_Nat → ℕ
   | ENS_zero => 0
   | ENS_succ a => Nat.succ (JustOne_inv a)
@@ -242,7 +247,7 @@ def JustOne_Left : LeftInverse JustOne_inv JustOne_fun := by
   -- | Nat.succ m =>
   --     rw [JustOne_fun, JustOne_inv, JustOne_Left]
 
-
+--This we leave as an exercise...
 def JustOne_Right : RightInverse JustOne_inv JustOne_fun
   | ENS_zero => rfl
   | ENS_succ m => by rw [JustOne_inv, JustOne_fun, JustOne_Right]
@@ -255,22 +260,27 @@ def JustOne : ℕ ≃ ENS_Nat where
   right_inv := JustOne_Right
 
 
-inductive Lor (p q : Prop) : Prop
-| left : p → Lor p q
-| right : q → Lor p q
+inductive ENS_Or (p q : Prop) : Prop
+| left : p → ENS_Or p q
+| right : q → ENS_Or p q
 
-#print Lor
+#print ENS_Or
 
-example (n : ENS_Nat) : Lor (n = ENS_zero) (∃ m, n = ENS_succ m) := by
+example (n : ENS_Nat) : ENS_Or (n = ENS_zero) (∃ m, n = ENS_succ m) := by
   cases' n with m -- this is a case-splitting on the way an `ENS_succ` can be constructed
-  · apply Lor.left
+  · apply ENS_Or.left
     rfl
-  · apply Lor.right
+  · apply ENS_Or.right
     cases' m with d
     · use ENS_zero
     · use ENS_succ d
 
-/- **§ Exercises** -/
+
+
+
+/- **§ Some exercises** -/
+
+
 
 -- **1** : Fill in the `sorry` in `JustOne_inv` and in `JustOne_Right`.
 -- *Solutions* are above
@@ -376,7 +386,12 @@ lemma not_IsEven_succ : ∀ n : ℕ, IsEven n ↔ ¬ IsEven (n + 1) := by
       apply hd
       exact h
 
+
+
+
 /- **§ Some exercises** -/
+
+
 
 -- **1** Recall the `repeat` tactic
 example : ¬ IsEven 111 := by
