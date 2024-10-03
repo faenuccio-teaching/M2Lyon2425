@@ -160,7 +160,7 @@ example : (True → False) → P := by
 /-
   # Negation
   Use `\not` to write `¬`
-  The definition of `¬ P` is `P → False`: they are *definitionnally equal*
+  The definition of `¬ P` is `P → False`: they are *definitionally equal*
 -/
 
 -- Use of the `change` tactic
@@ -238,7 +238,7 @@ example : (¬Q → ¬P) → P → Q := by
 /- END TODO -/
 
 /-
-  # Conjonction / And
+  # Conjunction / And
   Use `\and` to write `∧`
 -/
 
@@ -451,7 +451,7 @@ example : ¬(P ↔ ¬P) := by
 /- END TODO -/
 
 /-
-  # Disjonction / Or
+  # DIsjunction / Or
   Use `\or` to write `∨`
 -/
 
