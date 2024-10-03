@@ -85,7 +85,7 @@ Given sets `S T : Set α`  have the
 def (S ∩ T : Set α) := fun a ↦ a ∈ S ∧ a ∈ T
 ```
 * Often need **extensionality**: equality of sets can be tested on elements;
-* realted to _functional extensionality_ : two functions are equal if and only they have if they take the same values on same arguments;
+* related to _functional extensionality_ : two functions are equal if and only they have if they take the same values on same arguments;
 * not strange: sets *are* functions.
 
 `⌘`
