@@ -27,7 +27,7 @@ Given a function `f : α → β` and sets `(S : Set α), (T : Set β)`, there ar
 +++ The **image** of `S` through `f`, noted `f '' S`.
 This is the *set* `f '' S : Set β` whose defining property is
 ```lean
-f'' S := fun b ↦ ∃ x, x ∈ S ∧ f x = b
+f '' S := fun b ↦ ∃ x, x ∈ S ∧ f x = b
 ```
 Unfortunately it comes with a lot of accents (but we're in France...): and with a space between `f` and `''`: it is not `f'' S`, it is `f '' S`.
 
