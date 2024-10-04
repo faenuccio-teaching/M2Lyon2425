@@ -16,10 +16,12 @@ variable (α : Type*) (P Q : α → Prop) -- Use `\alpha` to write `α`
 
 -- Use of the `rw` tactic
 example (x y : α) (hx : P x) (h : y = x) : P y := by
-  sorry
+  rw [h]
+  exact hx
 
 example (x : α) (hP : P x) (h : P = Q) : Q x := by
-  sorry
+  rw [← h]
+  exact hP
 
 /-
   # Quantifiers
@@ -28,68 +30,116 @@ example (x : α) (hP : P x) (h : P = Q) : Q x := by
 
 variable (R : Prop)
 
-example (h : ∀ x : α, P x) (y : α) : P y := by
-  sorry
+example (h : ∀ x : α, P x) (y : α) : P y := h y
 
-example : (∀ x : α, P x ∧ Q x) → ∀ x : α, P x := by
-  sorry
+example : (∀ x : α, P x ∧ Q x) → ∀ x : α, P x := fun H x ↦ (H x).1
 
 -- Use of the `specialize` tactic and `Or.resolve_right/Or.resolve_left`
 example : (∀ x, P x ∨ R) ↔ (∀ x, P x) ∨ R := by
-  sorry
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · by_cases hR : R
+    · right
+      exact hR
+    · left
+      intro x
+      specialize h x
+      exact h.resolve_right hR
+  · intro x
+    cases h with
+    | inl h =>
+        left
+        specialize h x
+        exact h
+    | inr h =>
+        right
+        exact h
 
 -- Use of the `use` tactic
 example (x : α) (h : P x) : ∃ y, P y := by
-  sorry
+  use x
 
 -- Use of `Exists.choose / Exists.choose_spec`
 example (h : ∃ x, P x ∧ Q x) : ∃ x, P x := by
-  sorry
+  use h.choose
+  exact h.choose_spec.1
 
 -- Use of the `cases` tactic
 example (h : ∃ x, P x ∧ Q x) : ∃ x, Q x ∧ P x := by
-  sorry
+  cases h with
+  | intro w h =>
+      use w
+      exact ⟨h.2, h.1⟩
 
 /- TODO -/
 
-example : (∀ x, P x ∧ Q x) ↔ (∀ x, P x) ∧ (∀ x, Q x) := by
-  sorry
+example : (∀ x, P x ∧ Q x) ↔ (∀ x, P x) ∧ (∀ x, Q x) :=
+  ⟨fun h ↦ ⟨fun x ↦ (h x).1, fun x ↦ (h x).2⟩, fun h x ↦ ⟨h.1 x, h.2 x⟩⟩
 
-example : (∀ x, P x → Q x) → (∀ x, P x) → (∀ x, Q x) := by
-  sorry
+example : (∀ x, P x → Q x) → (∀ x, P x) → (∀ x, Q x) :=
+  fun h h₂ x ↦ h x (h₂ x)
 
 example : (∀ x, Q x) ∨ (∀ x, Q x) → ∀ x, Q x ∨ P x := by
-  sorry
+  refine fun h x ↦ ?_
+  left
+  cases h with
+  | inl h => exact h x
+  | inr h => exact h x
 
-example (h1 : ∀ x, P x → Q x) (h2 : ∀ x, P x) : ∀ x, Q x := by
-  sorry
+example (h1 : ∀ x, P x → Q x) (h2 : ∀ x, P x) : ∀ x, Q x :=
+  fun x ↦ h1 x (h2 x)
 
 example (h : ¬ ∃ x, ¬ P x) : ∀ x, P x := by
-  sorry
+  push_neg at h
+  exact h
 
-example : (∃ x : α, R) → R := by
-  sorry
+example : (∃ _ : α, R) → R := (·.choose_spec)
 
-example (x : α) : R → (∃ x : α, R) := by
-  sorry
+example (x : α) : R → (∃ _ : α, R) := (⟨x, ·⟩)
 
 example : (∃ x, P x ∨ Q x) ↔ (∃ x, P x) ∨ (∃ x, Q x) := by
-  sorry
+  refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+  · cases h with
+    | intro w h =>
+        cases h with
+        | inl _ =>
+            left
+            use w
+        | inr _ =>
+            right
+            use w
+  · cases h with
+    | inl h =>
+        use h.choose
+        left
+        exact h.choose_spec
+    | inr h =>
+        use h.choose
+        right
+        exact h.choose_spec
 
 example : (∀ x, P x) ↔ ¬ (∃ x, ¬ P x) := by
-  sorry
+  refine ⟨fun h h₂ ↦ h₂.choose_spec (h h₂.choose), fun h x ↦ ?_⟩
+  push_neg at h
+  exact h x
 
 example : (∃ x, P x) ↔ ¬ (∀ x, ¬ P x) := by
-  sorry
+  refine ⟨fun h h₂ ↦ h₂ h.choose h.choose_spec, fun h ↦ ?_⟩
+  push_neg at h
+  exact h
 
-example : (∀ x, P x → R) ↔ (∃ x, P x) → R := by
-  sorry
+example : (∀ x, P x → R) ↔ (∃ x, P x) → R :=
+  ⟨fun h h₂ ↦ h h₂.choose h₂.choose_spec, fun h x hx ↦ h ⟨x, hx⟩⟩
 
-example : (∃ x, P x → R) ↔ (∀ x, P x) → R := by
-  sorry
+example (a : α) : (∃ x, P x → R) ↔ (∀ x, P x) → R := by
+  refine ⟨fun h h₂ ↦ h.choose_spec (h₂ h.choose), ?_⟩
+  contrapose!
+  intro hx
+  exact ⟨fun x ↦ (hx x).1, (hx a).2⟩
 
-example : (∃ x, R → P x) ↔ (R → ∃ x, P x) := by
-  sorry
+example (a : α) : (∃ x, R → P x) ↔ (R → ∃ x, P x) := by
+  refine ⟨fun h r ↦ ⟨h.choose, h.choose_spec r⟩, ?_⟩
+  contrapose!
+  exact fun hx ↦ ⟨(hx a).1, fun x ↦ (hx x).2⟩
 
 /- END TODO -/
 
