@@ -6,7 +6,7 @@ import Mathlib.Tactic.Common
 import Mathlib.Data.Real.Basic
 import Mathlib.GroupTheory.Perm.Basic
 
-open Set Classical
+open Classical
 
 /-!
 Announcement about projects: you should let us know what final exam project you want
