@@ -188,6 +188,11 @@ example {α : Type*} : Group₁ (Equiv₁ α α) where
 lemma Group₁.mul_inv_cancel {α : Type*} (G : Group₁ α) (x : α) :
     G.mul x (G.inv x) = G.one := sorry
 
+-- Hint: you might find the following lemma useful:
+/-
+lemma Group₁.inv_eq_of_mul {α : Type*} (G : Group₁ α) (x y : α) :
+    G.mul x y = G.one → G.inv x = y := sorry
+-/
 
 /- The last example is kind of painful to write. We would like to:
 (1) not have to give a name for the group structure on `α`;
