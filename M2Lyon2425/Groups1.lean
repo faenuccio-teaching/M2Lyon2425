@@ -185,8 +185,9 @@ example {α : Type*} : Group₁ (Equiv₁ α α) where
   mul_assoc := sorry
   inv_mul_cancel := sorry
 
-lemma Group₁.mul_inv_cancel {α : Type*} (G : Group α) (x : α) :
+lemma Group₁.mul_inv_cancel {α : Type*} (G : Group₁ α) (x : α) :
     G.mul x (G.inv x) = G.one := sorry
+
 
 /- The last example is kind of painful to write. We would like to:
 (1) not have to give a name for the group structure on `α`;
