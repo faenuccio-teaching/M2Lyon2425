@@ -92,30 +92,32 @@ variable {α β γ : Type*}
 theorem better_ext {f g : Equiv₁ α β} (h : f.toFun = g.toFun) : f = g := by
   apply Equiv₁.ext
   · exact h
-  · sorry
+  · ext y
+    have := f.right_inv y
+    conv_rhs => rw [← this, h, g.left_inv]
 
 -- The identity as equivalence.
 
 def refl (α) : Equiv₁ α α where
   toFun := fun x ↦ x
   invFun := fun x ↦ x
-  left_inv := sorry
-  right_inv := sorry
+  left_inv _ := rfl
+  right_inv _ := rfl
 
 -- Defining functions on structures: inverse and composition of equivalences.
 
 def symm (f : Equiv₁ α β) : Equiv₁ β α where
   toFun := f.invFun
   invFun := f.toFun
-  left_inv := sorry
-  right_inv := sorry
+  left_inv := f.right_inv
+  right_inv := f.left_inv
 
 def symm' (f : Equiv₁ α β) : Equiv₁ β α :=
   {
     toFun := f.invFun
     invFun := f.toFun
-    left_inv:= sorry
-    right_inv := sorry
+    left_inv:= f.right_inv
+    right_inv := f.left_inv
   }
 
 def symm'' (f : Equiv₁ α β) : Equiv₁ β α := by
@@ -123,14 +125,14 @@ def symm'' (f : Equiv₁ α β) : Equiv₁ β α := by
   refine Equiv₁.mk ?_ ?_ ?_ ?_
   · exact f.invFun
   · exact f.toFun
-  · sorry
-  · sorry
+  · exact f.right_inv
+  · exact f.left_inv
 
 def trans (f : Equiv₁ α β) (g : Equiv₁ β γ) : Equiv₁ α γ where
   toFun := g.toFun ∘ f.toFun
   invFun := f.invFun ∘ g.invFun
-  left_inv := sorry
-  right_inv := sorry
+  left_inv := by intro x; simp; rw [g.left_inv, f.left_inv]
+  right_inv := by intro x; simp; rw [f.right_inv, g.right_inv]
 
 end Equiv₁
 
@@ -171,22 +173,34 @@ example {α : Type*} : BundledGroup₁ where
   one := Equiv₁.refl α
   mul := Equiv₁.trans
   inv := Equiv₁.symm
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
-  inv_mul_cancel := sorry -- can you do this?
+  mul_one _ := rfl
+  one_mul _ := rfl
+  mul_assoc _ _ _ := rfl
+  inv_mul_cancel := by 
+    intro ⟨ f, g, L, R ⟩; apply Equiv₁.better_ext
+    ext y; exact R y
 
 example {α : Type*} : Group₁ (Equiv₁ α α) where
   one := Equiv₁.refl α
   mul := Equiv₁.trans
   inv := Equiv₁.symm
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
-  inv_mul_cancel := sorry
+  mul_one _ := rfl
+  one_mul _ := rfl
+  mul_assoc _ _ _ := rfl
+  inv_mul_cancel := by
+    intro ⟨ f, g, L, R ⟩; apply Equiv₁.better_ext
+    ext y; exact R y
+
+lemma Group₁.inv_eq_of_mul {α : Type*} (G : Group₁ α) (x y : α) :
+    G.mul x y = G.one → G.inv x = y := by
+  intro e
+  rw [←(G.mul_one (G.inv x)), ←e, ←G.mul_assoc, G.inv_mul_cancel, G.one_mul]
 
 lemma Group₁.mul_inv_cancel {α : Type*} (G : Group₁ α) (x : α) :
-    G.mul x (G.inv x) = G.one := sorry
+    G.mul x (G.inv x) = G.one := by
+  have := Group₁.inv_eq_of_mul _ _ _ (G.inv_mul_cancel x)
+  conv_lhs => congr; rfl; rw [←this]
+  exact G.inv_mul_cancel (G.inv x)
 
 -- Hint: you might find the following lemma useful:
 /-
@@ -237,17 +251,28 @@ class Group₂ (α : Type*) where
   mul_assoc : ∀ (x y z : α), mul (mul x y) z = mul x (mul y z)
   inv_mul_cancel : ∀ (x : α), mul (inv x) x = one
 
+lemma Group₂.inv_eq_of_mul {α : Type*} [Group₂ α] (x y : α) :
+    mul x y = one → inv x = y := by
+  intro e
+  rw [←(mul_one (inv x)), ←e, ←mul_assoc, inv_mul_cancel, one_mul]
+
 lemma Group₂.mul_inv_cancel {α : Type*} [Group₂ α] (x : α) :
-     mul x (inv x) = one := sorry
+     mul x (inv x) = one := by
+  have := Group₂.inv_eq_of_mul _ _ (inv_mul_cancel x)
+  conv_lhs => congr; rw [←this]
+  exact inv_mul_cancel (inv x)
 
 instance {α : Type*} : Group₂ (Equiv₁ α α) where
   one := Equiv₁.refl α
   mul := Equiv₁.trans
   inv := Equiv₁.symm
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
-  inv_mul_cancel := sorry
+  mul_one _ := rfl
+  one_mul _ := rfl
+  mul_assoc _ _ _ := rfl
+  inv_mul_cancel := by
+    intro ⟨ f, g, L, R ⟩
+    apply Equiv₁.better_ext
+    ext y; exact R y
 
 section Tests
 
@@ -260,7 +285,6 @@ variable {α : Type*}
 #synth Group (Equiv.Perm α)
 
 end Tests
-
 
 /- *How does Lean know that a group is a monoid ?*
 
@@ -280,9 +304,9 @@ class Monoid₁ (α : Type*) where
 instance : Monoid₁ ℕ where
   one := 0
   mul a b := a + b
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
+  mul_one _ := rfl
+  one_mul _ := by simp
+  mul_assoc := add_assoc
 
 /- But every group is also a monoid, and Lean should know this. How do we tell it?
 
@@ -319,11 +343,10 @@ structure Involution₁ (α : Type*) extends Equiv₁ α α where
 
 example : Involution₁ ℤ where
   toFun := fun x ↦ -x
-  invFun := sorry
-  left_inv := sorry
-  right_inv := sorry
-  inv := sorry
-
+  invFun := fun x ↦ -x
+  left_inv _ := by simp
+  right_inv _ := by simp
+  inv _ := by simp
 
 /- What about using notation?
 
@@ -343,7 +366,7 @@ class Dia₁ (α : Type*) where
 -- `⋄` as for `Dia₁.dia`.)
 @[inherit_doc]
 infixl:70 " ⋄ " => Dia₁.dia -- type ⋄ using \ + diamond (or just \ + dia)
-
+ 
 -- The binary operation on permutations.
 instance {α : Type*} : Dia₁ (Equiv₁ α α) where
   dia := Equiv₁.trans
@@ -356,8 +379,7 @@ class Semigroup₁ (α : Type*) extends Dia₁ α where
   dia_assoc : ∀ (x y z : α), x ⋄ y ⋄ z = x ⋄ (y ⋄ z)
 
 instance {α : Type*} : Semigroup₁ (Equiv₁ α α) where
-  dia_assoc := sorry -- should really have made the associativity of `Equiv₁.trans`
-                     -- into a lemma earlier!
+  dia_assoc _ _ _ := rfl
 
 -- Let's do the same with the unit element.
 class One₁ (α : Type*) where
@@ -375,7 +397,7 @@ notation "𝟙" => One₁.one  -- type using \ + b1
 
 #check (𝟙 : Equiv₁ ℕ ℕ)
 
-example (a : ℕ) : (𝟙 : Equiv₁ ℕ ℕ).toFun a = a := sorry
+example (a : ℕ) : (𝟙 : Equiv₁ ℕ ℕ).toFun a = a := by rfl
 
 -- To define monoids, we just need to put semigroups and unit elements together,
 -- and to add a couple of axioms.
@@ -411,8 +433,8 @@ example {α : Type*} [Monoid₃ α] :
 
 
 instance {α : Type*} : DiaOneClass₁ (Equiv₁ α α) where
-  one_dia := sorry
-  dia_one := sorry
+  one_dia _ := rfl
+  dia_one _ := rfl
 
 instance {α : Type*} : Monoid₂ (Equiv₁ α α) where
   dia_assoc := Semigroup₁.dia_assoc
@@ -436,7 +458,10 @@ class Group₄ (G : Type*) extends Monoid₂ G, Inv₁ G where
   inv_dia : ∀ a : G, a⁻¹ ⋄ a = 𝟙
 
 instance {α : Type*} : Group₄ (Equiv₁ α α) where
-  inv_dia := sorry
+  inv_dia := by
+    intro ⟨ f, g, L, R ⟩
+    apply Equiv₁.better_ext
+    ext y; exact R y
 
 lemma left_inv_eq_right_inv₁ {M : Type} [Monoid₂ M] {a b c : M}
     (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) : b = c := by
@@ -451,19 +476,40 @@ lemma left_inv_eq_right_inv₁' {M : Type} [Monoid₂ M] {a b c : M}
     (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) : b = c := by
   rw [← one_dia c, ← hba, dia_assoc, hac, dia_one b]
 
-/- Exercise: define a second binary operator class, say `Ast₁` with notation `∗` (\ + ast),
-and a second unit `OneBis` with notation `𝟭` (\ + sb1); define a class `AstOneBisClass₁` similar
-to `DiaOneClass₁`.
-Then introduce a class `TwoCompatibleLaws` extending `DiaOneClass₁` and `AstOneBisClass₁` with
-the extra condition that `exchange : ∀ x y z t, (x ⋄ y) ∗ (z ⋄ t) = (x ∗ z) ⋄ (y ∗ t)`.
 
-Then prove the following lemmas:
+class Ast₁ (α : Type*) where
+  ast : α → α → α
 
-lemma one_eq_oneBis {α : Type*} (M : TwoCompatibleLaws α) : 𝟙 = 𝟭 := sorry
+@[inherit_doc]
+infixl:70 " ∗ " => Ast₁.ast
 
-lemma dia_eq_ast {α : Type*} (M : TwoCompatibleLaws α) (x y : α) : x ⋄ y = x ∗ y := sorry
+class OneBis (α : Type*) where
+  oneBis : α
 
-lemma dia_comm {α : Type*} (M : TwoCompatibleLaws α) (x y : α) : x ⋄ y = y ⋄ x := sorry
+@[inherit_doc]
+notation "𝟏" => OneBis.oneBis
 
-lemma dia_assoc {α : Type*} (M : TwoCompatibleLaws α) (x y z : α) : x ⋄ y ⋄ z = x ⋄ (y ⋄ x) := sorry
--/
+class AstOneBisClass₁ (α : Type*) extends OneBis α, Ast₁ α where
+  one_ast : ∀ x : α, 𝟏 ∗ x = x
+  ast_one : ∀ x : α, x ∗ 𝟏 = x
+
+class TwoCompatibleLaws (α : Type*) extends DiaOneClass₁ α, AstOneBisClass₁ α where
+  exchange : ∀ x y z t : α, (x ⋄ y) ∗ (z ⋄ t) = (x ∗ z) ⋄ (y ∗ t)
+
+lemma one_eq_oneBis {α : Type*} (M : TwoCompatibleLaws α) : (𝟙 : α) = (𝟏 : α) := by
+  rw [←(M.ast_one 𝟙)]  
+  rw [←(dia_one (𝟙 ∗ 𝟏))]  
+  conv_lhs => congr; rfl; rw [←(M.one_ast 𝟙)]
+  rw [←M.exchange, dia_one, one_dia, M.ast_one]
+
+lemma dia_eq_ast {α : Type*} (M : TwoCompatibleLaws α) (x y : α) : x ⋄ y = x ∗ y := by
+  conv_lhs => congr; rw [←(M.ast_one x)]; rfl; rw [←(M.one_ast y)]
+  rw [←M.exchange, ←one_eq_oneBis, M.dia_one, M.one_dia]
+
+lemma dia_comm {α : Type*} (M : TwoCompatibleLaws α) (x y : α) : x ⋄ y = y ⋄ x := by
+  conv_lhs => rw [dia_eq_ast, ←(one_dia x), ←(dia_one y)]
+  rw [M.exchange, one_eq_oneBis, M.one_ast, M.ast_one]
+  
+lemma dia_assoc {α : Type*} (M : TwoCompatibleLaws α) (x y z : α) : x ⋄ y ⋄ z = x ⋄ (y ⋄ z) := by
+  conv_lhs => rw [dia_eq_ast]; congr; rfl; rw [←(M.one_dia z)]
+  rw [M.exchange, one_eq_oneBis, M.ast_one, ←dia_eq_ast]
