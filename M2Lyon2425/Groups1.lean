@@ -174,7 +174,7 @@ example {α : Type*} : BundledGroup₁ where
   mul_one := sorry
   one_mul := sorry
   mul_assoc := sorry
-  inv_mul_cancel := sorry
+  inv_mul_cancel := sorry -- can you do this?
 
 example {α : Type*} : Group₁ (Equiv₁ α α) where
   one := Equiv₁.refl α
