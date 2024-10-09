@@ -74,11 +74,11 @@ it is rather an exercise for you...
 ## Inductive Types
 
 So far, we
-* met some abstact types `α, β, T : Type`, and variations like `α → T` or `β → Type`;
+* met some abstract types `α, β, T : Type`, and variations like `α → T` or `β → Type`;
 * also met a lot of types `p, q, (1 = 2) ∧ (0 ≤ 5) : Prop`;
 * struggled a bit with `h : (2 = 3)` *versus* `(2 = 3) : Prop`;
 * also met `ℕ`, `ℤ`;
-* considered the subytpe `{a : α // S a} = ↑S` corresponding to a set `S : α → Prop`.
+* considered the subtype `{a : α // S a} = ↑S` corresponding to a set `S : α → Prop`.
 
 How can we *construct* new types? For instance, `ℕ`, or "the" subtype `↑S`, or `True : Prop`?
 
