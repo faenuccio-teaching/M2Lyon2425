@@ -61,7 +61,9 @@ jobs:
             MathlibDoc-
 
       - name: Build documentation
-        run: ~/.elan/bin/lake -R -Kenv=dev build M2Lyon2425:docs
+        run: |
+          mkdir -p docs
+          ~/.elan/bin/lake -R -Kenv=dev build M2Lyon2425:docs
 
 
       - name: Move documentation to `docs/docs`
