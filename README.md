@@ -1,5 +1,5 @@
 # M2Lyon2425
-This is the repository for the Lean courses of the program <a href="http://mathematiques.ens-lyon.fr/parcours-2024-2025-394652.kjsp">"Higher Algebra and Formalised Mathematics"</a> of the Advanced Master in Mathematics in Lyon for 2024/25.
+This is the webpage for the Lean courses of the program <a href="http://mathematiques.ens-lyon.fr/parcours-2024-2025-394652.kjsp">"Higher Algebra and Formalised Mathematics"</a> of the Advanced Master in Mathematics in Lyon for 2024/25. For the original `git` repository, click <a href="https://github.com/faenuccio-teaching/M2Lyon2425">here</a>.
 
 ## Prerequisites
 
@@ -26,14 +26,15 @@ Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/
 | Sep 4th| Installation Party | X. Roblot & S. Morel|
 | Sep 11th | Logic 1 | X. Roblot |
 | Sep 18th | Logic 2 | X. Roblot |
-| Sep 25th | Sets | F. Nuccio |
-| Oct 2nd | Functions on Sets and Inductive Types | F. Nuccio |
+| Sep 25th | Sets | F. Nuccio | Accompanying <a href="https://github.com/faenuccio/M2Lyon2425/blob/e75a8e16707e77390813ce07bf9c949c87a039ec/M2Lyon2425/Lectures/SetsAndFunctions1_lecture.pdf">pdf file</a>
+| Oct 2nd | Functions on Sets and Inductive Types | F. Nuccio | Accompanying <a href="https://github.com/faenuccio/M2Lyon2425/blob/e75a8e16707e77390813ce07bf9c949c87a039ec/M2Lyon2425/Lectures/SetsAndFunctions2_lecture.pdf">pdf file</a>
 | Oct 9th | Groups 1 | S. Morel
 | Oct 16th | Groups 2 | S. Morel
 | Oct 23rd | Rings and Fields 1 | X. Roblot
 | Oct 30th | _Holidays_ | ---
 | Nov 6th | Rings and Fields 2 | X. Roblot
 | Nov 13th | Topological Spaces 1 | S. Morel
+| **Nov 15th** | **Deadline for project proposal** | --- | **Upload it to your** **`git branch`**
 | Nov 20th | Topological Spaces 2 | S. Morel
 | Nov 27th | Calculus 1 | X. Roblot
 | Dec 4th | Calculus 2 | X. Roblot
