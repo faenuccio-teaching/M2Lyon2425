@@ -1,3 +1,6 @@
+def Intervals : ℕ → Set ℤ := by
+  exact fun (n : ℕ) ↦ (fun m ↦ (-n : ℤ) ≤ m ∧ m ≤ n) --this defines the interval [-n,n]
+
 example : ⋂ n : ℕ, Intervals n = {0} := by
   ext s
   constructor
