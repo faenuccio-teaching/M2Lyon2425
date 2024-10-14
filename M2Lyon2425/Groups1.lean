@@ -8,7 +8,6 @@ import Mathlib.Data.Real.Basic
 import Mathlib.GroupTheory.Perm.Basic
 
 open Classical
-
 /-!
 Announcement about projects: you should let us know what final exam project you want
 to work on by November 15, but it would be better if you did it earlier (say after
@@ -92,30 +91,42 @@ variable {α β γ : Type*}
 theorem better_ext {f g : Equiv₁ α β} (h : f.toFun = g.toFun) : f = g := by
   apply Equiv₁.ext
   · exact h
-  · sorry
+  · ext x
+    nth_rw 1 [← g.right_inv x]
+    rw[← h]
+    rw[left_inv ]
+
+
+
+-- deux premiers pas tres efficace , il suffit de rewrite a droite
 
 -- The identity as equivalence.
 
 def refl (α) : Equiv₁ α α where
   toFun := fun x ↦ x
   invFun := fun x ↦ x
-  left_inv := sorry
-  right_inv := sorry
+  left_inv := by
+
+    intro x
+    rfl
+  right_inv := by
+    intro y
+    rfl
 
 -- Defining functions on structures: inverse and composition of equivalences.
 
 def symm (f : Equiv₁ α β) : Equiv₁ β α where
   toFun := f.invFun
   invFun := f.toFun
-  left_inv := sorry
-  right_inv := sorry
+  left_inv := f.right_inv
+  right_inv := f.left_inv
 
 def symm' (f : Equiv₁ α β) : Equiv₁ β α :=
   {
     toFun := f.invFun
     invFun := f.toFun
-    left_inv:= sorry
-    right_inv := sorry
+    left_inv:= f.right_inv
+    right_inv := f.left_inv
   }
 
 def symm'' (f : Equiv₁ α β) : Equiv₁ β α := by
@@ -123,14 +134,22 @@ def symm'' (f : Equiv₁ α β) : Equiv₁ β α := by
   refine Equiv₁.mk ?_ ?_ ?_ ?_
   · exact f.invFun
   · exact f.toFun
-  · sorry
-  · sorry
+  · exact f.right_inv
+  · exact f.left_inv
 
 def trans (f : Equiv₁ α β) (g : Equiv₁ β γ) : Equiv₁ α γ where
   toFun := g.toFun ∘ f.toFun
   invFun := f.invFun ∘ g.invFun
-  left_inv := sorry
-  right_inv := sorry
+  left_inv := by
+    intro x
+    simp
+    rw[g.left_inv,f.left_inv]
+  right_inv := by
+    intro x
+    simp
+    rw[f.right_inv,g.right_inv]
+
+
 
 end Equiv₁
 
@@ -171,8 +190,17 @@ example {α : Type*} : BundledGroup₁ where
   one := Equiv₁.refl α
   mul := Equiv₁.trans
   inv := Equiv₁.symm
-  mul_one := sorry
-  one_mul := sorry
+  mul_one := by
+    intro f
+    apply Equiv₁.better_ext
+    ext _
+    rfl
+  one_mul := by
+    intro f
+    apply Equiv₁.better_ext
+    rfl
+
+
   mul_assoc := sorry
   inv_mul_cancel := sorry -- can you do this?
 
@@ -180,19 +208,57 @@ example {α : Type*} : Group₁ (Equiv₁ α α) where
   one := Equiv₁.refl α
   mul := Equiv₁.trans
   inv := Equiv₁.symm
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
-  inv_mul_cancel := sorry
+  mul_one := by
+    intro x
+    rfl
+
+
+  one_mul := by
+    intro x
+    rfl
+  mul_assoc := by
+    intro x y z
+    rfl
+
+  inv_mul_cancel := by
+    intro f
+    apply Equiv₁.better_ext
+    ext x
+    change f.toFun (f.invFun x)= x
+    rw[f.right_inv]
+
+lemma Group₁.inv_eq_of_mul {α : Type*} (G : Group₁ α) (x y : α) :
+    G.mul x y = G.one → G.inv x = y := by
+  intro h
+  apply_fun ( fun z ↦ G.mul (G.inv x ) z ) at h
+  rw[G.mul_one,← G.mul_assoc , G.inv_mul_cancel,G.one_mul] at h
+  symm
+  exact h
 
 lemma Group₁.mul_inv_cancel {α : Type*} (G : Group₁ α) (x : α) :
-    G.mul x (G.inv x) = G.one := sorry
+    G.mul x (G.inv x) = G.one := by
+  have : G.inv (G.inv x) = x := by
+    apply Group₁.inv_eq_of_mul
+    exact G.inv_mul_cancel x
+  nth_rw 1 [← this]
+  exact G.inv_mul_cancel (G.inv x)
+
+
+
+
+--lemma Group₁.mul_inv_cancel {α : Type*} (G : Group₁ α) (x : α) :
+--    G.mul x (G.inv x) = G.one := by
+--  have heq : G.inv (G.inv x) = x := by
+--    apply Group₁.inv_eq_of_mul
+--    exact G.inv_mul_cancel x
+--  conv_lhs => congr ; rfl ; rw[← heq]
+--  exact G.inv_mul_cancel ( G.inv x)
+
+
+
 
 -- Hint: you might find the following lemma useful:
-/-
-lemma Group₁.inv_eq_of_mul {α : Type*} (G : Group₁ α) (x y : α) :
-    G.mul x y = G.one → G.inv x = y := sorry
--/
+
 
 /- The last example is kind of painful to write. We would like to:
 (1) not have to give a name for the group structure on `α`;
@@ -238,16 +304,36 @@ class Group₂ (α : Type*) where
   inv_mul_cancel : ∀ (x : α), mul (inv x) x = one
 
 lemma Group₂.mul_inv_cancel {α : Type*} [Group₂ α] (x : α) :
-     mul x (inv x) = one := sorry
+    mul x (inv x) = one := by sorry
+  have : x = inv ( inv ( x)):= by sorry
+
+
 
 instance {α : Type*} : Group₂ (Equiv₁ α α) where
   one := Equiv₁.refl α
   mul := Equiv₁.trans
   inv := Equiv₁.symm
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
-  inv_mul_cancel := sorry
+  mul_one := by
+    intro x
+    rfl
+  one_mul := by
+    intro x
+    rfl
+  mul_assoc := by
+    intro x y z
+    rfl
+  inv_mul_cancel := by
+    intro f
+    apply Equiv₁.better_ext
+    ext x
+    have :(Equiv₁.refl α ).toFun x = x := by rfl
+    rw[this]
+    change f.toFun ( f.invFun x) = x
+    exact f.right_inv x
+
+
+
+
 
 section Tests
 
@@ -280,9 +366,18 @@ class Monoid₁ (α : Type*) where
 instance : Monoid₁ ℕ where
   one := 0
   mul a b := a + b
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
+  mul_one := by
+    intro x
+    simp
+  one_mul :=  by
+    intro
+    simp
+  mul_assoc := by
+    intro x y z
+    simp
+    exact add_assoc x y z
+
+instance {α : Type*}: Monoid₁ (Equiv₁ α α) where
 
 /- But every group is also a monoid, and Lean should know this. How do we tell it?
 
@@ -300,7 +395,11 @@ class Group₃ (α : Type*) extends Monoid₁ α where
 -- automatically.
 #check Group₃.toMonoid₁
 
-instance {α : Type*} : Group₃ (Equiv₁ α α) := sorry
+instance {α : Type*} : Group₃ (Equiv₁ α α) where
+
+-- comment on cree le skelette
+
+
 
 section Tests
 
@@ -319,10 +418,16 @@ structure Involution₁ (α : Type*) extends Equiv₁ α α where
 
 example : Involution₁ ℤ where
   toFun := fun x ↦ -x
-  invFun := sorry
-  left_inv := sorry
-  right_inv := sorry
-  inv := sorry
+  invFun := fun x ↦ -x
+  left_inv := by
+    intro z
+    simp
+  right_inv := by
+    intro z
+    simp
+  inv := by
+    intro x
+    simp
 
 
 /- What about using notation?
@@ -336,6 +441,7 @@ and introduce notation for them (so they can be used in various contexts). Then 
 -- the diamond notation for the operation so it doesn't clash with anything else.
 
 class Dia₁ (α : Type*) where
+  /--blnla--/
   dia : α → α → α
 
 -- Notation.
@@ -356,8 +462,11 @@ class Semigroup₁ (α : Type*) extends Dia₁ α where
   dia_assoc : ∀ (x y z : α), x ⋄ y ⋄ z = x ⋄ (y ⋄ z)
 
 instance {α : Type*} : Semigroup₁ (Equiv₁ α α) where
-  dia_assoc := sorry -- should really have made the associativity of `Equiv₁.trans`
-                     -- into a lemma earlier!
+  dia_assoc := by
+    intro x y z
+    rfl
+
+
 
 -- Let's do the same with the unit element.
 class One₁ (α : Type*) where
@@ -411,8 +520,12 @@ example {α : Type*} [Monoid₃ α] :
 
 
 instance {α : Type*} : DiaOneClass₁ (Equiv₁ α α) where
-  one_dia := sorry
-  dia_one := sorry
+  one_dia := by
+    intro a
+    rfl
+  dia_one :=  by
+    intro a
+    rfl
 
 instance {α : Type*} : Monoid₂ (Equiv₁ α α) where
   dia_assoc := Semigroup₁.dia_assoc
@@ -467,3 +580,48 @@ lemma dia_comm {α : Type*} (M : TwoCompatibleLaws α) (x y : α) : x ⋄ y = y 
 
 lemma dia_assoc {α : Type*} (M : TwoCompatibleLaws α) (x y z : α) : x ⋄ y ⋄ z = x ⋄ (y ⋄ x) := sorry
 -/
+class Ast₁ (α : Type*) where
+    /-- The element  not one -/
+   ast : α → α → α
+
+
+@[inherit_doc]
+infixl:70 " ∗ " => Ast₁.ast
+
+class One_bis (α : Type*) where
+   /-- The element one -/
+  one_bis : α
+
+@[inherit_doc]
+notation  " 𝟭 " => One_bis.one_bis
+
+class AstOneBisClass₁ (α : Type*) extends One_bis α , Ast₁ α  where
+  ast_one : ∀ a : α , a ∗ 𝟭 = a
+  one_ast : ∀ a : α , 𝟭 ∗ a = a
+
+class TwoCompatibleLaws (α : Type*) extends AstOneBisClass₁ α , DiaOneClass₁ α where
+  exchange : ∀ (x y z t : α ), (x ⋄ y) ∗ (z ⋄ t) = (x ∗ z) ⋄ (y ∗ t)
+export AstOneBisClass₁ (ast_one one_ast)
+
+lemma one_eq_oneBis {α : Type*} [TwoCompatibleLaws α] : 𝟙 = (𝟭 :α ):= by
+  have := TwoCompatibleLaws.exchange (𝟙:α ) 𝟭  𝟭 𝟙
+  rw[one_dia,ast_one,dia_one,ast_one,one_ast,one_dia] at this
+  symm
+  exact this
+
+lemma dia_eq_ast {α : Type*} [TwoCompatibleLaws α] (x y : α) : x ⋄ y = x ∗ y := by
+  have := TwoCompatibleLaws.exchange x (𝟙:α )  𝟭 y
+  rw[← one_eq_oneBis,dia_one,one_eq_oneBis,ast_one,one_ast,← one_eq_oneBis,one_dia] at this
+  symm
+  exact this
+
+lemma dia_comm {α : Type*} [TwoCompatibleLaws α] (x y : α) : x ⋄ y = y ⋄ x := by
+  have := TwoCompatibleLaws.exchange (𝟙:α ) x  y 𝟭
+  rw[one_dia,← one_eq_oneBis,dia_one,one_eq_oneBis,ast_one,one_ast] at this
+  rw[dia_eq_ast]
+  exact this
+
+lemma dia_assoc {α : Type*} [ TwoCompatibleLaws α] (x y z : α) : x ⋄ y ⋄ z = x ⋄ (y ⋄ z) := by
+  have := TwoCompatibleLaws.exchange x y 𝟙 z
+  rw[one_dia,one_eq_oneBis,ast_one,← dia_eq_ast,← dia_eq_ast] at this
+  exact this
