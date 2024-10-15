@@ -475,7 +475,7 @@ class SqEpsClass₁ (α : Type*) extends Eps α, Sq α where
 export SqEpsClass₁ (eps_sq sq_eps) -- so we can use these lemmas without the `SqEpsClass₁` prefix
 
 attribute [simp] eps_sq sq_eps dia_one one_dia -- make all these lemmas into `simp` lemmas (i.e. the `simp`)
-                                               -- tactic will automcatically try to use them
+                                               -- tactic will automatically try to use them
 
 class TwoCompatibleLaws (α : Type*) extends DiaOneClass₁ α, SqEpsClass₁ α where
   exchange : ∀ (x y z t : α), (x ⋄ y) ◾ (z ⋄ t) = (x ◾ z) ⋄ (y ◾ t)
