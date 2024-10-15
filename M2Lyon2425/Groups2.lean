@@ -9,8 +9,7 @@ import Mathlib.GroupTheory.Perm.Basic
 import Mathlib.Data.SetLike.Basic
 import Mathlib.Algebra.Group.Subgroup.Basic
 import Mathlib.Algebra.Quotient
-
-open Classical
+import Mathlib.Tactic
 
 section Morphisms
 
@@ -71,8 +70,8 @@ namespace MonoidHom₁
 lemma map_pow {M N : Type*} [Monoid M] [Monoid N] (f : MonoidHom₁ M N) (a : M) (n : ℕ) :
     f (a ^ n) = (f a) ^ n := by
   induction' n with n hn
-  · simp; rw [f.map_one]
-  · rw [pow_succ, f.map_mul, hn, pow_succ]
+  · sorry
+  · sorry
 
 end MonoidHom₁
 
@@ -145,15 +144,16 @@ namespace MonoidHomClass₁
 lemma map_pow {M N F : Type*} [Monoid M] [Monoid N] [MonoidHomClass₁ F M N] (f : F) (a : M) (n : ℕ) :
     toFun f (a ^ n) = (toFun f a : N) ^ n := by
   induction' n with n hn
-  · simp; rw [map_one]
-  · rw [pow_succ, map_mul, hn, pow_succ]
+  · sorry
+  · sorry
 
 end MonoidHomClass₁
 
 example {R S : Type*} [Ring R] [Ring S] (f : RingHom₁ R S) (a : R) (n : ℕ) :
     MonoidHomClass₁.toFun f (a ^ n) = (MonoidHomClass₁.toFun f a : S) ^ n := by
   rw [MonoidHomClass₁.map_pow]
--- Yay! Except that we lost our coercions to functions, so applying `f` to elements is horrible again.
+-- Yay! Except that we lost our coercions to functions, so applying `f` to elements
+-- is horrible again.
 
 -- So why not define a `CoeFun` instance on `MonoidHomClass₁`?
 --set_option synthInstance.checkSynthOrder false in
@@ -312,7 +312,7 @@ structure Subgroup₁ where
 /-- Subgroups in `G` can be seen as sets in `G`. -/
 instance : SetLike (Subgroup₁ G) G where
   coe := Subgroup₁.carrier
-  coe_injective' := sorry -- _ _ := Subgroup₁.ext
+  coe_injective' := sorry
 
 /- Examples of the coercion to sets un action:-/
 
@@ -370,11 +370,14 @@ instance : SubgroupClass₁ (Subgroup₁ G) G where
 
 section BadIdea
 
+/-
 class SubgroupClass₂ (S : Type*) (G : Type*) [Group G] extends SetLike S G where
   mul_mem : ∀ (s : S) {a b : G}, a ∈ s → b ∈ s → a * b ∈ s
   one_mem : ∀ s : S, 1 ∈ s
-  inv_mem : ∀ (s : S) {a : G}, a ∈ s → a⁻¹ ∈ s
-
+  inv_mem : ∀ (s : S) {a : G}, a ∈ s → a⁻¹ ∈ s --synthesization order trouble
+-/
+-- This is really a bad idea: leaving it in the code causes
+-- timeouts later!
 
 class SubgroupClass₃ (S : Type*) (G : outParam Type*) [Group G] extends SetLike S G where
   mul_mem : ∀ (s : S) {a b : G}, a ∈ s → b ∈ s → a * b ∈ s
@@ -395,7 +398,7 @@ instance : Inf (Subgroup₁ G) :=
     { carrier := S₁ ∩ S₂
       one_mem := ⟨S₁.one_mem, S₂.one_mem⟩
       mul_mem := fun ⟨hx, hx'⟩ ⟨hy, hy'⟩ ↦ ⟨S₁.mul_mem hx hy, S₂.mul_mem hx' hy'⟩
-      inv_mem := sorry --fun hx ↦ by refine ⟨S₁.inv_mem hx.1, S₂.inv_mem hx.2⟩
+      inv_mem := sorry
       }⟩
 
 #print Inf
@@ -483,8 +486,8 @@ instance : HasQuotient A (Subgroup A) where
 -- This just allows us to write `A ⧸ B` instead of `Quotient B.Setoid`.
 -- Type `⧸` using \ + quot.
 
-def QuotientGroup.mk (B : Subgroup A) : A → A ⧸ B := Quotient.mk B.Setoid
--- So we can write `QuotientGroup.mk B` instead of `Quotient.mk B.Setoid`.
+def QuotientGroup₁.mk (B : Subgroup A) : A → A ⧸ B := Quotient.mk B.Setoid
+-- So we can write `QuotientGroup₁.mk B` instead of `Quotient.mk B.Setoid`.
 
 -- The quotient is a commutative group.
 instance (B : Subgroup A) : CommGroup (A ⧸ B) where
@@ -493,7 +496,7 @@ instance (B : Subgroup A) : CommGroup (A ⧸ B) where
         )
   mul_assoc := by
       sorry
-  one := QuotientGroup.mk B (1 : A)
+  one := QuotientGroup₁.mk B (1 : A)
   one_mul := by
       sorry
   mul_one := by
@@ -502,8 +505,129 @@ instance (B : Subgroup A) : CommGroup (A ⧸ B) where
   inv_mul_cancel := sorry
   mul_comm := sorry
 
--- Exercise: define `QuotientGroup.mk B` as a group morphism (call
--- it something like `QuotientMorphism B`).
-
+-- Exercise: define `QuotientGroup₁.mk B` as a group morphism (call
+-- it something like `QuotientMorphism₁ B`).
 
 end Subgroups
+
+
+/- More exercises.-/
+
+/- First here are some tactics to work in groups:
+(1) `group` proves identities that hold in any group:-/
+
+example {G : Type*} [Group G] (x y z : G) :
+    x * (y * z) * (x * z)⁻¹ * (x * y * x⁻¹)⁻¹ = 1 := by group
+
+/-(2) proves identities that hold in any abelian group:-/
+
+example {G : Type*} [AddCommGroup G] (x y z : G) : z + x + (y - z - x) = y := by
+  abel
+
+/- The conjugate of a subgroup of `G` by an element of `G`.-/
+
+def conjugate {G : Type*} [Group G] (x : G) (H : Subgroup G) : Subgroup G where
+  carrier := {a : G | ∃ h, h ∈ H ∧ a = x * h * x⁻¹}
+  one_mem' := by
+    dsimp
+    sorry
+  inv_mem' := by
+    dsimp
+    sorry
+  mul_mem' := by
+    dsimp
+    sorry
+
+/- Group actions. Mathematically, an action of a group `G` on
+a type `X` is just a morphism of groups `φ : G →* Equiv.Perm X` (`→*`
+is mathlib's notation for a monoid morphism, and `Equiv.Perm X` is
+the type of permutations of `X`, which has a group structure
+given by the instance `Equiv.Perm.permGroup`).
+
+But, just as in pen-and-paper math, we don't want to write
+`φ` all the time. So mathlib introduces a class for (multiplicative)
+group actions, called `MulAction`.
+-/
+
+#print MulAction
+
+--We can recover `φ` using `MulAction.toPermHom`:
+example {G X : Type*} [Group G] [MulAction G X] : G →* Equiv.Perm X :=
+  MulAction.toPermHom G X
+
+-- Example: the action of `G` on its subgroups by conjugation.
+example {G : Type*} [Group G] : MulAction G (Subgroup G) where
+  smul x H := conjugate x H
+  one_smul := sorry
+  mul_smul := sorry
+
+/- An exercise about quotients: let `G` be a finite group,
+and let `H` and `K` be disjoint normal subgroups of `G`
+such that the cardinal of `G` is the product of the cardinals
+of `H` and `K`. Then `G` is isomorphic to `H × K`.
+
+Here `Disjoint H K` means that `H ⊓ K = ⊥` (where `⊥` is the
+smallest subgroup, i.e. the trivial subgroup), or rather it's
+equivalent by `disjoint_iff`.
+-/
+
+section
+
+variable {G : Type*} [Group G] {H K : Subgroup G}
+
+/- First we prove that `card(G ⧸ H) = card K`. Here are some useful
+theorems.-/
+#check Nat.card_pos -- The `Nonempty α` argument will be automatically inferred
+                    -- if `α` has a `Group` instance. (In theory at least...)
+#check Subgroup.index_eq_card
+#check Subgroup.index_mul_card
+#check Nat.eq_of_mul_eq_mul_right
+
+#synth One H
+#synth Nonempty H
+-- This timeouts because of one of the definitions in the `BadIdea` section.
+-- We can comment the definition of add the following line to cheat:
+-- local instance : Nonempty H := One.instNonempty
+
+lemma aux_card_eq [Finite G] (h' : Nat.card G = Nat.card H * Nat.card K) :
+    Nat.card (G ⧸ H) = Nat.card K := by
+  sorry
+
+variable [H.Normal] [K.Normal] [Fintype G] (h : Disjoint H K)
+  (h' : Nat.card G = Nat.card H * Nat.card K)
+
+/- Helper functions.-/
+#check Nat.bijective_iff_injective_and_card
+#check MonoidHom.ker_eq_bot_iff
+#check MonoidHom.restrict
+#check MonoidHom.ker_restrict
+
+example : G →* G ⧸ H := QuotientGroup.mk' H
+
+-- Making an isomorphism out of a bijective group morphism:
+noncomputable example {G H : Type*} [Group G] [Group H]
+    (f : G →* H) (h : Function.Bijective f) :
+    G ≃* H :=
+  MulEquiv.ofBijective f h
+
+-- Exercise.
+noncomputable def iso₁ : K ≃* G ⧸ H := by
+  sorry
+
+-- You can use `MonoidHom.prod`, which makes
+-- a morphism `G₀ →* G₁ × G₂` from morphisms
+-- `G₀ →* G₁` and `G₀ →* G₂`.
+#check MonoidHom.prod
+
+noncomputable def iso₂ : G ≃* (G ⧸ K) × (G ⧸ H) := by
+  sorry
+
+-- Last helper function: it makes an isomorphism
+-- `G₁ × G₂ ≃* G₁' × G₂'` from isomorphisms `G₁ ≃* G₁'`
+-- and `G₂ ≃* G₂'`.
+#check MulEquiv.prodCongr
+
+noncomputable def finalIso : G ≃* H × K := by
+  sorry
+
+end
