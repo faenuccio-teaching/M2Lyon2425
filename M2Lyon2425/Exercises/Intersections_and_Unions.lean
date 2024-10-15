@@ -1,3 +1,13 @@
+import Mathlib.Algebra.Group.Nat
+import Mathlib.Data.Set.Basic
+import Mathlib.Data.Set.Operations
+import Mathlib.Order.SetNotation
+import Mathlib.Tactic.Common
+
+open Set Classical
+
+open scoped Set
+
 def Intervals : ℕ → Set ℤ := by
   exact fun (n : ℕ) ↦ (fun m ↦ (-n : ℤ) ≤ m ∧ m ≤ n) --this defines the interval [-n,n]
 
