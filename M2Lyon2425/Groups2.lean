@@ -38,10 +38,13 @@ structure on them.-/
 
 def f : MonoidHom₁ (ℕ × ℕ) ℕ where
   toFun p := p.1 * p.2
-  map_one := sorry
-  map_mul := sorry
+  map_one := rfl
+  map_mul := by
+    intro ⟨ m, n ⟩ ⟨ p, q ⟩
+    simp
+    apply Nat.mul_mul_mul_comm
 
-#check f ⟨2,3⟩ -- we can't apply a `MonoidHom₁` to an element, which is annoying
+-- #check f ⟨2,3⟩ -- we can't apply a `MonoidHom₁` to an element, which is annoying
 
 #check f.toFun ⟨2,3⟩
 #eval! f.toFun ⟨2,3⟩
@@ -60,7 +63,6 @@ instance {G H : Type*} [Monoid G] [Monoid H] :
 
 attribute [coe] MonoidHom₁.toFun --in the tactic, the coercion of a `MonoidHom₁` `f` to
                                 -- a function will be displayed as `↑f`
-
 #check f ⟨2,3⟩
 
 namespace MonoidHom₁
@@ -70,13 +72,13 @@ namespace MonoidHom₁
 lemma map_pow {M N : Type*} [Monoid M] [Monoid N] (f : MonoidHom₁ M N) (a : M) (n : ℕ) :
     f (a ^ n) = (f a) ^ n := by
   induction' n with n hn
-  · sorry
-  · sorry
+  · simp; rw [MonoidHom₁.map_one]
+  · rw [pow_succ, MonoidHom₁.map_mul, hn, pow_succ]
 
 end MonoidHom₁
 
 /- But soon we will have another problem, this time with inheritance. Because morphisms
-are bundled, Lean will not now that a morphism of rings is a morphism of monoids, and
+are bundled, Lean will not know that a morphism of rings is a morphism of monoids, and
 so we will not be able to apply the lemmas about morphisms of monoids to morphisms
 of rings.-/
 
@@ -101,11 +103,11 @@ local instance {R S : Type*} [Ring R] [Ring S] :
 -- using `local` because I don't want this unconvenient instance to persist after
 -- I close the section
 
-attribute [coe] (MonoidHom₁.toFun ∘ RingHom₁.toMonoidHom₁) -- does not work :-(
+-- attribute [coe] (MonoidHom₁.toFun ∘ RingHom₁.toMonoidHom₁) -- does not work :-(
 
 example {R S : Type*} [Ring R] [Ring S] (f : RingHom₁ R S) (a : R) (n : ℕ) :
-    f (a ^ n) = (f a) ^ n := by
-  erw [MonoidHom₁.map_pow] -- does not work
+    f (a ^ n) = (f a) ^ n := MonoidHom₁.map_pow f.toMonoidHom₁ a n
+  -- erw [MonoidHom₁.map_pow] -- does not work
   -- (okay, so it would here if we do `simp` first, but this is very simple situation)
 
 end RingHomCoe_first_try
@@ -129,13 +131,13 @@ class MonoidHomClass₁ (F : Type*) (M N : Type*) [Monoid M] [Monoid N] where
 
 instance (M N : Type*) [Monoid M] [Monoid N] : MonoidHomClass₁ (MonoidHom₁ M N) M N where
   toFun := MonoidHom₁.toFun
-  map_one := fun f ↦ f.map_one
-  map_mul := fun f ↦ f.map_mul
+  map_one f := f.map_one 
+  map_mul f := f.map_mul
 
 instance (R S : Type*) [Ring R] [Ring S] : MonoidHomClass₁ (RingHom₁ R S) R S where
-  toFun := fun f ↦ f.toMonoidHom₁.toFun
-  map_one := fun f ↦ f.toMonoidHom₁.map_one
-  map_mul := fun f ↦ f.toMonoidHom₁.map_mul
+  toFun f := f.toMonoidHom₁.toFun
+  map_one f := f.toMonoidHom₁.map_one
+  map_mul f := f.toMonoidHom₁.map_mul
 
 namespace MonoidHomClass₁
 -- any definitions and lemmas until the end of this namespace (i.e. when we see `end MonoidHom₁`) will
@@ -144,8 +146,8 @@ namespace MonoidHomClass₁
 lemma map_pow {M N F : Type*} [Monoid M] [Monoid N] [MonoidHomClass₁ F M N] (f : F) (a : M) (n : ℕ) :
     toFun f (a ^ n) = (toFun f a : N) ^ n := by
   induction' n with n hn
-  · sorry
-  · sorry
+  · simp; rw[map_one]
+  · rw [pow_succ, map_mul, hn, pow_succ]
 
 end MonoidHomClass₁
 
@@ -157,9 +159,9 @@ example {R S : Type*} [Ring R] [Ring S] (f : RingHom₁ R S) (a : R) (n : ℕ) :
 
 -- So why not define a `CoeFun` instance on `MonoidHomClass₁`?
 --set_option synthInstance.checkSynthOrder false in
-local instance badInst {F M N : Type*} [Monoid M] [Monoid N] [MonoidHomClass₁ F M N] :
-    CoeFun F (fun _ ↦ M → N) where
-  coe := MonoidHomClass₁.toFun
+-- local instance badInst {F M N : Type*} [Monoid M] [Monoid N] [MonoidHomClass₁ F M N] :
+--     CoeFun F (fun _ ↦ M → N) where
+--   coe := MonoidHomClass₁.toFun
 -- oops, strange error :-((((
 
 
@@ -213,9 +215,9 @@ example {R S : Type*} [Ring R] [Ring S] (f : RingHom₁ R S) (a : R) (n : ℕ) :
 end MisguidedStuff
 
 /- To finish, we would like to use a better coercion, which also remembers the fact
-that coercing a monoid morphism to a function is an injective.
+that coercing a monoid morphism to a function is an injection.
 
-For his, we use the class `FunLike`. An instance `[FunLike F α β]` means that `F`
+For this, we use the class `FunLike`. An instance `[FunLike F α β]` means that `F`
 behaves like a set of functions from `α` to `β`. More precisely, it means that
 there is a coercion from `F` to `α → β` (called `FunLike.coe`), plus a condition
 that this coercion is injective (called `FunLike.coe_injective'`).
@@ -252,16 +254,28 @@ structure OrderPresHom (α β : Type) [LE α] [LE β] where
 structure OrderPresMonoidHom (M N : Type) [Monoid M] [LE M] [Monoid N] [LE N] extends
 MonoidHom₁ M N, OrderPresHom M N
 
-class OrderPresHomClass (F : Type) (α β : outParam Type) [LE α] [LE β]
+class OrderPresHomClass (F : Type) (α β : outParam Type) [LE α] [LE β] extends 
+  DFunLike F α (λ _ ↦ β) where
+  le_of_le : ∀ (f : F) (x y : α), x ≤ y → f x ≤ f y
 
 instance (α β : Type) [LE α] [LE β] : OrderPresHomClass (OrderPresHom α β) α β where
+  coe f := f.toFun
+  coe_injective' _ _ := OrderPresHom.ext
+  le_of_le := OrderPresHom.le_of_le
+
+instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
+  DFunLike (OrderPresMonoidHom α β) α (λ _ ↦ β) where
+  coe f := f.toMonoidHom₁.toFun
+  coe_injective' _ _ := OrderPresMonoidHom.ext
 
 instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
     OrderPresHomClass (OrderPresMonoidHom α β) α β where
+  le_of_le := OrderPresMonoidHom.le_of_le
 
 instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
-    MonoidHomClass₃ (OrderPresMonoidHom α β) α β
-  := sorry
+    MonoidHomClass₃ (OrderPresMonoidHom α β) α β where
+  map_one f := f.toMonoidHom₁.map_one
+  map_mul f := f.toMonoidHom₁.map_mul
 
 end Exo
 
@@ -312,9 +326,9 @@ structure Subgroup₁ where
 /-- Subgroups in `G` can be seen as sets in `G`. -/
 instance : SetLike (Subgroup₁ G) G where
   coe := Subgroup₁.carrier
-  coe_injective' := sorry
+  coe_injective' _ _ := Subgroup₁.ext
 
-/- Examples of the coercion to sets un action:-/
+/- Examples of the coercion to sets in action:-/
 
 example (H : Subgroup₁ G) : 1 ∈ H := H.one_mem   -- elements of a subgroup
 
@@ -347,10 +361,10 @@ instance Subgroup₁Group (H : Subgroup₁ G) : Group H where
     apply SetCoe.ext
     exact mul_assoc (x : G) y z
   one := ⟨1, H.one_mem⟩
-  one_mul x := sorry
-  mul_one := sorry
-  inv := sorry
-  inv_mul_cancel := sorry
+  one_mul x := by apply SetCoe.ext; exact one_mul (x : G)
+  mul_one x := by apply SetCoe.ext; exact mul_one (x : G)
+  inv x := ⟨x⁻¹, H.inv_mem x.property⟩ 
+  inv_mul_cancel x := by apply SetCoe.ext; exact inv_mul_cancel (x : G)
 
 /- Just like with morphisms, we will later define subrings, or submodules, and
 we will want Lean to know that they are also subgroups (so the lemmas we proved
@@ -398,7 +412,9 @@ instance : Inf (Subgroup₁ G) :=
     { carrier := S₁ ∩ S₂
       one_mem := ⟨S₁.one_mem, S₂.one_mem⟩
       mul_mem := fun ⟨hx, hx'⟩ ⟨hy, hy'⟩ ↦ ⟨S₁.mul_mem hx hy, S₂.mul_mem hx' hy'⟩
-      inv_mem := sorry
+      inv_mem := by
+        intro x h
+        exact ⟨ S₁.inv_mem h.left , S₂.inv_mem h.right ⟩
       }⟩
 
 #print Inf
@@ -420,25 +436,27 @@ instance : SemilatticeInf (Subgroup₁ G) where
   le_trans H K L := le_trans
   lt_iff_le_not_le H K := lt_iff_le_not_le
   le_antisymm H K := le_antisymm
-  inf_le_left H K := by sorry
-  inf_le_right H K := by sorry
-  le_inf := sorry
+  inf_le_left H K := λ x h ↦ h.left
+  inf_le_right H K := λ x h ↦ h.right
+  le_inf H K L := by
+    intro hHK hHL x hH; constructor
+    · apply hHK hH
+    · apply hHL hH
 
 -- Less code duplication this way:
 instance : SemilatticeInf (Subgroup₁ G) :=
   {SetLike.instPartialOrder with
    inf := Inf.inf
-   inf_le_left := sorry
-   inf_le_right := sorry
-   le_inf := sorry
+   inf_le_left := by intro H K x h; exact h.left
+   inf_le_right := by intro H K x h; exact h.right
+   le_inf := by intro H K L hHK hHL x hH; constructor; apply hHK hH; apply hHL hH
    }
 
 /- We also a "sup" function on subgroups, which we denote by
 `⊔` (type using \ + lub or \ + sup). In fact, subgroups form a
 complete lattice.-/
 
-
-/- We finally talk about quotients. Ot simplify the situation, we'll
+/- We finally talk about quotients. Or simplify the situation, we'll
 stick to commutative groups (`CommGroup`).-/
 
 variable {A : Type*} [CommGroup A]
@@ -479,23 +497,38 @@ by default.)
 def Subgroup.Setoid (B : Subgroup A) : Setoid A  where
   r := fun x y ↦ x*y⁻¹ ∈ B
   iseqv := {
-    refl := fun x ↦ sorry
-    symm := by sorry
-    trans := by sorry
+    refl := by
+      intro x; rw [CommGroup.mul_comm, CommGroup.toGroup.inv_mul_cancel]
+      exact B.one_mem
+    symm := by
+      intro x y h; rw [CommGroup.mul_comm]
+      apply B.inv_mem at h
+      rw [mul_inv, InvolutiveInv.inv_inv] at h
+      trivial
+    trans := by
+      intro x y z hxy hyz
+      rw [←mul_one x, ←inv_mul_cancel y, mul_assoc, mul_assoc, ←mul_assoc]
+      apply Subgroup.mul_mem <;> trivial
   }
 
 instance : HasQuotient A (Subgroup A) where
   quotient' := fun B ↦ Quotient B.Setoid
 -- This just allows us to write `A ⧸ B` instead of `Quotient B.Setoid`.
--- Type `⧸` using \ + quot.
+-- Type `⧸` using \ + quot. 
 
 def QuotientGroup₁.mk (B : Subgroup A) : A → A ⧸ B := Quotient.mk B.Setoid
 -- So we can write `QuotientGroup₁.mk B` instead of `Quotient.mk B.Setoid`.
 
-
 -- Multiplication on the quotient.
 instance (B : Subgroup A) : Mul (A ⧸ B) where
-  mul := Quotient.map₂' (· * ·) (by sorry)
+  mul := Quotient.map₂' (· * ·) 
+    (by intro x y hxy z t hzt; simp; change (x * z) * (y * t)⁻¹ ∈ B
+        rw [mul_assoc, mul_inv, CommGroup.mul_comm]
+        have := CommGroup.mul_comm (y⁻¹) (t⁻¹)
+        rw [this, ←mul_assoc, mul_assoc]
+        apply B.mul_mem
+        · trivial
+        · rw [CommGroup.mul_comm]; trivial)
 
 -- Unit in the quotient.
 instance (B : Subgroup A) : One (A ⧸ B) where
@@ -504,8 +537,14 @@ instance (B : Subgroup A) : One (A ⧸ B) where
 -- Inverse function on the quotient.
 instance (B : Subgroup A) : Inv (A ⧸ B) where
   inv := Quotient.map' (fun a ↦ a⁻¹)
-    (by sorry
-    )
+    (by intro a b x; simp; apply B.Setoid.iseqv.trans
+        · have := by apply B.Setoid.iseqv.symm; trivial
+          change (b * a⁻¹ ∈ B) at this
+          rw [CommGroup.mul_comm, ←InvolutiveInv.inv_inv b] at this
+          trivial
+        · change (b⁻¹ * (b⁻¹)⁻¹ ∈ B)
+          rw [mul_inv_cancel]
+          exact B.one_mem)
 
 -- The quotient is a commutative group.
 instance (B : Subgroup A) : CommGroup (A ⧸ B) where
@@ -517,21 +556,32 @@ instance (B : Subgroup A) : CommGroup (A ⧸ B) where
     -- class in the quotient holds for terms of type `A`,
     -- it holds for terms of type `A ⧸ B`.
     -- Here we use a variant for properties depending on 3 variables.
-    sorry
+    intro a b c; apply Quotient.sound; simp
+    rw [mul_assoc]
+    apply refl
   one := 1
   one_mul := by
-      sorry
+      intro a; apply Quotient.inductionOn (motive := λ (x : A ⧸ B) ↦ 1 * x = x)
+      intro x; apply Quotient.sound; simp
+      apply refl
   mul_one := by
-      sorry
+      intro a; apply Quotient.inductionOn (motive := λ (x : A ⧸ B) ↦ x * 1 = x)
+      intro x; apply Quotient.sound; simp
+      apply refl
   inv := Inv.inv
-  inv_mul_cancel := sorry
-  mul_comm := sorry
+  inv_mul_cancel := by
+    intro a; apply Quotient.inductionOn (motive := λ (x : A ⧸ B) ↦ x⁻¹ * x = 1)
+    intro x; apply Quotient.sound; simp
+    apply refl
+  mul_comm := by
+    intro a b; apply Quotient.inductionOn₂ (motive := λ (x y : A ⧸ B) ↦ x * y = y * x)
+    intro x y; apply Quotient.sound; simp
+    rw [CommGroup.mul_comm]; apply refl
 
 -- Exercise: define `QuotientGroup₁.mk B` as a group morphism (call
 -- it something like `QuotientMorphism₁ B`).
 
 end Subgroups
-
 
 /- More exercises.-/
 
@@ -552,13 +602,18 @@ def conjugate {G : Type*} [Group G] (x : G) (H : Subgroup G) : Subgroup G where
   carrier := {a : G | ∃ h, h ∈ H ∧ a = x * h * x⁻¹}
   one_mem' := by
     dsimp
-    sorry
+    use 1; constructor
+    · exact H.one_mem
+    · group
   inv_mem' := by
-    dsimp
-    sorry
+    dsimp; intro a ⟨ y, ⟨ hy, e ⟩ ⟩; use (y⁻¹); constructor
+    · apply H.inv_mem; trivial
+    · rw [e]; group
   mul_mem' := by
-    dsimp
-    sorry
+    dsimp; intro a b ⟨ y, ⟨ hy, e ⟩ ⟩ ⟨ z, ⟨ hz, e' ⟩ ⟩
+    use (y * z); constructor
+    · apply H.mul_mem <;> trivial
+    · rw [e, e']; group    
 
 /- Group actions. Mathematically, an action of a group `G` on
 a type `X` is just a morphism of groups `φ : G →* Equiv.Perm X` (`→*`
@@ -580,8 +635,21 @@ example {G X : Type*} [Group G] [MulAction G X] : G →* Equiv.Perm X :=
 -- Example: the action of `G` on its subgroups by conjugation.
 example {G : Type*} [Group G] : MulAction G (Subgroup G) where
   smul x H := conjugate x H
-  one_smul := sorry
-  mul_smul := sorry
+  one_smul := by intro H; ext x; constructor <;> intro h
+                 · have h := h.out
+                   cases h with
+                   | intro y h => group at h; cases h with
+                     | intro l r => rw [r]; trivial
+                 · use x; constructor
+                   · trivial
+                   · group
+  mul_smul := by intro x y H; ext z; constructor
+                 · intro ⟨ t, ⟨ ht, e ⟩ ⟩; use (y * t * y⁻¹); constructor
+                   · use t
+                   · rw [e]; group
+                 · intro ⟨ t, ⟨ ⟨ u, ⟨ h, e ⟩ ⟩, e' ⟩ ⟩; use u; constructor
+                   · trivial
+                   · rw [e', e]; group
 
 /- An exercise about quotients: let `G` be a finite group,
 and let `H` and `K` be disjoint normal subgroups of `G`
@@ -613,7 +681,10 @@ theorems.-/
 
 lemma aux_card_eq [Finite G] (h' : Nat.card G = Nat.card H * Nat.card K) :
     Nat.card (G ⧸ H) = Nat.card K := by
-  sorry
+  rw [←Subgroup.index_eq_card]
+  apply Nat.eq_of_mul_eq_mul_right (m := Nat.card H)
+  · apply Nat.card_pos
+  · rw [Subgroup.index_mul_card, Nat.mul_comm, ←h']
 
 variable [H.Normal] [K.Normal] [Fintype G] (h : Disjoint H K)
   (h' : Nat.card G = Nat.card H * Nat.card K)
@@ -634,15 +705,30 @@ noncomputable example {G H : Type*} [Group G] [Group H]
 
 -- Exercise.
 noncomputable def iso₁ : K ≃* G ⧸ H := by
-  sorry
-
+  have hcard := by apply aux_card_eq h'
+  let f := (QuotientGroup.mk' H).restrict K
+  have hrestrict := by apply MonoidHom.ker_restrict K (QuotientGroup.mk' H)
+  have hinj : f.ker = ⊥ := by
+    rw [hrestrict]
+    apply Subgroup.subgroupOf_eq_bot.mpr
+    simp; trivial
+  apply MulEquiv.ofBijective f
+  apply (Nat.bijective_iff_injective_and_card f).mpr; constructor
+  · apply (MonoidHom.ker_eq_bot_iff f).mp hinj
+  · rw [hcard]
+  
 -- You can use `MonoidHom.prod`, which makes
 -- a morphism `G₀ →* G₁ × G₂` from morphisms
 -- `G₀ →* G₁` and `G₀ →* G₂`.
 #check MonoidHom.prod
 
 noncomputable def iso₂ : G ≃* (G ⧸ K) × (G ⧸ H) := by
-  sorry
+  let f := MonoidHom.prod (QuotientGroup.mk' K) (QuotientGroup.mk' H)
+  apply MulEquiv.ofBijective f
+  apply (Nat.bijective_iff_injective_and_card f).mpr; constructor
+  · apply (MonoidHom.ker_eq_bot_iff f).mp
+    rw [MonoidHom.ker_prod]; simp; apply disjoint_iff.mp; intro L HK HH; apply h <;> trivial
+  · simp; rw [aux_card_eq h', ←Subgroup.index_eq_card, Subgroup.index_mul_card]; simp
 
 -- Last helper function: it makes an isomorphism
 -- `G₁ × G₂ ≃* G₁' × G₂'` from isomorphisms `G₁ ≃* G₁'`
@@ -650,6 +736,21 @@ noncomputable def iso₂ : G ≃* (G ⧸ K) × (G ⧸ H) := by
 #check MulEquiv.prodCongr
 
 noncomputable def finalIso : G ≃* H × K := by
-  sorry
-
+  have h₀: K ≃* G ⧸ H := by apply iso₁ <;> trivial
+  have h₁: H ≃* G ⧸ K := by
+    let f := (QuotientGroup.mk' K).restrict H
+    have hrestrict := by apply MonoidHom.ker_restrict H (QuotientGroup.mk' K)
+    have hinj : f.ker = ⊥ := by
+      rw [hrestrict]
+      apply Subgroup.subgroupOf_eq_bot.mpr
+      simp; intro L HK HH; apply h <;> trivial
+    apply MulEquiv.ofBijective f
+    apply (Nat.bijective_iff_injective_and_card f).mpr; constructor
+    · apply (MonoidHom.ker_eq_bot_iff f).mp hinj
+    · rw [←Subgroup.index_eq_card]; apply Nat.eq_of_mul_eq_mul_right (m := Nat.card K)
+      · apply Nat.card_pos
+      · rw [Subgroup.index_mul_card, h']
+  apply MulEquiv.trans (N := (G ⧸ K) × (G ⧸ H))
+  · apply iso₂ <;> trivial
+  · apply MulEquiv.prodCongr <;> apply MulEquiv.symm <;> trivial
 end
