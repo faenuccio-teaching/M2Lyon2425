@@ -19,9 +19,15 @@ section FirstTrap
 
 -- Functions do not natively act on elements of sets: how can we fix this code?
 example (α β : Type) (S : Set α) (T : Set β) (f g : S → β) :
-  f = g ↔ ∀ a : α, a ∈ S → f a  = g a := by sorry
-
-
+  f = g ↔ ∀ a : S, f a  = g a := by
+  constructor
+  · intro h
+    rw [h]
+    intro _
+    rfl
+  · intro H
+    ext x
+    apply H
 -- `⌘`
 
 end FirstTrap
@@ -35,13 +41,21 @@ variable (α β : Type) (f : α → β)
 -- The **image**
 
 
-example : 1 ∈ Nat.succ '' univ := by sorry
+example : 1 ∈ Nat.succ '' univ := ⟨0, ⟨trivial, rfl⟩⟩
+ -- use 0
+ -- constructor
+ -- · trivial
+ -- · rfl
 
 -- We can upgrade a function `f` to a function between sets, using its *image*:
-example : Set α → Set β := by sorry
+example : Set α → Set β := by
+  intro S
+  exact f '' S
 
 
-example (α β: Type) (f : α → β) (S : Set α) : S ≠ ∅ → f '' S ≠ ∅ := by sorry
+example (α β: Type) (f : α → β) (S : Set α) : S ≠ ∅ → f '' S ≠ ∅ := by
+  intro H h_false
+  sorry
 
 
 
@@ -51,17 +65,25 @@ example (α β: Type) (f : α → β) (S : Set α) : S ≠ ∅ → f '' S ≠ �
 
 -- The **preimage**
 
-example : 2 ∈ Nat.succ ⁻¹' {2, 3} ∧ 1 ∉ .succ ⁻¹' {0, 3} := by sorry
-
+example : 2 ∈ Nat.succ ⁻¹' {2, 3} ∧ 1 ∉ .succ ⁻¹' {0, 3} := by
+  constructor
+  · rw [mem_preimage]
+    decide -- Lean checks every option
+  · sorry
 
 
 
 
 -- `⌘`
 
-example : InjOn (fun n : ℤ ↦ n ^ 2) PositiveIntegers := by sorry
-
-
+example : InjOn (fun n : ℤ ↦ n ^ 2) PositiveIntegers := by
+  intro m hm n hn
+  simp
+  intro H
+  simp only [Int.pow_succ', Int.pow_zero, Int.mul_one] at H
+  by_cases hmn: m < n
+  · exfalso
+    sorry
 
 
 /- **§ Some exercises** -/
@@ -70,7 +92,12 @@ example : InjOn (fun n : ℤ ↦ n ^ 2) PositiveIntegers := by sorry
 
 /- **1** The range is not *definitionally equal* to the image of the universal set:
   use extensionality! -/
-example : range f = f '' univ := by sorry
+example : range f = f '' univ := by
+  ext x
+  constructor
+  · intro hx
+    sorry
+
 
 
 -- **2** Why does this code *fail*? Fix it, and then prove the statement
@@ -196,11 +223,16 @@ inductive NiceFamily : ℕ → Prop
 -- ## §4.1 : Inductive predicates
 
 inductive IsEven : ℕ → Prop
+  | even_zero : IsEven 0
+  | succ_succ (n : ℕ) : IsEven n → IsEven (n+2)
 
 
 example : IsEven 4 := by sorry
 
-example : ¬ IsEven 5 := by sorry
+example : ¬ IsEven 5 := by
+  intro H
+  cases' H with cdsnn h1
+
 
 
 lemma not_isEven_succ_succ (n : ℕ) : ¬ IsEven n ↔ ¬ IsEven (n + 2) := by sorry
@@ -216,7 +248,8 @@ lemma not_IsEven_succ : ∀ n : ℕ, IsEven n ↔ ¬ IsEven (n + 1) := by sorry
 
 
 -- **1** Recall the `repeat` tactic
-example : ¬ IsEven 111 := by sorry
+example : ¬ IsEven 111 := by
+
 
 
 -- Let's consider the *set* of even numbers satisfying `IsEven`

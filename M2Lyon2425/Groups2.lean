@@ -38,8 +38,8 @@ structure on them.-/
 
 def f : MonoidHom₁ (ℕ × ℕ) ℕ where
   toFun p := p.1 * p.2
-  map_one := sorry
-  map_mul := sorry
+  map_one := by simp only [Prod.fst_one, Prod.snd_one, mul_one]
+  map_mul p q := by simp only [Prod.fst_mul, Prod.snd_mul]; ring
 
 #check f ⟨2,3⟩ -- we can't apply a `MonoidHom₁` to an element, which is annoying
 
@@ -59,7 +59,7 @@ instance {G H : Type*} [Monoid G] [Monoid H] :
 #check f ⟨2,3⟩
 
 attribute [coe] MonoidHom₁.toFun --in the tactic, the coercion of a `MonoidHom₁` `f` to
-                                -- a function will be displayed as `↑f`
+                                -- a function will be displayed as `↑f` (Just changes display in infoview)
 
 #check f ⟨2,3⟩
 
@@ -70,8 +70,10 @@ namespace MonoidHom₁
 lemma map_pow {M N : Type*} [Monoid M] [Monoid N] (f : MonoidHom₁ M N) (a : M) (n : ℕ) :
     f (a ^ n) = (f a) ^ n := by
   induction' n with n hn
-  · sorry
-  · sorry
+  · simp only [pow_zero, map_one]
+  · rw [pow_succ, pow_succ, map_mul, hn];
+
+-- attribute [simp] MonoidHom₁.map_one, MonoidHom₁.map_mul...
 
 end MonoidHom₁
 
@@ -252,16 +254,31 @@ structure OrderPresHom (α β : Type) [LE α] [LE β] where
 structure OrderPresMonoidHom (M N : Type) [Monoid M] [LE M] [Monoid N] [LE N] extends
 MonoidHom₁ M N, OrderPresHom M N
 
-class OrderPresHomClass (F : Type) (α β : outParam Type) [LE α] [LE β]
+class OrderPresHomClass (F : Type) (α β : outParam Type) [LE α] [LE β] extends
+    DFunLike F α (fun _ ↦ β) where
+  le_of_le : ∀ (f : F) a a', a ≤ a' → f a ≤ f a'
 
 instance (α β : Type) [LE α] [LE β] : OrderPresHomClass (OrderPresHom α β) α β where
+    coe := OrderPresHom.toFun
+    coe_injective' _ _ := OrderPresHom.ext
+    le_of_le := OrderPresHom.le_of_le
+
+instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
+    DFunLike (OrderPresMonoidHom α β) α (fun _ ↦ β) where
+    coe f := f.toFun
+    coe_injective' _ _ := OrderPresMonoidHom.ext
+
 
 instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
     OrderPresHomClass (OrderPresMonoidHom α β) α β where
+    le_of_le := OrderPresMonoidHom.le_of_le
+
+
 
 instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
-    MonoidHomClass₃ (OrderPresMonoidHom α β) α β
-  := sorry
+    MonoidHomClass₃ (OrderPresMonoidHom α β) α β where
+    map_one f := f.map_one
+    map_mul f := f.map_mul
 
 end Exo
 
@@ -312,7 +329,7 @@ structure Subgroup₁ where
 /-- Subgroups in `G` can be seen as sets in `G`. -/
 instance : SetLike (Subgroup₁ G) G where
   coe := Subgroup₁.carrier
-  coe_injective' := sorry
+  coe_injective' _ _ := Subgroup₁.ext
 
 /- Examples of the coercion to sets un action:-/
 
@@ -347,10 +364,16 @@ instance Subgroup₁Group (H : Subgroup₁ G) : Group H where
     apply SetCoe.ext
     exact mul_assoc (x : G) y z
   one := ⟨1, H.one_mem⟩
-  one_mul x := sorry
-  mul_one := sorry
-  inv := sorry
-  inv_mul_cancel := sorry
+  one_mul x := by
+    apply SetCoe.ext
+    exact one_mul (x : G)
+  mul_one x := by
+    apply SetCoe.ext
+    exact mul_one (x : G)
+  inv x := ⟨ x⁻¹, H.inv_mem x.property ⟩
+  inv_mul_cancel x := by
+    apply SetCoe.ext
+    exact inv_mul_cancel (x : G)
 
 /- Just like with morphisms, we will later define subrings, or submodules, and
 we will want Lean to know that they are also subgroups (so the lemmas we proved
