@@ -38,8 +38,8 @@ structure on them.-/
 
 def f : MonoidHom₁ (ℕ × ℕ) ℕ where
   toFun p := p.1 * p.2
-  map_one := sorry
-  map_mul := sorry
+  map_one := by simp only; simp only [Prod.fst_one, Prod.snd_one, mul_one]
+  map_mul p q := by simp only; simp only [Prod.fst_mul, Prod.snd_mul]; ring
 
 #check f ⟨2,3⟩ -- we can't apply a `MonoidHom₁` to an element, which is annoying
 
@@ -60,6 +60,7 @@ instance {G H : Type*} [Monoid G] [Monoid H] :
 
 attribute [coe] MonoidHom₁.toFun --in the tactic, the coercion of a `MonoidHom₁` `f` to
                                 -- a function will be displayed as `↑f`
+attribute [simp] MonoidHom₁.map_one MonoidHom₁.map_mul
 
 #check f ⟨2,3⟩
 
@@ -70,8 +71,8 @@ namespace MonoidHom₁
 lemma map_pow {M N : Type*} [Monoid M] [Monoid N] (f : MonoidHom₁ M N) (a : M) (n : ℕ) :
     f (a ^ n) = (f a) ^ n := by
   induction' n with n hn
-  · sorry
-  · sorry
+  · simp only [pow_zero, map_one]
+  · rw [pow_succ, pow_succ, map_mul, hn]
 
 end MonoidHom₁
 
@@ -144,7 +145,8 @@ namespace MonoidHomClass₁
 lemma map_pow {M N F : Type*} [Monoid M] [Monoid N] [MonoidHomClass₁ F M N] (f : F) (a : M) (n : ℕ) :
     toFun f (a ^ n) = (toFun f a : N) ^ n := by
   induction' n with n hn
-  · sorry
+  · simp
+    sorry
   · sorry
 
 end MonoidHomClass₁
@@ -243,25 +245,40 @@ section Exo
 /- Adapt the ideas above to define order-preserving morphisms, and then
 order-preserving monoid morphisms.-/
 
+#print LE
+
 @[ext]
 structure OrderPresHom (α β : Type) [LE α] [LE β] where
   toFun : α → β
   le_of_le : ∀ a a', a ≤ a' → toFun a ≤ toFun a'
 
 @[ext]
-structure OrderPresMonoidHom (M N : Type) [Monoid M] [LE M] [Monoid N] [LE N] extends
-MonoidHom₁ M N, OrderPresHom M N
+structure OrderPresMonoidHom (M N : Type) [Monoid M] [LE M] [Monoid N] [LE N]
+  extends MonoidHom₁ M N, OrderPresHom M N
 
 class OrderPresHomClass (F : Type) (α β : outParam Type) [LE α] [LE β]
+  extends DFunLike F α (fun _ ↦ β) where
+  le_of_le : ∀ (f : F) a₁ a₂, a₁ ≤ a₂ → f a₁ ≤ f a₂
 
 instance (α β : Type) [LE α] [LE β] : OrderPresHomClass (OrderPresHom α β) α β where
+  coe f := f.toFun
+  coe_injective' _ _ := OrderPresHom.ext
+  le_of_le := OrderPresHom.le_of_le
+
+instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
+    DFunLike (OrderPresMonoidHom α β) α (fun _ ↦ β) where
+    coe f := f.toFun
+    coe_injective' _ _ := OrderPresMonoidHom.ext
+
 
 instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
     OrderPresHomClass (OrderPresMonoidHom α β) α β where
+    le_of_le := OrderPresMonoidHom.le_of_le
 
 instance (α β : Type) [LE α] [Monoid α] [LE β] [Monoid β] :
-    MonoidHomClass₃ (OrderPresMonoidHom α β) α β
-  := sorry
+    MonoidHomClass₃ (OrderPresMonoidHom α β) α β where
+    map_one f := f.map_one
+    map_mul f := f.map_mul
 
 end Exo
 
@@ -309,10 +326,16 @@ structure Subgroup₁ where
 
 #print Subgroup₁ --note that `G` and `Group G` are arguments
 
+variable (H : Subgroup₁ G)
+
+#check Subgroup₁.ext
+
 /-- Subgroups in `G` can be seen as sets in `G`. -/
 instance : SetLike (Subgroup₁ G) G where
   coe := Subgroup₁.carrier
-  coe_injective' := sorry
+  coe_injective' _ _ := Subgroup₁.ext
+
+#check 1 ∈ H
 
 /- Examples of the coercion to sets un action:-/
 
@@ -330,6 +353,7 @@ example (H : Subgroup₁ G) (x : H) : 0 = 0 := by
   set x' : G := x.1
   set x'' : G := x.val
   set x''' : G := (x : G)
+  set x'''' := ↑x
   have xprop := x.2
   have xprop' := x.property
   rfl
@@ -347,10 +371,17 @@ instance Subgroup₁Group (H : Subgroup₁ G) : Group H where
     apply SetCoe.ext
     exact mul_assoc (x : G) y z
   one := ⟨1, H.one_mem⟩
-  one_mul x := sorry
-  mul_one := sorry
-  inv := sorry
-  inv_mul_cancel := sorry
+  one_mul x := by
+    apply SetCoe.ext
+    exact one_mul (x : G)
+  mul_one x := by
+    apply SetCoe.ext
+    exact mul_one (x : G)
+  inv x := ⟨x⁻¹, H.inv_mem x.property⟩
+  inv_mul_cancel x := by
+    rw [← SetCoe.ext_iff]
+    change (x⁻¹ : G) * x = 1
+    exact inv_mul_cancel (x : G)
 
 /- Just like with morphisms, we will later define subrings, or submodules, and
 we will want Lean to know that they are also subgroups (so the lemmas we proved
@@ -398,7 +429,12 @@ instance : Inf (Subgroup₁ G) :=
     { carrier := S₁ ∩ S₂
       one_mem := ⟨S₁.one_mem, S₂.one_mem⟩
       mul_mem := fun ⟨hx, hx'⟩ ⟨hy, hy'⟩ ↦ ⟨S₁.mul_mem hx hy, S₂.mul_mem hx' hy'⟩
-      inv_mem := sorry
+      inv_mem := by
+        intro x
+        simp
+        intro hx1 hx2
+        --have := (inv_mem (⟨x, hx1⟩ : S₁) : S₁)
+        sorry
       }⟩
 
 #print Inf
