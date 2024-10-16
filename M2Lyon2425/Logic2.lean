@@ -16,10 +16,12 @@ variable (α : Type*) (P Q : α → Prop) -- Use `\alpha` to write `α`
 
 -- Use of the `rw` tactic
 example (x y : α) (hx : P x) (h : y = x) : P y := by
-  sorry
+  rw [h]
+  exact hx
 
 example (x : α) (hP : P x) (h : P = Q) : Q x := by
-  sorry
+  rw [← h]
+  exact hP
 
 /-
   # Quantifiers
@@ -29,49 +31,101 @@ example (x : α) (hP : P x) (h : P = Q) : Q x := by
 variable (R : Prop)
 
 example (h : ∀ x : α, P x) (y : α) : P y := by
-  sorry
+  apply h y
 
 example : (∀ x : α, P x ∧ Q x) → ∀ x : α, P x := by
-  sorry
+  intro h
+  intro x
+  exact (h x).left
 
 -- Use of the `specialize` tactic and `Or.resolve_right/Or.resolve_left`
 example : (∀ x, P x ∨ R) ↔ (∀ x, P x) ∨ R := by
-  sorry
+  constructor
+  · intro h
+    by_cases hR : R
+    · right
+      exact hR
+    · left
+      intro x
+      specialize h x
+      exact Or.resolve_right h hR
+  · intro h
+    intro x
+    by_cases hR : R
+    · right
+      exact hR
+    · left
+      apply (Or.resolve_right h hR) x
+
 
 -- Use of the `use` tactic
 example (x : α) (h : P x) : ∃ y, P y := by
-  sorry
+  use x
 
 -- Use of `Exists.choose / Exists.choose_spec`
 example (h : ∃ x, P x ∧ Q x) : ∃ x, P x := by
-  sorry
+  use h.choose
+  exact h.choose_spec.left
 
 -- Use of the `cases` tactic
 example (h : ∃ x, P x ∧ Q x) : ∃ x, Q x ∧ P x := by
-  sorry
+  cases h with
+  | intro x h => sorry
 
 /- TODO -/
 
 example : (∀ x, P x ∧ Q x) ↔ (∀ x, P x) ∧ (∀ x, Q x) := by
-  sorry
+  constructor
+  · intro h
+    constructor
+    · intro x
+      specialize h x
+      exact h.left
+    · intro x
+      specialize h x
+      exact h.right
+  · intro h x
+    constructor
+    · apply h.left x
+    · apply h.right x
 
 example : (∀ x, P x → Q x) → (∀ x, P x) → (∀ x, Q x) := by
-  sorry
+  intro h1 h2 x
+  specialize h1 x
+  specialize h2 x
+  apply h1 h2
 
-example : (∀ x, Q x) ∨ (∀ x, Q x) → ∀ x, Q x ∨ P x := by
-  sorry
+example : (∀ x, Q x) ∨ (∀ x, P x) → ∀ x, Q x ∨ P x := by
+  intro h x
+  cases h with
+  | inl h =>
+    left
+    apply h x
+  | inr h =>
+    right
+    apply h x
+
 
 example (h1 : ∀ x, P x → Q x) (h2 : ∀ x, P x) : ∀ x, Q x := by
-  sorry
+  intro x
+  specialize h1 x
+  specialize h2 x
+  apply h1 h2
 
 example (h : ¬ ∃ x, ¬ P x) : ∀ x, P x := by
-  sorry
+  intro x
+  by_contra nP -- Or use push_neg
+  apply h
+  use x
 
 example : (∃ x : α, R) → R := by
-  sorry
+  intro h
+  exact Exists.choose_spec h
+
 
 example (x : α) : R → (∃ x : α, R) := by
-  sorry
+  intro hR
+  use x
 
 example : (∃ x, P x ∨ Q x) ↔ (∃ x, P x) ∨ (∃ x, Q x) := by
   sorry
@@ -85,10 +139,21 @@ example : (∃ x, P x) ↔ ¬ (∀ x, ¬ P x) := by
 example : (∀ x, P x → R) ↔ (∃ x, P x) → R := by
   sorry
 
-example : (∃ x, P x → R) ↔ (∀ x, P x) → R := by
-  sorry
+example (a : α) : (∃ x, P x → R) ↔ (∀ x, P x) → R := by
+  constructor
+  · intro h1 h2
+    cases h1 with
+    | intro x h =>
+      exact h (h2 x)
+  · contrapose! -- `!` also does `push-neg`
+    intro h
+    constructor
+    · intro x
+      exact (h x).left
+    · specialize h a
+      exact h.right
 
-example : (∃ x, R → P x) ↔ (R → ∃ x, P x) := by
+example (a : α) : (∃ x, R → P x) ↔ (R → ∃ x, P x) := by
   sorry
 
 /- END TODO -/

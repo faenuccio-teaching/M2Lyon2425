@@ -364,20 +364,36 @@ example : ¬(P ↔ ¬P) := by
 
 -- Use of the `left` tactic
 example : P → P ∨ Q := by
-  sorry
+  intro hP
+  left
+  exact hP
 
 -- Use of the `right` tactic
 example : Q → P ∨ Q := by
-  sorry
+  intro hQ
+  right
+  exact hQ
 
 -- symmetry of `∨`
 example : P ∨ Q → Q ∨ P := by
-  sorry
+  intro h
+  cases h with
+  | inl hP =>
+    right
+    exact hP
+  | inr hQ =>
+    left
+    exact hQ
+
 
 -- The law of excluded middle is not by default in Lean but we included some conventions
 -- from Mathlib including this law (and we actually already used it.)
 example : P ∨ ¬ P := by
-  sorry
+  by_cases h : P
+  · left
+    exact h
+  · right
+    exact h
 
 /- TODO -/
 
@@ -399,7 +415,7 @@ example : (P ↔ R) → (Q ↔ S) → (P ∨ Q ↔ R ∨ S) := by
 
 -- de Morgan's laws
 example : ¬(P ∨ Q) ↔ ¬P ∧ ¬Q := by
-  sorry
+  tauto
 
 example : ¬(P ∧ Q) ↔ ¬P ∨ ¬Q := by
   sorry

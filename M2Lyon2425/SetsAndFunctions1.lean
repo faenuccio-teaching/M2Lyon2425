@@ -12,35 +12,37 @@ section Definitions
 -- # §1: Definitions
 
 -- **An error**
-example (S : Set) := sorry
+-- example (S : Set) := sorry
 
 -- `⌘`
 
 -- **A tautology**
 
 example (α : Type) (x : α) (S : Set α) : x ∈ S ↔ S x := by
-  sorry
+  rfl
 
 -- **The positive integers**
 
-def PositiveIntegers : Set ℤ := by
-  sorry
+def PositiveIntegers : Set ℤ := (0 < ·)
 
 -- `⌘`
 
-lemma one_pos : 1 ∈ PositiveIntegers := by sorry
+lemma one_pos : 1 ∈ PositiveIntegers := Int.one_pos
 
-def PositiveNaturals : Set ℕ := by sorry
+def PositiveNaturals : Set ℕ := (0 < ·)
 
-example : 1 ∈ PositiveNaturals := by sorry
+example : 1 ∈ PositiveNaturals := Nat.one_pos
 
 -- Why does this *fail*? How to fix it?
-example : (-1) ∉ PositiveNaturals := sorry
+example : (-1 : ℤ) ∉ PositiveIntegers := by
+  intro h -- We want to show False ! this is not a proof by contradiction !
+  replace h := h.out
+  exact (Int.negSucc_not_nonneg (0 + 0).succ).mp (by exact h)
 
 -- **The even naturals**
+-- **The even naturals**
 
-def EvenNaturals : Set ℕ := by
-  sorry
+def EvenNaturals : Set ℕ := (· % 2 = 0)
 
 example (n : ℕ) : n ∈ EvenNaturals → (n+2) ∈ EvenNaturals := by
   sorry
@@ -57,9 +59,8 @@ example {α : Type} (P : α → Prop) : AbstractSet P = AbstractSet' P := sorry
 -- `⌘`
 
 -- **Subsets as implication**
-example {α : Type} (S T : Set α) (s : α) (hST : S ⊆ T) (hs : s ∈ S) : s ∈ T := by sorry
-
-
+example {α : Type} (S T : Set α) (s : α) (hST : S ⊆ T) (hs : s ∈ S) : s ∈ T := by
+  exact hST hs
 
 -- `⌘`
 
@@ -91,27 +92,38 @@ example : ∀ n : PositiveIntegers, 0 ≤ n := by sorry
 /- **§ Some exercises** -/
 
 example : 1 ∉ EvenNaturals := by
-  sorry
-
-example : -1 ∉ PositiveIntegers := by
-  sorry
+  intro h
+  replace h := h.out
+  trivial
 
 -- Define the set of even, positive numbers
-def EvenPositiveNaturals : Set PositiveIntegers := by
-  sorry
+example : -1 ∉ PositiveIntegers := by
+  intro h
+  replace h := h.out
+  trivial
+
+-- Define the set of even, positive numbers
+def EvenPositiveNaturals : Set PositiveNaturals := (EvenNaturals ·.1)
 
 -- Why does this *fail*? How to fix it?
 example : 1 ∉ EvenPositiveNaturals := sorry
 
+example : ⟨1, Nat.one_pos⟩ ∉ EvenPositiveNaturals := by
+  intro h
+  replace h := h.out
+  trivial
 
 -- Define the set of odd numbers and prove some properties
-def OddNaturals : Set ℕ := sorry
+def OddNaturals : Set ℕ := (· % 2 = 1)
 
-example : 3 ∈ OddNaturals := by sorry
+example : 3 ∈ OddNaturals := rfl
 
 
 example (n : ℕ) : n ∈ OddNaturals ↔ n ∉ EvenNaturals := by
-  sorry
+  constructor
+  · intro h
+    replace h := h.out
+    exact h
 
 
 -- Why does this *fail*?
@@ -127,8 +139,12 @@ section Operations
 -- **Self-intersection is the identity, proven with extensionality**
 
 example (α : Type) (S : Set α) : S ∩ S = S := by
-  sorry
-
+  ext s
+  constructor
+  · intro h
+    exact h.left
+  · intro h
+    exact ⟨h,h⟩
 
 -- `⌘`
 

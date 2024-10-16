@@ -83,39 +83,42 @@ structure Equiv₁ (α β : Type*) where
 
 -- To check that two equivalences are equal, we need to check the equality of
 -- their `toFun` and `invFun` fields, which is not ideal.
-#check Equiv₁.ext
+#check Equiv₁.ext -- We don't need to check equality of left_inv / right_inv bc Props. Lean knows : PROOF IRRELEVANCE !
 
 namespace Equiv₁
 
 variable {α β γ : Type*}
 
 theorem better_ext {f g : Equiv₁ α β} (h : f.toFun = g.toFun) : f = g := by
-  apply Equiv₁.ext
-  · exact h
-  · sorry
+  apply Equiv₁.ext h
+  ext y
+  have := f.right_inv y
+  conv_rhs => rw [← this, h, g.left_inv]
+  -- rw [← this, f.left_inv, h, g.left_inv]
+
 
 -- The identity as equivalence.
 
 def refl (α) : Equiv₁ α α where
   toFun := fun x ↦ x
   invFun := fun x ↦ x
-  left_inv := sorry
-  right_inv := sorry
+  left_inv _ := rfl
+  right_inv _ := rfl
 
 -- Defining functions on structures: inverse and composition of equivalences.
 
-def symm (f : Equiv₁ α β) : Equiv₁ β α where
+def symm (f : Equiv₁ α β) : Equiv₁ β α where -- Prefered method
   toFun := f.invFun
   invFun := f.toFun
-  left_inv := sorry
-  right_inv := sorry
+  left_inv := f.right_inv
+  right_inv := f.left_inv
 
 def symm' (f : Equiv₁ α β) : Equiv₁ β α :=
   {
     toFun := f.invFun
     invFun := f.toFun
-    left_inv:= sorry
-    right_inv := sorry
+    left_inv:= f.right_inv
+    right_inv := f.left_inv
   }
 
 def symm'' (f : Equiv₁ α β) : Equiv₁ β α := by
@@ -123,13 +126,14 @@ def symm'' (f : Equiv₁ α β) : Equiv₁ β α := by
   refine Equiv₁.mk ?_ ?_ ?_ ?_
   · exact f.invFun
   · exact f.toFun
-  · sorry
-  · sorry
+  · exact f.right_inv
+  · exact f.left_inv
 
 def trans (f : Equiv₁ α β) (g : Equiv₁ β γ) : Equiv₁ α γ where
   toFun := g.toFun ∘ f.toFun
   invFun := f.invFun ∘ g.invFun
-  left_inv := sorry
+  left_inv x := by
+    sorry
   right_inv := sorry
 
 end Equiv₁
@@ -180,19 +184,43 @@ example {α : Type*} : Group₁ (Equiv₁ α α) where
   one := Equiv₁.refl α
   mul := Equiv₁.trans
   inv := Equiv₁.symm
-  mul_one := sorry
+  mul_one f := by
+    apply Equiv₁.better_ext
+    ext
+    rfl
   one_mul := sorry
   mul_assoc := sorry
-  inv_mul_cancel := sorry
+  inv_mul_cancel f := by
+    apply Equiv₁.better_ext
+    ext x
+    -- change f.toFun (f.invFun x) = x
+    -- rw [f.right_inv]
+    erw [f.right_inv] -- rw but smarter
+    rfl
 
-lemma Group₁.mul_inv_cancel {α : Type*} (G : Group₁ α) (x : α) :
-    G.mul x (G.inv x) = G.one := sorry
 
 -- Hint: you might find the following lemma useful:
-/-
+
 lemma Group₁.inv_eq_of_mul {α : Type*} (G : Group₁ α) (x y : α) :
-    G.mul x y = G.one → G.inv x = y := sorry
--/
+    G.mul x y = G.one → G.inv x = y := by
+    intro h1
+    have h2 : G.inv x = G.mul (G.inv x) (G.mul x y) := by
+      rw [h1]
+      rw [G.mul_one]
+    rw [← G.mul_assoc, G.inv_mul_cancel, G.one_mul] at h2
+    rw [← h2]
+
+lemma Group₁.mul_inv_cancel {α : Type*} (G : Group₁ α) (x : α) :
+    G.mul x (G.inv x) = G.one := by
+      have heq : G.inv (G.inv x) = x := by
+        apply Group₁.inv_eq_of_mul
+        exact G.inv_mul_cancel x
+      conv => -- conversion mode ! Super cool
+        lhs
+        congr
+        · skip
+        · rw[← heq]
+      exact G.inv_mul_cancel (G.inv x)
 
 /- The last example is kind of painful to write. We would like to:
 (1) not have to give a name for the group structure on `α`;
@@ -453,17 +481,40 @@ lemma left_inv_eq_right_inv₁' {M : Type} [Monoid₂ M] {a b c : M}
 
 /- Exercise: define a second binary operator class, say `Ast₁` with notation `∗` (\ + ast),
 and a second unit `OneBis` with notation `𝟭` (\ + sb1); define a class `AstOneBisClass₁` similar
-to `DiaOneClass₁`.
-Then introduce a class `TwoCompatibleLaws` extending `DiaOneClass₁` and `AstOneBisClass₁` with
-the extra condition that `exchange : ∀ x y z t, (x ⋄ y) ∗ (z ⋄ t) = (x ∗ z) ⋄ (y ∗ t)`.
+to `DiaOneClass₁`. -/
 
-Then prove the following lemmas:
+class Ast₁ (α : Type*) where
+  ast : α → α → α
+infixl:70 " ∗ " => Ast₁.ast
 
-lemma one_eq_oneBis {α : Type*} (M : TwoCompatibleLaws α) : 𝟙 = 𝟭 := sorry
+class OneBis (α : Type*) where
+  one : α
+notation " 𝟭 " => OneBis.one
 
-lemma dia_eq_ast {α : Type*} (M : TwoCompatibleLaws α) (x y : α) : x ⋄ y = x ∗ y := sorry
+class AstOneBisClass₁ (α : Type*) extends Ast₁ α, OneBis α where
+  ast_one : ∀ a : α, a ∗ 𝟭 = a
+  one_ast : ∀ a : α, 𝟭 ∗ a = a
 
-lemma dia_comm {α : Type*} (M : TwoCompatibleLaws α) (x y : α) : x ⋄ y = y ⋄ x := sorry
+export AstOneBisClass₁ (one_ast ast_one)
+attribute [simp] one_ast ast_one dia_one one_dia
 
-lemma dia_assoc {α : Type*} (M : TwoCompatibleLaws α) (x y z : α) : x ⋄ y ⋄ z = x ⋄ (y ⋄ x) := sorry
+/- Then introduce a class `TwoCompatibleLaws` extending `DiaOneClass₁` and `AstOneBisClass₁` with
+the extra condition that `exchange : ∀ x y z t, (x ⋄ y) ∗ (z ⋄ t) = (x ∗ z) ⋄ (y ∗ t)`. -/
+
+class TwoCompatibleLaws (α : Type*) extends DiaOneClass₁ α, AstOneBisClass₁ α where
+  exchange : ∀ x y z t : α, (x ⋄ y) ∗ (z ⋄ t) = (x ∗ z) ⋄ (y ∗ t)
+
+/- Then prove the following lemmas: -/
+
+@[simp]
+lemma one_eq_oneBis {α : Type*} [TwoCompatibleLaws α] : (𝟙 : α) = 𝟭 := by
+  have := TwoCompatibleLaws.exchange (𝟙 : α) 𝟭 𝟭 𝟙
+  simp at this
+  exact this
+
+lemma dia_eq_ast {α : Type*} [TwoCompatibleLaws α] (x y : α) : x ⋄ y = x ∗ y := sorry
+
+lemma dia_comm {α : Type*} [TwoCompatibleLaws α] (x y : α) : x ⋄ y = y ⋄ x := sorry
+
+lemma dia_assoc {α : Type*} [TwoCompatibleLaws α] (x y z : α) : x ⋄ y ⋄ z = x ⋄ (y ⋄ x) := sorry
 -/
