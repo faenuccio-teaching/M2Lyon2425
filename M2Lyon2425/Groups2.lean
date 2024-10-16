@@ -464,6 +464,9 @@ of `x`;
 - `Quotient.lift` : a theorem saying that, if `f : α → β` is a function
 such that `a ≈ b → f a = f b`, then `f` induces a function
 `g : Quotient s → β` such that `g ∘ Quotient.mk s = f`;
+- `Quotient.map` is like `Quotient.lift`, but the conditions are written
+differently; it has variants like `Quotient.map₂`, for a function of
+two variables;
 - `Quotient.sound` : for all `a,b : α`, if `a ≈ b`, then
 `Quotient.mk s a = Quotient.mk s b`.
 
@@ -489,19 +492,38 @@ instance : HasQuotient A (Subgroup A) where
 def QuotientGroup₁.mk (B : Subgroup A) : A → A ⧸ B := Quotient.mk B.Setoid
 -- So we can write `QuotientGroup₁.mk B` instead of `Quotient.mk B.Setoid`.
 
+
+-- Multiplication on the quotient.
+instance (B : Subgroup A) : Mul (A ⧸ B) where
+  mul := Quotient.map₂' (· * ·) (by sorry)
+
+-- Unit in the quotient.
+instance (B : Subgroup A) : One (A ⧸ B) where
+  one := QuotientGroup₁.mk B (1 : A)
+
+-- Inverse function on the quotient.
+instance (B : Subgroup A) : Inv (A ⧸ B) where
+  inv := Quotient.map' (fun a ↦ a⁻¹)
+    (by sorry
+    )
+
 -- The quotient is a commutative group.
 instance (B : Subgroup A) : CommGroup (A ⧸ B) where
-  mul := Quotient.map₂' (· * ·) (by
-      sorry
-        )
+  mul := Mul.mul
   mul_assoc := by
-      sorry
-  one := QuotientGroup₁.mk B (1 : A)
+    intro x y z
+    apply Quotient.inductionOn₃ (motive := fun (x y z : A ⧸ B) ↦ (x * y) * z = x * (y * z))
+    -- `Quotient.inductionOn` basically says that, if a property that depends only on the
+    -- class in the quotient holds for terms of type `A`,
+    -- it holds for terms of type `A ⧸ B`.
+    -- Here we use a variant for properties depending on 3 variables.
+    sorry
+  one := 1
   one_mul := by
       sorry
   mul_one := by
       sorry
-  inv := sorry
+  inv := Inv.inv
   inv_mul_cancel := sorry
   mul_comm := sorry
 
