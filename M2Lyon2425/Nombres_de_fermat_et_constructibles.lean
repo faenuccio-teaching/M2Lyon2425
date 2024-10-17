@@ -13,7 +13,7 @@ import Mathlib.Data.Nat.Multiplicity
 
 
 -- définiton d'un nombre premier de Fermat
-def premierfermat (p : Nat) :=
+def premierfermat (p : ℕ) :=
   (Nat.Prime p) ∧ (∃ n : ℕ, p=2^(2^n)+1)
 
 
@@ -71,7 +71,7 @@ rw[hh4H,<-Nat.mul_assoc,Nat.mul_comm,<-Nat.pow_add_one,Nat.eq_iff_prime_padicVal
 
 
 --Lemme : Tout premier de la forme 2^m+1 est de Fermat et réciproquement.
-theorem premierfermat_equ (p : Nat) : (premierfermat p) ↔ ((Nat.Prime p) ∧ (∃ m : ℕ, m>0 ∧ p=2^m+1)) := by
+theorem premierfermat_equ (p : ℕ) : (premierfermat p) ↔ ((Nat.Prime p) ∧ (∃ m : ℕ, m>0 ∧ p=2^m+1)) := by
 constructor
 · intro hf
   cases hf with
@@ -95,7 +95,7 @@ constructor
       obtain ⟨z, hz⟩ := pow_padicValNat_dvd (p := 2) (n := n)
       let hyp1 := Odd.nat_add_dvd_pow_add_pow (2^(2^(padicValNat 2 n))) 1 (oddz n z ⟨nn.left, hz⟩)
       simp at hyp1
-      rw[<-Nat.pow_mul, <-hz, <- nn.right,Nat.dvd_prime left] at hyp1
+      rw[<-Nat.pow_mul, <-hz, <-nn.right,Nat.dvd_prime left] at hyp1
       simp at hyp1
       use padicValNat 2 n
       exact hyp1.symm
@@ -114,16 +114,45 @@ def nombre_constructible (a : Complex) :=
    K ⟨0,zeroinfn n.2⟩ = ℚ
   --∧ a ∈ (K ⟨n,n.2⟩)
 
-theorem Wantzel (a : Complex) : nombre_constructible (IsPrimitiveRoot (ζ : ℂ) p^α) ↔ Nat.isPowerOfTwo := by
-sorry
 
-theorem groupe_galois_Qw (p : Nat) : premierfermat p → IsCyclotomicExtension.Aut.commGroup Qw ≅ (ZMod p)ˣ:= by
-sorry
+--Lemme : si p est premier de Fermat, Gal(Q(w)/Q) ≅ (Z/pZ)*
+--CyclotomicField p ℚ "Corps cyclotomique"
 
--- définition de constructible à partir du théorème de Wantzel
-theorem Gauss_Wantzel (p : Nat.Primes) (α : Nat): nombre_constructible (Complex.exp ((Complex.I)*↑Real.pi/(p^α))) ↔ premierfermat p := by
-constructor
-· intro h1
-  cases h1 with
-  | intro w h =>
-    sorry
+
+--Lemme : si p est premier de Fermat, alors Φₚ(X) est irréductible sur ℚ.
+theorem poly_cyclo_p_irre (p : ℕ) : premierfermat p → Irreducible (Polynomial.cyclotomic p ℚ) :=by
+intro hp
+have hpp : p>0 := by
+  cases hp with
+  | intro left right =>
+    apply Nat.Prime.pos
+    exact left
+exact Polynomial.cyclotomic.irreducible_rat hpp
+
+--Lemme : ℚ(w)/ℚ est galoisienne
+theorem Qw_est_galois (p : ℕ+) : premierfermat p → IsGalois ℚ (CyclotomicField p ℚ) := by
+  intro _
+  have h1 := IsCyclotomicExtension.isGalois p ℚ (CyclotomicField p ℚ)
+  exact h1
+
+
+
+--theorem groupe_galois_Qw_ZpZ {p : ℕ} (hp : 0 < (p : Nat)) : premierfermat p → galCyclotomicEquivUnitsZMod (Polynomial.cyclotomic.irreducible_rat hp):= by
+
+-- Lemme : si p est de Fermat, alors Gal(ℚ(w)/ℚ)≅(ℤ/pℤ)*
+--theorem groupe_galois_Qw_ZpZ (p : ℕ+) (h : Irreducible (Polynomial.cyclotomic ↑p ℚ)) : premierfermat ↑p → galXPowEquivUnitsZMod h :=by
+
+--theorem groupe_galois_Qw_ZpZ (p : ℕ+): premierfermat p → ∃ m, (Polynomial.Gal (Polynomial.cyclotomic p ℚ)) ≃* (ZMod (2^m)) := by
+--sorry
+
+theorem Z2mZ_resoluble (m : Nat) : IsSolvable (ZMod (2^m))ˣ := by
+  have h : ∀ (a b : (ZMod (2^m))ˣ), ↑a * ↑b = ↑b * ↑a := by
+    intro a b
+    rw[Units.instCommGroupUnits.proof_1]
+  exact isSolvable_of_comm h
+
+
+
+
+
+--(Polynomial.Gal (Polynomial.cyclotomic p ℚ) ≅ (ZMod p)ˣ)
