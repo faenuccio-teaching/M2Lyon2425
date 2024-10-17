@@ -110,8 +110,7 @@ def nombre_constructible (a : Complex) :=
   ∃ n : {n : ℕ // 1 < n},
    ∃ K : Fin n → Type, ∃ _ : (i : Fin n) → Semiring (K i),
   (i : Fin n) → IsField (K i) ∧
-  ∃ f : (i : Fin n) → ((K i) →+* (K (i.add ⟨1, n.2⟩))), (i : Fin n) → Function.Injective (f i) ∧
-   K ⟨0,zeroinfn n.2⟩ = ℚ
+  ∃ f : (i : Fin n) → ((K i) →+* (K (i.add ⟨1, n.2⟩))), (i : Fin n) → Function.Injective (f i)
   --∧ a ∈ (K ⟨n,n.2⟩)
 
 
@@ -135,6 +134,7 @@ theorem Qw_est_galois (p : ℕ+) : premierfermat p → IsGalois ℚ (CyclotomicF
   have h1 := IsCyclotomicExtension.isGalois p ℚ (CyclotomicField p ℚ)
   exact h1
 
+--Lemme : bijection corps intermédiaires/sous-groupes IsGalois.intermediateFieldEquivSubgroup
 
 
 --theorem groupe_galois_Qw_ZpZ {p : ℕ} (hp : 0 < (p : Nat)) : premierfermat p → galCyclotomicEquivUnitsZMod (Polynomial.cyclotomic.irreducible_rat hp):= by
@@ -146,13 +146,26 @@ theorem Qw_est_galois (p : ℕ+) : premierfermat p → IsGalois ℚ (CyclotomicF
 --sorry
 
 theorem Z2mZ_resoluble (m : Nat) : IsSolvable (ZMod (2^m))ˣ := by
-  have h : ∀ (a b : (ZMod (2^m))ˣ), ↑a * ↑b = ↑b * ↑a := by
+  have h : ∀ (a b : (ZMod (2^m))ˣ), a * b = b * a := by
     intro a b
     rw[Units.instCommGroupUnits.proof_1]
   exact isSolvable_of_comm h
 
+theorem suite_resoluble_Z2mZ (m : Nat) : ∃ (ζ : (ZMod (2^m))ˣ), derivedSeries (ZMod (2^m))ˣ
 
+theorem tour_quadraQw (p:Nat) : premierfermat p →
 
 
 
 --(Polynomial.Gal (Polynomial.cyclotomic p ℚ) ≅ (ZMod p)ˣ)
+theorem Gauss_Wantzel_1 (p α : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑(p^α))) ↔ premierfermat p ∧ α =1 :=by
+constructor
+· sorry
+· intro h
+  cases h with
+  | intro left right =>
+    rw[right,pow_one]
+
+
+theorem Gauss_Wantzel (n : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑n)) ↔ ∀ (p : Nat.Primes), p ∣ n → (premierfermat p ∧ padicValNat p n = 1):= by
+sorry
