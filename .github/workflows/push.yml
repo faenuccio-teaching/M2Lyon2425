@@ -69,6 +69,8 @@ jobs:
 
       - name: Move documentation to `docs/docs`
         run: |
+          mkdir -p docs/docs
+          mkdir -p docs/_site
           mv .lake/build/doc docs/docs
 
       - name: Upload docs & blueprint artifact
