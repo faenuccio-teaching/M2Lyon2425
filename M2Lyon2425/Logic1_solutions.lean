@@ -180,7 +180,7 @@ example : True → ¬False := by
   by_contra h
   exact h
 
--- Use of the `have` tatic
+-- Use of the `have` tactic
 example : (P → Q) → (¬Q → ¬P) := by
   intro h1
   intro h2

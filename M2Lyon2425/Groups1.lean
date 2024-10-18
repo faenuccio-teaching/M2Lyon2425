@@ -70,7 +70,7 @@ def myPoint4 : Point where
   x := -1
   y := 4
 
-/- A more complicated structiure: equivalences between two types `α` and `β`.-/
+/- A more complicated structure: equivalences between two types `α` and `β`.-/
 
 @[ext]
 structure Equiv₁ (α β : Type*) where
@@ -393,7 +393,7 @@ class Monoid₂ (α : Type*) extends DiaOneClass₁ α, Semigroup₁ α
 #print Monoid₂ -- note that Lean knows that the binary operations coming from the
                -- DiaOneClass₁ and the Semigroup₁ are the same
 
--- Here is a bad idea, becaue we will get two binary operations that are not the same:
+-- Here is a bad idea, because we will get two binary operations that are not the same:
 class Monoid₃ (α : Type*) where
   toSemigroup₁ : Semigroup₁ α
   toDiaOneClass₁ : DiaOneClass₁ α
