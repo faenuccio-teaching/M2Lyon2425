@@ -473,7 +473,7 @@ lemma ARS_mul_kstar_le_self {α : Type*} {f g : α → α → Prop} :
 -- #synth (AddMonoid (ℕ → ℕ → Prop))
 -- il n'y a pas de struture de monoïde idempotent sur les relations binaires d'un type
 
-#print KleeneAlgebra
+--#print KleeneAlgebra
 
 
 instance ARS {α : Type*} : KleeneAlgebra (α → α → Prop) where
@@ -497,7 +497,7 @@ instance ARS {α : Type*} : KleeneAlgebra (α → α → Prop) where
   le := ARS_le
   lt := ARS_lt
   le_refl := ARS_le_refl
-  le_trans := ARS_le_trans
+  le_trans := @ARS_le_trans α
   lt_iff_le_not_le := ARS_lt_iff_le_not_le
   le_antisymm := ARS_le_antisymm
   sup := ARS_add -- il faut toujours que `⊔` et `+` soient égaux
@@ -514,9 +514,10 @@ instance ARS {α : Type*} : KleeneAlgebra (α → α → Prop) where
   kstar_mul_le_self := sorry
 
 
-
+/-
 #print KleeneAlgebra
 #print IdemSemiring
 #print SemilatticeSup
 #print PartialOrder
 #print Preorder
+-/
