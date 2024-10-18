@@ -92,30 +92,36 @@ variable {α β γ : Type*}
 theorem better_ext {f g : Equiv₁ α β} (h : f.toFun = g.toFun) : f = g := by
   apply Equiv₁.ext
   · exact h
-  · sorry
+  · ext x
+    have := Equiv₁.right_inv f x
+    rw [← this, Equiv₁.left_inv f (f.invFun x), h, Equiv₁.left_inv g (f.invFun x)]
 
 -- The identity as equivalence.
 
 def refl (α) : Equiv₁ α α where
   toFun := fun x ↦ x
   invFun := fun x ↦ x
-  left_inv := sorry
-  right_inv := sorry
+  left_inv := by
+    intro x
+    rfl
+  right_inv := by
+    intro y
+    rfl
 
 -- Defining functions on structures: inverse and composition of equivalences.
 
 def symm (f : Equiv₁ α β) : Equiv₁ β α where
   toFun := f.invFun
   invFun := f.toFun
-  left_inv := sorry
-  right_inv := sorry
+  left_inv := f.right_inv
+  right_inv := f.left_inv
 
 def symm' (f : Equiv₁ α β) : Equiv₁ β α :=
   {
     toFun := f.invFun
     invFun := f.toFun
-    left_inv:= sorry
-    right_inv := sorry
+    left_inv:= f.right_inv
+    right_inv := f.left_inv
   }
 
 def symm'' (f : Equiv₁ α β) : Equiv₁ β α := by
@@ -123,14 +129,22 @@ def symm'' (f : Equiv₁ α β) : Equiv₁ β α := by
   refine Equiv₁.mk ?_ ?_ ?_ ?_
   · exact f.invFun
   · exact f.toFun
-  · sorry
-  · sorry
+  · exact f.right_inv
+  · exact f.left_inv
 
 def trans (f : Equiv₁ α β) (g : Equiv₁ β γ) : Equiv₁ α γ where
   toFun := g.toFun ∘ f.toFun
   invFun := f.invFun ∘ g.invFun
-  left_inv := sorry
-  right_inv := sorry
+  left_inv := by
+    intro x
+    rw [Function.comp_def, Function.comp_def]
+    change f.invFun (g.invFun (g.toFun (f.toFun x))) = x
+    rw [g.left_inv, f.left_inv]
+  right_inv := by
+    intro y
+    rw [Function.comp_def, Function.comp_def]
+    change g.toFun (f.toFun (f.invFun (g.invFun y))) = y
+    rw [f.right_inv, g.right_inv]
 
 end Equiv₁
 
