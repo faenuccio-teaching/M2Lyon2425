@@ -10,12 +10,11 @@ import Mathlib.Data.Nat.Multiplicity
 
 -- Le p^α gone régulier (p premier) est constructible à la règle et au compas (définition de Wantzel) si et
 -- seulement si p=2 ou alpha=1 et p est de Fermat.
-
+--On désignera par w le nombre Complex.exp (2*↑Real.pi*Complex.I/p)
 
 -- définiton d'un nombre premier de Fermat
 def premierfermat (p : ℕ) :=
   (Nat.Prime p) ∧ (∃ n : ℕ, p=2^(2^n)+1)
-
 
 --Lemme : si n est strictement positif, alors n=2^v2(n) * z implique z impair
 theorem oddz (n z : Nat) : (n>0 ∧ n = 2^(padicValNat 2 n)*z) → (Odd z):= by
@@ -69,7 +68,6 @@ rw[hh4H,<-Nat.mul_assoc,Nat.mul_comm,<-Nat.pow_add_one,Nat.eq_iff_prime_padicVal
   have _:=h.left
   contradiction
 
-
 --Lemme : Tout premier de la forme 2^m+1 est de Fermat et réciproquement.
 theorem premierfermat_equ (p : ℕ) : (premierfermat p) ↔ ((Nat.Prime p) ∧ (∃ m : ℕ, m>0 ∧ p=2^m+1)) := by
 constructor
@@ -100,13 +98,11 @@ constructor
       use padicValNat 2 n
       exact hyp1.symm
 
-
 theorem zeroinfn : 1<↑n → 0<n := by
   intro h
   have h3 : 0<1 := by
     exact Nat.zero_lt_one
   exact Nat.lt_trans h3 h
-
 
 def nombre_constructible (a : Complex) :=
   ∃ n : {n : ℕ // 1 < n}, ∃ K : Fin n → Type, ∃ _ : (i : Fin n) → Semiring (K i),
@@ -131,20 +127,42 @@ theorem Qw_est_galois (p : ℕ+) : premierfermat p → IsGalois ℚ (CyclotomicF
   have h1 := IsCyclotomicExtension.isGalois p ℚ (CyclotomicField p ℚ)
   exact h1
 
---Lemme : bijection corps intermédiaires/sous-groupes IsGalois.intermediateFieldEquivSubgroup
---theorem groupe_galois_Qw_ZpZ {p : ℕ} (hp : 0 < (p : Nat)) : premierfermat p → galCyclotomicEquivUnitsZMod (Polynomial.cyclotomic.irreducible_rat hp):= by
--- Lemme : si p est de Fermat, alors Gal(ℚ(w)/ℚ)≅(ℤ/pℤ)*
---theorem groupe_galois_Qw_ZpZ (p : ℕ+) (h : Irreducible (Polynomial.cyclotomic ↑p ℚ)) : premierfermat ↑p → galXPowEquivUnitsZMod h :=by
---theorem groupe_galois_Qw_ZpZ (p : ℕ+): premierfermat p → ∃ m, (Polynomial.Gal (Polynomial.cyclotomic p ℚ)) ≃* (ZMod (2^m)) := by
 
 
-theorem Z2mZ_resoluble (m : Nat) : IsSolvable (ZMod (2^m))ˣ := by
-  have h : ∀ (a b : (ZMod (2^m))ˣ), a * b = b * a := by
+theorem Z2mZ_resoluble (m : Nat) : IsSolvable (ZMod (2^(2^m)))ˣ := by
+  have h : ∀ (a b : (ZMod (2^(2^m)))ˣ), a * b = b * a := by
     intro a b
     rw[Units.instCommGroupUnits.proof_1]
   exact isSolvable_of_comm h
 
-theorem suite_resoluble_Z2mZ (m : Nat) : ∃ (ζ : (ZMod (2^m))ˣ), derivedSeries (ZMod (2^m))ˣ
+
+theorem racine_prim_unite (p : ℕ+) : IsPrimitiveRoot (Complex.exp (2*↑Real.pi*Complex.I/p)) p :=by
+  rw[IsPrimitiveRoot.iff_def]
+  constructor
+  · rw[<-Complex.exp_nat_mul,IsField.mul_comm]
+    simp
+    apply Field.toIsField
+  · intro l
+    intro h1
+    rw[<-Complex.exp_nat_mul,Complex.exp_eq_one_iff,CommRing.toNonUnitalCommRing.proof_11,
+    <-Complex.commRing.proof_6,<-mul_div_assoc,<-div_mul_eq_mul_div₀] at h1
+    sorry
+--mul_eq_of_eq_div'
+
+theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Complex.exp (2*Complex.I*↑Real.pi/↑p)) := by
+  intro h1
+  cases h1 with
+  | intro left right =>
+    constructor
+    · let Φₚ := Polynomial.cyclotomic p ℚ
+      let ζ := Complex.exp ((2*Complex.I*↑Real.pi)/p)
+      have h2 := racine_prim_unite
+      specialize h2 p
+      sorry
+    · sorry
+
+
+
 
 --(Polynomial.Gal (Polynomial.cyclotomic p ℚ) ≅ (ZMod p)ˣ)
 theorem Gauss_Wantzel_1 (p : ℕ+) (α : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑(p^α))) ↔ premierfermat p ∧ α =1 :=by
@@ -161,3 +179,9 @@ constructor
 
 theorem Gauss_Wantzel (n : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑n)) ↔ ∀ (p : Nat.Primes), p ∣ n → (premierfermat p ∧ padicValNat p n = 1):= by
 sorry
+
+--Lemme : bijection corps intermédiaires/sous-groupes IsGalois.intermediateFieldEquivSubgroup
+--theorem groupe_galois_Qw_ZpZ {p : ℕ} (hp : 0 < (p : Nat)) : premierfermat p → galCyclotomicEquivUnitsZMod (Polynomial.cyclotomic.irreducible_rat hp):= by
+-- Lemme : si p est de Fermat, alors Gal(ℚ(w)/ℚ)≅(ℤ/pℤ)*
+--theorem groupe_galois_Qw_ZpZ (p : ℕ+) (h : Irreducible (Polynomial.cyclotomic ↑p ℚ)) : premierfermat ↑p → galXPowEquivUnitsZMod h :=by
+--theorem groupe_galois_Qw_ZpZ (p : ℕ+): premierfermat p → ∃ m, (Polynomial.Gal (Polynomial.cyclotomic p ℚ)) ≃* (ZMod (2^m)) := by
