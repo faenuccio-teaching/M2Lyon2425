@@ -14,7 +14,7 @@ import Mathlib.Tactic
 section Morphisms
 
 /- How do we define morphisms of groups/monoids? Just like for groups, we have two
-choices: define bundled morphisms as a structure containing a function plus some
+choices: define bundled morphisms  as a structure containing a function plus some
 conditions on it, or define a `IsMorphism` structure that takes a function as an
 argument.-/
 
