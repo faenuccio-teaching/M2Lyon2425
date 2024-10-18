@@ -13,7 +13,7 @@ open Classical
 Announcement about projects: you should let us know what final exam project you want
 to work on by November 15, but it would be better if you did it earlier (say after
 you come back from fall break).
-Also, to communicate your project topic to us, you should create a branch in the
+Also, to communicate  your project topic to us, you should create a branch in the
 `M2Lyon2425` git repository and add in it a file containing the project description.
 This will teach you to use branches, which will be necessary when you turn in your
 project.
