@@ -1,4 +1,3 @@
--- import Mathlib
-import Mathlib.Data.Set.Basic
+import Mathlib
 
 def hello := "world"
