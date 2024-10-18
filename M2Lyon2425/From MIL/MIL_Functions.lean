@@ -1,4 +1,4 @@
-import LeanInRome.Common
+ import LeanInRome.Common
 import Mathlib.Data.Set.Lattice
 import Mathlib.Data.Set.Function
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
@@ -13,7 +13,7 @@ variable (u v : Set β)
 open Function
 open Set
 
-example : f ⁻¹' (u ∩ v) = f ⁻¹' u ∩ f ⁻¹' v := by
+example : f ⁻¹' (u ∩ v) = f ⁻¹' u ∩ f ⁻¹' v :=  by
   ext
   rfl
 
