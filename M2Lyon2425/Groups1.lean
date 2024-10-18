@@ -185,22 +185,77 @@ example {α : Type*} : BundledGroup₁ where
   one := Equiv₁.refl α
   mul := Equiv₁.trans
   inv := Equiv₁.symm
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
-  inv_mul_cancel := sorry -- can you do this?
+  mul_one := by
+    intro x
+    apply Equiv₁.ext
+    · change (fun x ↦ x) ∘ x.toFun = x.toFun
+      rw [Function.comp_def]
+    · change x.invFun ∘ (fun x ↦ x) = x.invFun
+      rw [Function.comp_def]
+  one_mul := by
+    intro x
+    apply Equiv₁.ext
+    · change x.toFun ∘ (fun x ↦ x) = x.toFun
+      rw [Function.comp_def]
+    · change (fun x ↦ x) ∘ x.invFun = x.invFun
+      rw [Function.comp_def]
+  mul_assoc := by
+    intros x y z
+    apply Equiv₁.ext
+    · change z.toFun ∘ (y.toFun ∘ x.toFun) = (z.toFun ∘ y.toFun) ∘ x.toFun
+      rw [Function.comp_def, Function.comp_def, Function.comp_def, Function.comp_def]
+    · change (x.invFun ∘ y.invFun) ∘ z.invFun = x.invFun ∘ (y.invFun ∘ z.invFun)
+      rw [Function.comp_def, Function.comp_def, Function.comp_def, Function.comp_def]
+  inv_mul_cancel := by
+    intro f
+    apply Equiv₁.better_ext
+    ext x
+    change f.toFun (f.invFun x) = x
+    rw [f.right_inv]
 
 example {α : Type*} : Group₁ (Equiv₁ α α) where
   one := Equiv₁.refl α
   mul := Equiv₁.trans
   inv := Equiv₁.symm
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
-  inv_mul_cancel := sorry
+  mul_one := by
+    intro x
+    apply Equiv₁.ext
+    · change (fun x ↦ x) ∘ x.toFun = x.toFun
+      rw [Function.comp_def]
+    · change x.invFun ∘ (fun x ↦ x) = x.invFun
+      rw [Function.comp_def]
+  one_mul := by
+    intro x
+    apply Equiv₁.ext
+    · change x.toFun ∘ (fun x ↦ x) = x.toFun
+      rw [Function.comp_def]
+    · change (fun x ↦ x) ∘ x.invFun = x.invFun
+      rw [Function.comp_def]
+  mul_assoc := by
+    intros x y z
+    apply Equiv₁.ext
+    · change z.toFun ∘ (y.toFun ∘ x.toFun) = (z.toFun ∘ y.toFun) ∘ x.toFun
+      rw [Function.comp_def, Function.comp_def, Function.comp_def, Function.comp_def]
+    · change (x.invFun ∘ y.invFun) ∘ z.invFun = x.invFun ∘ (y.invFun ∘ z.invFun)
+      rw [Function.comp_def, Function.comp_def, Function.comp_def, Function.comp_def]
+  inv_mul_cancel := by
+    intro f
+    apply Equiv₁.better_ext
+    ext x
+    change f.toFun (f.invFun x) = x
+    rw [f.right_inv]
+
+lemma Group₁.inv_eq_of_mul {α : Type*} (G : Group₁ α) (x y : α) :
+    G.mul x y = G.one → G.inv x = y := by
+  intro h
+  have := congr (refl (G.mul (G.inv x))) h
+  rw [G.mul_one, ← G.mul_assoc, G.inv_mul_cancel, G.one_mul] at this
+  exact this.symm
 
 lemma Group₁.mul_inv_cancel {α : Type*} (G : Group₁ α) (x : α) :
-    G.mul x (G.inv x) = G.one := sorry
+    G.mul x (G.inv x) = G.one := by
+  conv_lhs => congr; rfl; rw [← G.inv_eq_of_mul _ _ (G.inv_mul_cancel x)]
+  exact G.inv_mul_cancel (G.inv x)
 
 -- Hint: you might find the following lemma useful:
 /-
