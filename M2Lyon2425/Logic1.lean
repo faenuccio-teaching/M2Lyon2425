@@ -152,7 +152,7 @@ example : True → ¬False := by
   push_neg at h
   exact h.2
 
--- Use of the `have` tatic
+-- Use of the `have` tactic
 example : (P → Q) → ¬Q → ¬P := by
   intro h1 h2 hP
   have := h1 hP
