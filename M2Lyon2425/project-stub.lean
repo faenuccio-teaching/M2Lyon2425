@@ -13,6 +13,11 @@ import Mathlib.Algebra.Group.Int
 
 -- def ARS (α : Type*) := α → α → Prop
 
+section MWE
+
+end MWE
+
+@[simp]
 def ARS_add {α : Type*} (f g : α → α → Prop) : α → α → Prop :=
   fun x y ↦ (f x y ∨ g x y)
 
@@ -39,9 +44,9 @@ lemma ARS_add_zero {α : Type*} (f : α → α → Prop) :
     simp
 
 def ARS_nsmul {α : Type*} (n : ℕ) (f : α → α → Prop) : α → α → Prop := by -- nécessaire
-  cases n with
-  | zero => exact ARS_zero
-  | succ m => exact f
+  match n with
+  | 0 => exact ARS_zero
+  | _ => exact f
 
 lemma ARS_nsmul_succ_succ {α : Type*} (n : ℕ) (f : α → α → Prop) -- nécessaire
   : ARS_nsmul (n + 1) f = f := by
@@ -185,7 +190,8 @@ lemma ARS_mul_zero {α : Type*} (f : α → α → Prop) : ARS_mul f ARS_zero = 
     exact absu
 
 lemma ARS_mul_assoc {α : Type*} (f g h : α → α → Prop) :
-  ARS_mul f (ARS_mul g h) = ARS_mul (ARS_mul f g) h := by
+   ARS_mul (ARS_mul f g) h = ARS_mul f (ARS_mul g h) := by
+    symm
     ext x y
     constructor
     · intro hyp
@@ -264,13 +270,12 @@ lemma ARS_lt_iff_le_not_le {α : Type*} (f g : α → α → Prop) :
       rw [neq_fg, ARS_addIdem] at hyp
       trivial
 
-
 lemma ARS_le_refl {α : Type*} (f : α → α → Prop) :
   ARS_le f f := by
     rw [ARS_le]
     exact ARS_addIdem f
 
-lemma ARS_le_trans {α : Type*} (f g h : α → α → Prop) :
+lemma ARS_le_trans {α : Type*} {f g h : α → α → Prop} :
   ARS_le f g → ARS_le g h → ARS_le f h := by
     repeat rw [ARS_le]
     intro add_fg add_gh
@@ -300,9 +305,170 @@ lemma ARS_sup_le {α : Type*} (f g h : α → α → Prop) :
     intro add_fh add_gh
     rw [ARS_add_assoc, add_gh, add_fh]
 
-
 lemma ARS_bot_le {α : Type*} (f : α → α → Prop) : ARS_le ARS_zero f := by
   exact ARS_zero_add f
+
+def ARS_npow {α : Type*} (n : ℕ) (f : α → α → Prop) :
+  α → α → Prop := by
+    match n with
+    | 0 => exact ARS_one
+    | m + 1 => exact ARS_mul (ARS_npow m f) f
+
+lemma ARS_npow_zero {α : Type*} (f : α → α → Prop) :
+  ARS_npow 0 f = ARS_one := by trivial
+
+lemma ARS_npow_succ {α : Type*} (n : ℕ) (f : α → α → Prop) :
+  ARS_npow (n+1) f = ARS_mul (ARS_npow n f) f := by trivial
+
+
+/- On utilise ici le fait que le quantificateur existentiel peut être vu comme
+une disjonction infinie sur le type sur lequel il quantifie : en d'autres termes,
+`∃ (x : α), P x` est équivalent à `⋁ (x : α), P x`
+Puisque `+` est une disjontion binaire, une somme infinie est une disjonction infinie -/
+def ARS_kstar {α : Type*} (f : α → α → Prop) :
+  α → α → Prop := fun u v ↦ ∃ n, ARS_npow n f u v
+
+lemma ARS_one_le_kstar {α : Type*} (f : α → α → Prop) :
+  ARS_le ARS_one (ARS_kstar f) := by
+    ext x y
+    constructor
+    · intro hyp
+      cases hyp with
+      | inl l =>
+        use 0
+        rw [ARS_npow_zero]
+        exact l
+      | inr r => exact r
+    · intro hyp
+      right
+      exact hyp
+
+/- On a f^n f = f f^n, par récurrence -/
+lemma ARS_npow_mul_eq_mul_npow {α : Type*} (n : ℕ) (f : α → α → Prop) :
+  ARS_mul f (ARS_npow n f) = ARS_mul (ARS_npow n f) f := by
+    match n with
+    | 0 => rw [ARS_npow_zero, ARS_one_mul, ARS_mul_one]
+    | m + 1 =>
+      rw [ARS_npow_succ, ← ARS_mul_assoc]
+      nth_rw 1 [← ARS_npow_mul_eq_mul_npow]
+
+lemma ARS_mul_kstar_le_kstar {α : Type*} (f : α → α → Prop) :
+  ARS_le (ARS_mul f (ARS_kstar f)) (ARS_kstar f) := by
+    change ARS_add (ARS_mul f (ARS_kstar f)) (ARS_kstar f) = ARS_kstar f
+    nth_rw 2 [← ARS_one_mul (ARS_kstar f)]
+    rw [
+      ← ARS_right_distrib f ARS_one (ARS_kstar f),
+      ARS_add_comm,
+      ]
+    ext x y
+    constructor
+    · intro hyp
+      let w := hyp.choose
+      have ⟨hwl, hwr⟩ := hyp.choose_spec
+      let n := hwr.choose
+      have hn := hwr.choose_spec
+      cases hwl with
+      | inl l =>
+        rw [l]
+        exact hwr
+      | inr r =>
+        use n + 1
+        rw [ARS_npow_succ, ← ARS_npow_mul_eq_mul_npow]
+        use w
+    · intro hyp
+      let n := hyp.choose
+      have hn := hyp.choose_spec
+      use x
+      constructor
+      · left
+        rfl
+      · use n
+
+lemma ARS_kstar_mul_le_kstar {α : Type*} (f : α → α → Prop) :
+  ARS_le (ARS_mul (ARS_kstar f) f) (ARS_kstar f) := by
+    change ARS_add (ARS_mul (ARS_kstar f) f) (ARS_kstar f) = ARS_kstar f
+    nth_rw 2 [← ARS_mul_one (ARS_kstar f)]
+    rw [
+      ← ARS_left_distrib (ARS_kstar f) f ARS_one,
+      ARS_add_comm,
+      ]
+    ext x y
+    constructor
+    · intro hyp
+      let w := hyp.choose
+      have ⟨hwl, hwr⟩ := hyp.choose_spec
+      let n := hwl.choose
+      have hn := hwl.choose_spec
+      cases hwr with
+      | inl l =>
+        use n
+        rw [← l]
+        exact hn
+      | inr r =>
+        use n + 1
+        rw [ARS_npow_succ]
+        use w
+    · intro hyp
+      let n := hyp.choose
+      have hn := hyp.choose_spec
+      use y
+      constructor
+      · use n
+      · left
+        rfl
+
+lemma ARS_ban_le_bam {α : Type*} {f g : α → α → Prop} :
+  ARS_le (ARS_mul f g) f →
+  ∀ (n : ℕ), ARS_le (ARS_mul f (ARS_npow (n + 1) g)) (ARS_mul f (ARS_npow (n ) g)) := by
+    simp
+    intro hyp n
+    rw [
+      ARS_npow_succ,
+      ← ARS_npow_mul_eq_mul_npow n g,
+      ← ARS_mul_assoc,
+      ← ARS_right_distrib,
+      hyp
+    ]
+
+lemma ARS_ban_le_b {α : Type*} {f g : α → α → Prop} :
+  (∀ n, ARS_le (ARS_mul f (ARS_npow (n + 1) g)) (ARS_mul f (ARS_npow (n ) g))) →
+  ∀ n, ARS_le (ARS_mul f (ARS_npow n g)) f := by
+    intro hyp n
+    induction n with
+    | zero =>
+      rw [
+        ARS_npow,
+        ARS_mul_one,
+      ]
+      exact ARS_le_refl f
+    | succ m hn =>
+      exact ARS_le_trans (hyp m) hn
+
+lemma ARS_bak_le_b {α : Type*} {f g : α → α → Prop} :
+  (∀ (n : ℕ), ARS_le (ARS_mul f (ARS_npow n g)) f) →
+  ARS_le (ARS_mul f (ARS_kstar g)) f := by
+    simp
+    intro hyp
+    ext x y
+    constructor
+    · intro h2
+      cases h2 with
+      | inl l =>
+        let w := l.choose
+        have ⟨hwl, hwr⟩ := l.choose_spec
+        let n := hwr.choose
+        have hn := hwr.choose_spec
+        sorry
+      | inr r =>
+        exact r
+    · sorry
+
+
+lemma ARS_mul_kstar_le_self {α : Type*} {f g : α → α → Prop} :
+  ARS_le (ARS_mul f g) f → ARS_le (ARS_mul f (ARS_kstar g)) f := by
+    intro hyp
+    exact ARS_bak_le_b (ARS_ban_le_b (ARS_ban_le_bam hyp))
+
 
 -- #synth (AddMonoid (ℕ → ℕ → Prop))
 -- il n'y a pas de struture de monoïde idempotent sur les relations binaires d'un type
@@ -324,7 +490,7 @@ instance ARS {α : Type*} : KleeneAlgebra (α → α → Prop) where
   right_distrib := ARS_right_distrib
   zero_mul := ARS_zero_mul
   mul_zero := ARS_mul_zero
-  mul_assoc f g h := by symm; exact ARS_mul_assoc f g h
+  mul_assoc := ARS_mul_assoc
   one := ARS_one
   one_mul := ARS_one_mul
   mul_one := ARS_mul_one
@@ -334,19 +500,20 @@ instance ARS {α : Type*} : KleeneAlgebra (α → α → Prop) where
   le_trans := ARS_le_trans
   lt_iff_le_not_le := ARS_lt_iff_le_not_le
   le_antisymm := ARS_le_antisymm
-  sup := ARS_add -- il faut toujours que ⊔ et + soient égaux
+  sup := ARS_add -- il faut toujours que `⊔` et `+` soient égaux
   le_sup_left := ARS_le_sup_left
   le_sup_right := ARS_le_sup_right
   sup_le := ARS_sup_le
-  bot_le := sorry
-  kstar := sorry
-  one_le_kstar := sorry
-  mul_kstar_le_kstar := sorry
-  kstar_mul_le_kstar := sorry
+  bot_le := ARS_bot_le
+  npow := ARS_npow
+  kstar := ARS_kstar
+  one_le_kstar := ARS_one_le_kstar
+  mul_kstar_le_kstar := ARS_mul_kstar_le_kstar
+  kstar_mul_le_kstar := ARS_kstar_mul_le_kstar
   mul_kstar_le_self := sorry
   kstar_mul_le_self := sorry
 
-#check KleeneAlgebra.one_le_kstar
+
 
 #print KleeneAlgebra
 #print IdemSemiring
