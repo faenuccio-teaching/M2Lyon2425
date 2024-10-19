@@ -307,16 +307,45 @@ class Group₂ (α : Type*) where
   inv_mul_cancel : ∀ (x : α), mul (inv x) x = one
 
 lemma Group₂.mul_inv_cancel {α : Type*} [Group₂ α] (x : α) :
-     mul x (inv x) = one := sorry
+     mul x (inv x) = one := by
+  have := Group₂.one_mul (mul x (inv x))
+  rw [← Group₂.inv_mul_cancel (mul x (inv x))] at this
+  have h₂ : mul (mul x (inv x)) (mul x (inv x)) = mul x (inv x) := by
+    rw [Group₂.mul_assoc, ← Group₂.mul_assoc (inv x), Group₂.inv_mul_cancel, Group₂.one_mul]
+  rw [Group₂.mul_assoc, h₂, Group₂.inv_mul_cancel (mul x (inv x))] at this
+  exact this.symm
 
 instance {α : Type*} : Group₂ (Equiv₁ α α) where
   one := Equiv₁.refl α
   mul := Equiv₁.trans
   inv := Equiv₁.symm
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
-  inv_mul_cancel := sorry
+  mul_one := by
+    intro x
+    apply Equiv₁.ext
+    · change (fun x ↦ x) ∘ x.toFun = x.toFun
+      rw [Function.comp_def]
+    · change x.invFun ∘ (fun x ↦ x) = x.invFun
+      rw [Function.comp_def]
+  one_mul := by
+    intro x
+    apply Equiv₁.ext
+    · change x.toFun ∘ (fun x ↦ x) = x.toFun
+      rw [Function.comp_def]
+    · change (fun x ↦ x) ∘ x.invFun = x.invFun
+      rw [Function.comp_def]
+  mul_assoc := by
+    intros x y z
+    apply Equiv₁.ext
+    · change z.toFun ∘ (y.toFun ∘ x.toFun) = (z.toFun ∘ y.toFun) ∘ x.toFun
+      rw [Function.comp_def, Function.comp_def, Function.comp_def, Function.comp_def]
+    · change (x.invFun ∘ y.invFun) ∘ z.invFun = x.invFun ∘ (y.invFun ∘ z.invFun)
+      rw [Function.comp_def, Function.comp_def, Function.comp_def, Function.comp_def]
+  inv_mul_cancel := by
+    intro f
+    apply Equiv₁.better_ext
+    ext x
+    change f.toFun (f.invFun x) = x
+    rw [f.right_inv]
 
 section Tests
 
@@ -349,9 +378,21 @@ class Monoid₁ (α : Type*) where
 instance : Monoid₁ ℕ where
   one := 0
   mul a b := a + b
-  mul_one := sorry
-  one_mul := sorry
-  mul_assoc := sorry
+  mul_one := by
+    intro n
+    induction' n with d _
+    · rfl
+    · rfl
+  one_mul := by
+    intro n
+    induction' n with d _
+    · rfl
+    · change 0 + (d + 1) = d + 1
+      rw [← Nat.add_assoc, Nat.zero_add]
+  mul_assoc := by
+    intros x y z
+    change x + y + z = x + (y + z)
+    exact Nat.add_assoc x y z
 
 /- But every group is also a monoid, and Lean should know this. How do we tell it?
 
@@ -369,7 +410,37 @@ class Group₃ (α : Type*) extends Monoid₁ α where
 -- automatically.
 #check Group₃.toMonoid₁
 
-instance {α : Type*} : Group₃ (Equiv₁ α α) := sorry
+instance {α : Type*} : Group₃ (Equiv₁ α α) where
+  one := Equiv₁.refl α
+  mul := Equiv₁.trans
+  mul_one := by
+    intro x
+    apply Equiv₁.ext
+    · change (fun x ↦ x) ∘ x.toFun = x.toFun
+      rw [Function.comp_def]
+    · change x.invFun ∘ (fun x ↦ x) = x.invFun
+      rw [Function.comp_def]
+  one_mul := by
+    intro x
+    apply Equiv₁.ext
+    · change x.toFun ∘ (fun x ↦ x) = x.toFun
+      rw [Function.comp_def]
+    · change (fun x ↦ x) ∘ x.invFun = x.invFun
+      rw [Function.comp_def]
+  mul_assoc := by
+    intros x y z
+    apply Equiv₁.ext
+    · change z.toFun ∘ (y.toFun ∘ x.toFun) = (z.toFun ∘ y.toFun) ∘ x.toFun
+      rw [Function.comp_def, Function.comp_def, Function.comp_def, Function.comp_def]
+    · change (x.invFun ∘ y.invFun) ∘ z.invFun = x.invFun ∘ (y.invFun ∘ z.invFun)
+      rw [Function.comp_def, Function.comp_def, Function.comp_def, Function.comp_def]
+  inv := Equiv₁.symm
+  inv_mul_cancel := by
+    intro f
+    apply Equiv₁.better_ext
+    ext x
+    change f.toFun (f.invFun x) = x
+    rw [f.right_inv]
 
 section Tests
 
@@ -388,11 +459,19 @@ structure Involution₁ (α : Type*) extends Equiv₁ α α where
 
 example : Involution₁ ℤ where
   toFun := fun x ↦ -x
-  invFun := sorry
-  left_inv := sorry
-  right_inv := sorry
-  inv := sorry
-
+  invFun := fun x ↦ -x
+  left_inv := by
+    intro x
+    change -(-x) = x
+    rw [Int.neg_neg]
+  right_inv := by
+    intro y
+    change -(-y) = y
+    rw [Int.neg_neg]
+  inv := by
+    intro x
+    change -(-x) = x
+    rw [Int.neg_neg]
 
 /- What about using notation?
 
@@ -425,8 +504,13 @@ class Semigroup₁ (α : Type*) extends Dia₁ α where
   dia_assoc : ∀ (x y z : α), x ⋄ y ⋄ z = x ⋄ (y ⋄ z)
 
 instance {α : Type*} : Semigroup₁ (Equiv₁ α α) where
-  dia_assoc := sorry -- should really have made the associativity of `Equiv₁.trans`
-                     -- into a lemma earlier!
+  dia_assoc := by
+    intros x y z
+    apply Equiv₁.ext
+    · change z.toFun ∘ (y.toFun ∘ x.toFun) = (z.toFun ∘ y.toFun) ∘ x.toFun
+      rw [Function.comp_def, Function.comp_def, Function.comp_def, Function.comp_def]
+    · change (x.invFun ∘ y.invFun) ∘ z.invFun = x.invFun ∘ (y.invFun ∘ z.invFun)
+      rw [Function.comp_def, Function.comp_def, Function.comp_def, Function.comp_def]
 
 -- Let's do the same with the unit element.
 class One₁ (α : Type*) where
@@ -444,7 +528,9 @@ notation "𝟙" => One₁.one  -- type using \ + b1
 
 #check (𝟙 : Equiv₁ ℕ ℕ)
 
-example (a : ℕ) : (𝟙 : Equiv₁ ℕ ℕ).toFun a = a := sorry
+example (a : ℕ) : (𝟙 : Equiv₁ ℕ ℕ).toFun a = a := by
+  change a = a
+  rfl
 
 -- To define monoids, we just need to put semigroups and unit elements together,
 -- and to add a couple of axioms.
@@ -480,8 +566,20 @@ example {α : Type*} [Monoid₃ α] :
 
 
 instance {α : Type*} : DiaOneClass₁ (Equiv₁ α α) where
-  one_dia := sorry
-  dia_one := sorry
+  one_dia := by
+    intro x
+    apply Equiv₁.ext
+    · change x.toFun ∘ (fun x ↦ x) = x.toFun
+      rw [Function.comp_def]
+    · change (fun x ↦ x) ∘ x.invFun = x.invFun
+      rw [Function.comp_def]
+  dia_one := by
+    intro x
+    apply Equiv₁.ext
+    · change x.toFun ∘ (fun x ↦ x) = x.toFun
+      rw [Function.comp_def]
+    · change (fun x ↦ x) ∘ x.invFun = x.invFun
+      rw [Function.comp_def]
 
 instance {α : Type*} : Monoid₂ (Equiv₁ α α) where
   dia_assoc := Semigroup₁.dia_assoc
@@ -505,7 +603,12 @@ class Group₄ (G : Type*) extends Monoid₂ G, Inv₁ G where
   inv_dia : ∀ a : G, a⁻¹ ⋄ a = 𝟙
 
 instance {α : Type*} : Group₄ (Equiv₁ α α) where
-  inv_dia := sorry
+  inv_dia := by
+    intro f
+    apply Equiv₁.better_ext
+    ext x
+    change f.toFun (f.invFun x) = x
+    rw [f.right_inv]
 
 lemma left_inv_eq_right_inv₁ {M : Type} [Monoid₂ M] {a b c : M}
     (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) : b = c := by
@@ -536,3 +639,40 @@ lemma dia_comm {α : Type*} (M : TwoCompatibleLaws α) (x y : α) : x ⋄ y = y 
 
 lemma dia_assoc {α : Type*} (M : TwoCompatibleLaws α) (x y z : α) : x ⋄ y ⋄ z = x ⋄ (y ⋄ x) := sorry
 -/
+
+class Ast₁ (α : Type*) where
+  ast : α → α → α
+
+infixl:70 "∗" => Ast₁.ast
+
+class OneBis (α : Type*) where
+  onebis : α
+
+notation "𝟭" => OneBis.onebis
+
+#print DiaOneClass₁
+class AstOneBisClass₁ (α : Type*) extends Ast₁ α, OneBis α where
+  mul_one : ∀ (x : α), x ∗ 𝟭 = x
+  one_mul : ∀ (x : α), 𝟭 ∗ x = x
+
+class TwoCompatibleLaws (α : Type*) extends DiaOneClass₁ α, AstOneBisClass₁ α where
+  exchange : ∀ (x : α) y z t, (x ⋄ y) ∗ (z ⋄ t) = (x ∗ z) ⋄ (y ∗ t)
+
+lemma one_eq_oneBis {α : Type*} [TwoCompatibleLaws α] : 𝟙 = (𝟭 : α) := by
+  have := TwoCompatibleLaws.exchange (𝟙 : α) 𝟭 𝟭 𝟙
+  rw [dia_one, one_dia, AstOneBisClass₁.one_mul, AstOneBisClass₁.one_mul, AstOneBisClass₁.mul_one,
+    one_dia] at this
+  exact this.symm
+
+lemma dia_eq_ast {α : Type*} [TwoCompatibleLaws α] (x y : α) : x ⋄ y = x ∗ y := by
+  conv_lhs => rw [← AstOneBisClass₁.mul_one x, ← AstOneBisClass₁.one_mul y]
+  rw [← TwoCompatibleLaws.exchange, ← one_eq_oneBis, DiaOneClass₁.one_dia, DiaOneClass₁.dia_one]
+
+lemma dia_comm {α : Type*} [TwoCompatibleLaws α] (x y : α) : x ⋄ y = y ⋄ x := by
+  conv_lhs => rw [← AstOneBisClass₁.one_mul x, ← AstOneBisClass₁.mul_one y]
+  rw [← TwoCompatibleLaws.exchange, ← one_eq_oneBis, DiaOneClass₁.one_dia, DiaOneClass₁.dia_one, dia_eq_ast]
+
+lemma dia_assoc {α : Type*} [TwoCompatibleLaws α] (x y z : α) : x ⋄ y ⋄ z = x ⋄ (y ⋄ z) := by
+  rw [dia_eq_ast x y, ← AstOneBisClass₁.one_mul z]
+  conv_lhs => rw [← TwoCompatibleLaws.exchange]
+  rw [AstOneBisClass₁.one_mul, ← one_eq_oneBis, DiaOneClass₁.dia_one, ← dia_eq_ast]
