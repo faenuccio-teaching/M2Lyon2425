@@ -162,21 +162,20 @@ theorem racine_prim_unite (p : ℕ+) : IsPrimitiveRoot (Complex.exp (2*↑Real.p
       exfalso
       contradiction
 
-
+--Lemme : w est algébrique sur ℚ
 theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Complex.exp (2*↑Real.pi*Complex.I/p)) := by
   intro h1
   cases h1 with
   | intro left right =>
     constructor
-    · --let Φₚ := Polynomial.cyclotomic p ℚ
-      --let ζ := Complex.exp ((2*Complex.I*↑Real.pi)/p)
-      have h2 := racine_prim_unite
+    · have h2 := racine_prim_unite
       specialize h2 p
       constructor
       · exact Polynomial.cyclotomic_ne_zero p ℚ
       · have h3 := Polynomial.cyclotomic_eq_minpoly_rat h2 (PNat.pos p)
         rw[h3]
-        exact minpoly.aeval ℚ (Complex.exp (2 * ↑Real.pi * Complex.I / ↑↑p))
+        have h4 := minpoly.aeval ℚ (Complex.exp (2 * ↑Real.pi * Complex.I / ↑↑p))
+        exact h4
 
 
 
