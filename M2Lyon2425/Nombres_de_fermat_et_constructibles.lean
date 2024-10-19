@@ -180,6 +180,27 @@ theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Comp
 
 
 
+/- PLAN DE LA PREUVE
+I) premier de fermat implique constructible
+    1) w est une racine de l'unité
+    2) ℚ(w)/ℚ est l'extension cyclotomique p ℚ et est galoisienne
+    3) deg(extension cyclotomique p ℚ) = p-1 =2^m
+    4) Gal (ℚ(w)/ℚ) ≅ (ℤ/pℤ)ˣ≅ ℤ/(p-1)ℤ
+    5) De 4, on a Gal(ℚ(w)/Q) isomorphe à un groupe cyclique donc est cyclique.
+      En particulier, ∃ ζ un générateur d'ordre maximal (ie p-1=2^m) et Gal(ℚ(w)/ℚ)
+      est résoluble.
+    6) La suite G_i = ⟨ ζ^(2^i) ⟩ est une suite résoluble vérifiant [G_i,G_(i+1)]=2,
+      G_0= Gal(ℚ(w)/ℚ) et G_m=⟨1⟩
+    7) Par correspondance de Galois, K_i:= ℚ(w)^(G_i) est une tour de corps vérifiant
+      K_0=ℚ, K_m=ℚ(w) et [K_(i+1):K_i]=2.
+
+II) Constructible implique premier de fermat
+1) w constructible implique tour quadratique
+2) multiplicativite des degres implique deg (ℚ(w)/ℚ)=2^m pour un certains m
+3) Or, deg(ℚ(w)/ℚ)=deg μ(w,ℚ)=deg Φ(p^α)=(p-1)p^(α-1)
+4) donc 2^m=(p-1)p^(α-1)
+5) D'où p=2 ou α=1 et p=2^m+1 qui implique permier de fermat
+-/
 
 
 
@@ -196,7 +217,7 @@ constructor
     rw[right1,pow_one]
     have QwGalois := Qw_est_galois p left1
     have Phi_p_irre := poly_cyclo_p_irre p left1
-    have Gp_galois_cyclo := galCyclotomicEquivUnitsZMod (Phi_p_irre)
+    have Gp_galois_cyclo := galCyclotomicEquivUnitsZMod Phi_p_irre
 
 
 theorem Gauss_Wantzel (n : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑n)) ↔ ∀ (p : Nat.Primes), p ∣ n → (premierfermat p ∧ padicValNat p n = 1):= by
