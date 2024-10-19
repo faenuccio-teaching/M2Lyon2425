@@ -88,7 +88,7 @@ example : InjOn (fun n : ℤ ↦ n ^ 2) PositiveIntegers := by
     have := @Int.mul_lt_mul m m n n hmn (le_of_lt hmn) hm (le_of_lt hn)
     apply ne_of_lt this H
   · by_cases hnlt : n<m
-    · exfalso
+    ·exfalso
       apply hmn
       sorry
     · apply eq_of_le_of_not_lt
@@ -132,7 +132,7 @@ example (N : OddNaturals) :  N ∈ Nat.succ ⁻¹' (EvenNaturals) := by sorry
 -- **4** Not every `n : ℕ` is the successor or something...
 example : range Nat.succ ≠ univ := by
   intro h1
-  sorry
+
 
 
 
@@ -167,7 +167,7 @@ constructor
 · intro h1
   simp at h1
   intro x
-  have hx : x∈ univ := sorry
+  have hx : x ∈ univ := sorry
   rw [← h1] at hx
   exact hx
 end Operations
@@ -271,7 +271,14 @@ def swap : Politics → Politics
 /- **5** Prove that if someone is not on the `Right`, they are on the `Left` -/
 example (a : Politics) : a ≠ Right → a = Left := by
   intro h1
-  sorry
+  by_cases h3 : a=Left
+  · exact h3
+  · exfalso
+    apply h1
+    sorry
+
+
+
 
 end InductiveTypes
 
@@ -307,7 +314,9 @@ inductive IsEven : ℕ → Prop
 
 
 example : IsEven 4 := by
-  sorry
+
+
+
 
 example : ¬ IsEven 5 := by
   intro h
@@ -337,7 +346,7 @@ constructor
     change (IsEven 1) → False
     by_contra h2
     trivial
-  | succ n ih =>sorry
+  | succ n ih =>
     apply ih at h1
     simp at ih
     change (IsEven (n+1+1) ) → False
@@ -356,8 +365,8 @@ constructor
 example : ¬ IsEven 111 := by
 intro h
 cases' h with _ h1
-repeat{cases' h1 with _ h2}
-
+repeat cases' h1 with _ h1
+--repeat cases' h1 with IsEven h1
 
 
 
@@ -369,20 +378,25 @@ To translate `IsEven d` into `d ∈ Even` you can use `mem_setOf_eq`. -/
 lemma EvenEq (n : ℕ) : n ∈ EvenNaturals ↔ n ∈ Evens := by
 constructor
 · intro h1
+  have h2:= h1.out
+  simp
   sorry
 · intro h1
   simp at h1
+  rw[h1] mem_setOf_eq
   sorry
 
 
 -- **3** Prove that every even number can be divided by `2`.
-lemma exists_half (n : Evens) : ∃ d : ℕ, n = 2 * d := by sorry
+lemma exists_half (n : Evens) : ∃ d : ℕ, n = 2 * d := by
+  sorry
 
 noncomputable
 def half : Evens → (univ : Set ℕ) := fun n ↦ ⟨(exists_half n).choose, trivial⟩
 
 -- **4** Doubling and halving is the identity.
-lemma double_half (n : Evens) : n = 2 * (half n).1 := by sorry
+lemma double_half (n : Evens) : n = 2 * (half n).1 := by
+  sorry
 
 
 
