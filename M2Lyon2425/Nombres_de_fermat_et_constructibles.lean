@@ -99,7 +99,7 @@ constructor
       use padicValNat 2 n
       exact hyp1.symm
 
-theorem zeroinfn : 1<↑n → 0<n := by
+theorem zeroinfn (n: {n : ℕ // 1 < n}) : ↑0 <n := by
   intro h
   have h3 : 0<1 := by
     exact Nat.zero_lt_one
@@ -109,7 +109,8 @@ theorem zeroinfn : 1<↑n → 0<n := by
 def nombre_constructible (a : Complex) :=
   ∃ n : {n : ℕ // 1 < n}, ∃ K : Fin n → Type, ∃ _ : (i : Fin n) → Semiring (K i),
   (i : Fin n) → IsField (K i) ∧
-  ∃ f : (i : Fin n) → ((K i) →+* (K (i.add ⟨1, n.2⟩))), (i : Fin n) → Function.Injective (f i)
+  ∃ f : (i : Fin n) → ((K i) →+* (K (i.add ⟨1, n.2⟩))), (i : Fin n) → Function.Injective (f i) ∧
+  K ⟨0, ⟩
 
 def Wantzel1 (a : Complex) : nombre_constructible a → ∃n, FiniteDimensional (Algebra.adjoin ℚ {a}) = 2^n := by
 sorry
@@ -117,7 +118,7 @@ sorry
 --Lemme : si p est premier de Fermat, Gal(Q(w)/Q) ≅ (Z/pZ)*
 
 --Lemme : si p est premier de Fermat, alors Φₚ(X) est irréductible sur ℚ.
-theorem poly_cyclo_p_irre (p : ℕ) : premierfermat p → Irreducible (Polynomial.cyclotomic p ℚ) :=by
+theorem poly_cyclo_p_irre (p : ℕ) : premierfermat p → Irreducible (Polynomial.cyclotomic (↑p) ℚ) :=by
 intro hp
 have hpp : p>0 := by
   cases hp with
@@ -168,8 +169,7 @@ theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Comp
   cases h1 with
   | intro left right =>
     constructor
-    · have h2 := racine_prim_unite
-      specialize h2 p
+    · have h2 := Complex.isPrimitiveRoot_exp p (Nat.Prime.ne_zero left)
       constructor
       · exact Polynomial.cyclotomic_ne_zero p ℚ
       · have h3 := Polynomial.cyclotomic_eq_minpoly_rat h2 (PNat.pos p)
@@ -217,7 +217,9 @@ constructor
     rw[right1,pow_one]
     have QwGalois := Qw_est_galois p left1
     have Phi_p_irre := poly_cyclo_p_irre p left1
-    have Gp_galois_cyclo := galCyclotomicEquivUnitsZMod Phi_p_irre
+    --rw[galCyclotomicEquivUnitsZMod] at Phi_p_irre
+    let Gp_galois := (Polynomial.cyclotomic (↑p) ℚ).Gal
+    have h3:= galCyclotomicEquivUnitsZMod Phi_p_irre
 
 
 theorem Gauss_Wantzel (n : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑n)) ↔ ∀ (p : Nat.Primes), p ∣ n → (premierfermat p ∧ padicValNat p n = 1):= by
