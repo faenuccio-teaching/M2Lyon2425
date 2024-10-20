@@ -1,4 +1,4 @@
-
+import Mathlib.Tactic.Common
 -- Introduce some propositions
 variable (P Q R S : Prop) --we are introducing some variables and giving them their type: the Prop type
 
