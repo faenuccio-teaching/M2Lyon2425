@@ -1,46 +1,24 @@
 import Mathlib
 
-def premierFermat (p : Nat.Primes) := 
-  ∃ n : Nat, (p : Int) = (2^n) +1
+def nombre_constructible (a : Complex) :=
+  ∃ n : ℕ,
+    (1 < n) ∧
+    ∃ K : ℕ → Type, ∀ i, i < n → Field (K i) →
+      ∃ f : ℕ → ((K i) →+* (K (i + 1))), (i : Fin n) → Function.Injective (f i) ∧
+      K ↑0
 
-lemma neg_un_pow_paire_eq_un {n : Nat} : n ≠ 0 →  1 = (-1)^2^n := by
-  cases n with
-  | zero =>
-    intro absu 
-    exfalso
-    omega
-  | succ m => 
-    have hm : 2 ^ (m+1) = 2 * (2^m) := by omega
-    rw [hm]
-    simp
-
-lemma fermat_hardImp {p : Nat.Primes} (hFPp : premierFermat p)
-  : ∃ m : Nat, (p : Int) = 2^2^m + 1 := by
-
-  change ∃ n, (p : Int) = 2^n +1 at hFPp
-  by_cases decompn : ∃ m, (p : Int) = 2 ^ 2 ^ m + 1
-  · exact decompn
-  · simp at decompn
-    
+def est_une_tour
+  {n : ℕ}
+  (hn : 1 < n)
+  {K : ℕ → Type}
+  (i : ℕ)
+  [Field (K i)] :
+  ∃ f : (Field (K i)) →+* (Field (K (i+1))), 1=2 := by
     sorry
 
-example p : premierFermat p ↔ (p : Int) = 2 ∨ ∃ m, (p : Int) = 2^2^m + 1 := by
-  constructor
-  · intro hFP
-    change ∃ k, (p : Int) = (2^k)+1 at hFP
---    exact fermat_hardImp hFP
-    by_cases hp2 : (p : Int) = 2
-    · left 
-      exact hp2
-    · right
-      exact fermat_hardImp hFP
-  · intro hE 
-    cases hE with
-    | inl h => 
-      use 0
-      omega
-    | inr h => 
-      let  k := h.choose
-      use 2 ^ k
-      exact h.choose_spec
+#print Field
 
+/-
+il existe n tel que n>1 et il existe K : ℕ → Type tel que
+K i est un corps et il existe f : ℕ → (K i) →+* K (i+1)
+-/
