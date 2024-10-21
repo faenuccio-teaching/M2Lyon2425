@@ -6,10 +6,10 @@ import Mathlib.Data.Nat.MaxPowDiv
 import Mathlib.Data.Nat.Multiplicity
 
 
---TENTATIVE DE PREUVE DE GAUSS-WANTZEl--
+--TENTATIVE DE PREUVE DU THEOREME DE  GAUSS-WANTZEl--
 
 -- Le p^α gone régulier (p premier) est constructible à la règle et au compas (définition de Wantzel) si et
--- seulement si p=2 ou alpha=1 et p est de Fermat.
+-- seulement si [p=2] ou [α=1 et p est de Fermat].
 
 --On désignera par w le nombre Complex.exp (2*↑Real.pi*Complex.I/p)
 
@@ -17,7 +17,7 @@ import Mathlib.Data.Nat.Multiplicity
 def premierfermat (p : ℕ) :=
   (Nat.Prime p) ∧ (∃ n : ℕ, p=2^(2^n)+1)
 
---Lemme : si n est strictement positif, alors n=2^v2(n) * z implique z impair
+--Lemme : si n est strictement positif, alors n=2^v₂(n) * z implique z impair
 theorem oddz (n z : Nat) : (n>0 ∧ n = 2^(padicValNat 2 n)*z) → (Odd z):= by
 intro h
 have h1:=h.right
@@ -99,10 +99,13 @@ constructor
       use padicValNat 2 n
       exact hyp1.symm
 
-theorem zeroinfn (k : ℕ+) (n : Fin k) (hn : 1 < ↑n) : ↑0 <n := by
-  have h3 : 0<1 := by
-    exact  Fin.zero_lt_one
-  exact Nat.lt_trans
+theorem nn1 (n : ℕ): n-1<n:=by
+sorry
+
+
+
+
+
 
 --Définition : un nombre a est constructible s'il existe une tour quadratique de ℚ vers ℚ(a).
 def nombre_constructible (a : Complex) :=
@@ -110,7 +113,7 @@ def nombre_constructible (a : Complex) :=
   (i : Fin n) → IsField (K i) ∧
   ∃ f : (i : Fin n) → ((K i) →+* (K (i.add ⟨1, n.2⟩))), (i : Fin n) → Function.Injective (f i)
    ∧ K ⟨0, Fin.size_pos'⟩ = ℚ
-   ∧ a ∈ (K ⟨n-1, ⟩)
+   ∧ K ⟨ Fin.last n-1, nn1⟩
 
 
 def Wantzel1 (a : Complex) : nombre_constructible a → ∃n, finite_dimensional ℚ (Algebra.adjoin ℚ {a}) = 2^n := by
@@ -135,13 +138,14 @@ theorem Qw_est_galois (p : ℕ+) : premierfermat p → IsGalois ℚ (CyclotomicF
   exact h1
 
 --Lemme : ℤ/(2^m)ℤ est un groupe résoluble
-theorem Z2mZ_resoluble (m : Nat) : IsSolvable (ZMod (2^(2^m)))ˣ := by
-  have h : ∀ (a b : (ZMod (2^(2^m)))ˣ), a * b = b * a := by
+theorem Z2mZ_resoluble (m : Nat) : IsSolvable (ZMod (2^m))ˣ := by
+  have h : ∀ (a b : (ZMod (2^m))ˣ), a * b = b * a := by
     intro a b
     rw[Units.instCommGroupUnits.proof_1]
   exact isSolvable_of_comm h
 
 --Lemme : w est une racine primitive p-ième de l'unité.
+/-
 theorem racine_prim_unite (p : ℕ+) : IsPrimitiveRoot (Complex.exp (2*↑Real.pi*Complex.I/p)) p :=by
   rw[IsPrimitiveRoot.iff_def]
   constructor
@@ -163,7 +167,7 @@ theorem racine_prim_unite (p : ℕ+) : IsPrimitiveRoot (Complex.exp (2*↑Real.p
       have hpi := Real.pi_ne_zero
       exfalso
       contradiction
-
+-/
 --Lemme : w est algébrique sur ℚ
 theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Complex.exp (2*↑Real.pi*Complex.I/p)) := by
   intro h1
@@ -210,7 +214,8 @@ II) Constructible implique premier de fermat
 --(Polynomial.Gal (Polynomial.cyclotomic p ℚ) ≅ (ZMod p)ˣ)
 theorem Gauss_Wantzel_1 (p : ℕ+) (α : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑(p^α))) ↔ premierfermat p ∧ α =1 :=by
 constructor
-· sorry
+· intro h
+
 · intro h
   cases h with
   | intro left1 right1 =>
