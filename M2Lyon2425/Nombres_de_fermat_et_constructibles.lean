@@ -99,20 +99,21 @@ constructor
       use padicValNat 2 n
       exact hyp1.symm
 
-theorem zeroinfn (n: {n : ℕ // 1 < n}) : ↑0 <n := by
-  intro h
+theorem zeroinfn (k : ℕ+) (n : Fin k) (hn : 1 < ↑n) : ↑0 <n := by
   have h3 : 0<1 := by
-    exact Nat.zero_lt_one
-  exact Nat.lt_trans h3 h
+    exact  Fin.zero_lt_one
+  exact Nat.lt_trans
 
 --Définition : un nombre a est constructible s'il existe une tour quadratique de ℚ vers ℚ(a).
 def nombre_constructible (a : Complex) :=
-  ∃ n : {n : ℕ // 1 < n}, ∃ K : Fin n → Type, ∃ _ : (i : Fin n) → Semiring (K i),
+  ∃ n : {n : ℕ+ // 1 < n}, ∃ K : Fin n → Type, ∃ _ : (i : Fin n) → Semiring (K i),
   (i : Fin n) → IsField (K i) ∧
-  ∃ f : (i : Fin n) → ((K i) →+* (K (i.add ⟨1, n.2⟩))), (i : Fin n) → Function.Injective (f i) ∧
-  K ⟨0, ⟩
+  ∃ f : (i : Fin n) → ((K i) →+* (K (i.add ⟨1, n.2⟩))), (i : Fin n) → Function.Injective (f i)
+   ∧ K ⟨0, Fin.size_pos'⟩ = ℚ
+   ∧ a ∈ (K ⟨n-1, ⟩)
 
-def Wantzel1 (a : Complex) : nombre_constructible a → ∃n, FiniteDimensional (Algebra.adjoin ℚ {a}) = 2^n := by
+
+def Wantzel1 (a : Complex) : nombre_constructible a → ∃n, finite_dimensional ℚ (Algebra.adjoin ℚ {a}) = 2^n := by
 sorry
 
 --Lemme : si p est premier de Fermat, Gal(Q(w)/Q) ≅ (Z/pZ)*
@@ -177,12 +178,11 @@ theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Comp
         have h4 := minpoly.aeval ℚ (Complex.exp (2 * ↑Real.pi * Complex.I / ↑↑p))
         exact h4
 
-
-
+--Lemme Gal(ℚ(w)/ℚ) iso ℤ/2^mℤ
 
 /- PLAN DE LA PREUVE
 I) premier de fermat implique constructible
-    1) w est une racine de l'unité
+OK  1) w est une racine de l'unité
     2) ℚ(w)/ℚ est l'extension cyclotomique p ℚ et est galoisienne
     3) deg(extension cyclotomique p ℚ) = p-1 =2^m
     4) Gal (ℚ(w)/ℚ) ≅ (ℤ/pℤ)ˣ≅ ℤ/(p-1)ℤ
@@ -217,7 +217,7 @@ constructor
     rw[right1,pow_one]
     have QwGalois := Qw_est_galois p left1
     have Phi_p_irre := poly_cyclo_p_irre p left1
-    --rw[galCyclotomicEquivUnitsZMod] at Phi_p_irre
+    --rw [galCyclotomicEquivUnitsZMod] at Phi_p_irre
     let Gp_galois := (Polynomial.cyclotomic (↑p) ℚ).Gal
     have h3:= galCyclotomicEquivUnitsZMod Phi_p_irre
 
