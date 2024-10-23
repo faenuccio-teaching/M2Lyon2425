@@ -9,6 +9,7 @@ import Mathlib.Tactic.Basic
 import Mathlib.RingTheory.IntegralClosure.IntegrallyClosed
 import Mathlib.Data.Real.Basic
 import Mathlib.Tactic.SlimCheck
+import Mathlib.RingTheory.DedekindDomain.Basic
 
 /-
   # Modified operations
@@ -86,9 +87,8 @@ example : GCDdomain ℤ := by
 class ICR (R : Type*) extends CommRing R, IsDomain R, IsIntegralClosure R R (FractionRing R)
 
 example : ICR ℤ := by
-  have : IsIntegralClosure ℤ ℤ (FractionRing ℤ) := by
-    sorry
-  refine ICR.mk
+  -- This works with the right imports...
+  exact ICR.mk
 
 -- However, defining classes like above is not a good idea since they carry data and it is
 -- better to use mixin to avoid diamonds. For example, assume we want to work with a ring that is
@@ -396,7 +396,9 @@ def add_aux (x y : ℕ × ℕ) : ZZ := ⟦(x.1 + y.1, x.2 + y.2)⟧
 def add : ZZ → ZZ → ZZ := by
   apply Quotient.lift₂ add_aux  -- Note the use of `Quotient.lift₂`
   intro x₁ x₂ y₁ y₂ h₁ h₂
-  sorry
+  rw [add_aux, add_aux, Quotient.eq]
+  rw [rZ_equiv_def] at h₁ h₂ ⊢
+  linarith
 
 instance : Add ZZ := ⟨add⟩
 
@@ -428,13 +430,23 @@ instance addCommGroup : AddCommGroup ZZ where
     refine Quotient.inductionOn x ?_
     rintro ⟨a, b⟩
     simp
-  add_zero := sorry
+  add_zero := by
+    intro x
+    refine Quotient.inductionOn x ?_
+    rintro ⟨a, b⟩
+    simp
   add_comm := by
     intro x y
     refine Quotient.inductionOn₂ x y ?_
-    sorry
+    rintro ⟨a, b⟩ ⟨c, d⟩
+    simp
+    ring
   add_assoc := by
-    sorry
+    intro x y z
+    refine Quotient.inductionOn₃ x y z ?_
+    rintro ⟨a, b⟩ ⟨c, d⟩ ⟨e, f⟩
+    simp
+    ring
   neg_add_cancel := by
     intro x
     refine Quotient.inductionOn x ?_
@@ -476,12 +488,38 @@ instance commRing : CommRing ZZ where
     rintro ⟨a, b⟩ ⟨c, d⟩ ⟨e, f⟩
     simp
     ring
-  right_distrib := sorry
-  zero_mul := sorry
-  mul_zero := sorry
-  one_mul := sorry
-  mul_one := sorry
-  mul_comm := sorry
+  right_distrib := by
+    intro x y z
+    refine Quotient.inductionOn₃ x y z ?_
+    rintro ⟨a, b⟩ ⟨c, d⟩ ⟨e, f⟩
+    simp
+    ring
+  zero_mul := by
+    intro x
+    refine Quotient.inductionOn x ?_
+    rintro ⟨a, b⟩
+    simp
+  mul_zero := by
+    intro x
+    refine Quotient.inductionOn x ?_
+    rintro ⟨a, b⟩
+    simp
+  one_mul := by
+    intro x
+    refine Quotient.inductionOn x ?_
+    rintro ⟨a, b⟩
+    simp
+  mul_one := by
+    intro x
+    refine Quotient.inductionOn x ?_
+    rintro ⟨a, b⟩
+    simp
+  mul_comm := by
+    intro x y
+    refine Quotient.inductionOn₂ x y ?_
+    rintro ⟨a, b⟩ ⟨c, d⟩
+    simp
+    ring
   zsmul := zsmulRec -- I don't know why we need to define this again...
   neg_add_cancel := neg_add_cancel -- I don't know why we need to define this again...
 
@@ -492,7 +530,9 @@ def N2Z (x : ℕ × ℕ) : ℤ := x.1 - x.2
 #print N2Z
 
 theorem N2Z_surjective : Function.Surjective N2Z := by
-  sorry
+  intro z
+  refine ⟨⟨z.toNat, (-z).toNat⟩, ?_⟩
+  rw [N2Z, Int.toNat_sub_toNat_neg]
 
 -- A function `f` define a setoid with the relation : `x ≈ y ↔ f x = f y`.
 -- It is called `Setoid.ker`. We prove that the setoid `rZSetoid` is equal to `Setoid.ker N2Z`.
@@ -539,10 +579,23 @@ def ringEquiv : ZZ ≃+* ℤ where
   invFun := equiv.symm
   left_inv := equiv.leftInverse_symm
   right_inv := equiv.rightInverse_symm
-  map_add' := sorry
-  map_mul' := sorry
+  map_add' := by
+    intro x y
+    refine Quotient.inductionOn₂ x y ?_
+    rintro ⟨a, b⟩ ⟨c, d⟩
+    simp
+    ring
+  map_mul' := by
+    intro x y
+    refine Quotient.inductionOn₂ x y ?_
+    rintro ⟨a, b⟩ ⟨c, d⟩
+    simp
+    nlinarith
 
 theorem ringEquiv_apply (x : ℕ × ℕ) : ringEquiv ⟦x⟧ = x.1 - x.2 := rfl
 
 -- Can you fill in the following statement and proof?
-theorem ringEquiv_apply_symm (z : ℤ) : ringEquiv.symm z = sorry := sorry
+theorem ringEquiv_apply_symm (z : ℤ) : ringEquiv.symm z = ⟦(z.toNat, (-z).toNat)⟧ := by
+  have : Function.Injective ringEquiv := RingEquiv.injective ringEquiv
+  rw [← Function.Injective.eq_iff this, RingEquiv.apply_symm_apply, ringEquiv_apply,
+    Int.toNat_sub_toNat_neg]
