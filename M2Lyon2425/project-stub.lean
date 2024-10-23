@@ -1,8 +1,43 @@
 import Mathlib
 
-/--Un alias pour le type des relations binaires sur un type  α-/
+/-
+On s'intéresse ici, pour `α` un type quelconque, aux relations binaires sur `α`,
+c'est à dire aux fonctions `α → α → Prop`. On fixe `f : α → α → Prop`. On voit cette
+relation binaire comme un flèche, si `x y : α`, on peut aller de `x` à `y` si et
+seulement si `f x y`. On peut alos s'intéresser à de la réécriture : est-il possible
+d'aller de `x` à `y` *via* un chemin fini ?
+
+Dans un premier temps on remarque que le type `α → α → Prop`, abbrégé en `ARS α`,
+est naturellement muni d'une structure d'algèbre de Kleene (un anneau non-commutatif,
+dont l'addition est idempotente, et muni d'une opération spéciale `∗`
+(en notation postfixe) vérifiant différentes propriétés)
+
+Ceci étant fait, il est beaucoup plus simple de vérifier certaines propriétés
+d'opérations sur `ARS α` (de même qu'il est plus facile de les énoncer).
+-/
+
+
+/-- Un alias pour le type des relations binaires sur un type  `α`. -/
 @[reducible]
 def ARS (α : Type*) := α → α → Prop
+
+/- On montre qu'il y a une structure d'algèbre de Kleene sur le type `ARS α` -/
+
+section KleeneAlgebra
+
+section IdemSemiring
+
+section Semiring
+
+section NonUnitalSemiring
+
+section NonUnitalNonAssocSemiring
+
+section AddCommMonoid
+
+section AddMonoid
+
+section Add
 
 @[simp]
 def ARS_add {α : Type*} (f g : ARS α) : ARS α :=
@@ -11,11 +46,17 @@ def ARS_add {α : Type*} (f g : ARS α) : ARS α :=
 instance (α : Type*) : Add (ARS α) where
   add := ARS_add
 
+end Add
+
+section Zero
+
 def ARS_zero {α : Type*} : ARS α :=
   fun _ _ ↦ False
 
 instance (α : Type*) : Zero (ARS α) where
   zero := ARS_zero
+
+end Zero
 
 lemma ARS_add_assoc {α : Type*} (f g h : ARS α ) :
   (f + g) + h = f + (g + h) := by
@@ -86,6 +127,8 @@ instance (α : Type*) : AddMonoid (ARS α) where
   nsmul := ARS_nsmul
   nsmul_succ := ARS_nsmul_succ
 
+end AddMonoid
+
 lemma ARS_add_comm {α : Type*} (f g : ARS α) :
   f + g = g + f := by
     ext x y
@@ -95,11 +138,17 @@ lemma ARS_add_comm {α : Type*} (f g : ARS α) :
 instance (α : Type*) : AddCommMonoid (ARS α) where
   add_comm := ARS_add_comm
 
+end AddCommMonoid
+
+section Mul
+
 def ARS_mul {α : Type*} (f g : ARS α) : ARS α :=
   fun u v ↦ (∃ w, f u w ∧ g w v)
 
 instance (α : Type*) : Mul (ARS α) where
   mul := ARS_mul
+
+end Mul
 
 lemma ARS_left_distrib {α : Type*} (f g h : ARS α) :
   f * (g + h) = (f * g) + (f * h) := by
@@ -203,11 +252,19 @@ instance (α : Type*) : NonUnitalNonAssocSemiring (ARS α) where
   zero_mul := ARS_zero_mul
   mul_zero := ARS_mul_zero
 
+end NonUnitalNonAssocSemiring
+
+section One
+
 def ARS_one {α : Type*} : ARS α :=
   (fun x y ↦ x = y)
 
 instance (α : Type*) : One (ARS α) where
   one := ARS_one
+
+end One
+
+section NatCast
 
 @[simp]
 def ARS_natCast {α : Type*} (n : ℕ) : ARS α := by
@@ -217,6 +274,8 @@ def ARS_natCast {α : Type*} (n : ℕ) : ARS α := by
 
 instance (α : Type*) : NatCast (ARS α) where
   natCast := ARS_natCast
+
+end NatCast
 
 lemma ARS_mul_assoc {α : Type*} (f g h : ARS α) :
    (f * g) * h = f * (g * h) := by
@@ -245,6 +304,8 @@ lemma ARS_mul_assoc {α : Type*} (f g h : ARS α) :
 
 instance (α : Type*) : NonUnitalSemiring (ARS α) where
   mul_assoc := ARS_mul_assoc
+
+end NonUnitalSemiring
 
 lemma ARS_mul_one {α : Type*} (f : ARS α) :
   f * 1 = f := by
@@ -292,17 +353,15 @@ instance (α : Type*) : Semiring (ARS α) where
   mul_one := ARS_mul_one
   natCast_succ := ARS_natCast_succ
 
-lemma ARS_npow_zero {α : Type*} (f : ARS α) :
-  f^0 = 1 := by trivial
+end Semiring
 
-lemma ARS_npow_succ {α : Type*} (n : ℕ) (f : ARS α) :
-  f^(n+1) = (f^n) * f := by trivial
+section SemilatticeSup
 
+section PartialOrder
 
-def ARS_sup {α : Type*} (f g : ARS α) : ARS α := f + g
+section Preorder
 
-instance (α : Type*) : Sup (ARS α) where
-  sup := ARS_sup
+section LE
 
 @[simp]
 def ARS_le {α : Type*} (f g : ARS α) : Prop :=
@@ -311,6 +370,10 @@ def ARS_le {α : Type*} (f g : ARS α) : Prop :=
 instance (α : Type*) : LE (ARS α) where
   le := ARS_le
 
+end LE
+
+section LT
+
 @[simp]
 def ARS_lt {α : Type*} (f g : ARS α) : Prop :=
   f ≤ g ∧ ¬ (f = g)
@@ -318,10 +381,19 @@ def ARS_lt {α : Type*} (f g : ARS α) : Prop :=
 instance (α : Type*) : LT (ARS α) where
   lt := ARS_lt
 
+end LT
+
 lemma ARS_le_refl {α : Type*} (f : ARS α) :
   f ≤ f := by
     exact ARS_addIdem f
 
+lemma ARS_le_trans {α : Type*} (f g h : ARS α) :
+  f ≤ g → g ≤ h → f ≤ h := by
+    intro add_fg add_gh
+    change f + h = h
+    rw [← add_gh]
+    nth_rw 2 [← add_fg]
+    rw [add_assoc]
 
 lemma ARS_lt_iff_le_not_le {α : Type*} (f g : ARS α) :
   f < g ↔ f ≤ g ∧ ¬ g ≤ f := by
@@ -341,18 +413,12 @@ lemma ARS_lt_iff_le_not_le {α : Type*} (f g : ARS α) :
         rw [eq_fg] at nle_gf
         exact nle_gf (ARS_le_refl g)
 
-lemma ARS_le_trans {α : Type*} (f g h : ARS α) :
-  f ≤ g → g ≤ h → f ≤ h := by
-    intro add_fg add_gh
-    change f + h = h
-    rw [← add_gh]
-    nth_rw 2 [← add_fg]
-    rw [add_assoc]
-
 instance (α : Type*) : Preorder (ARS α) where
   le_refl := ARS_le_refl
   le_trans := ARS_le_trans
   lt_iff_le_not_le := ARS_lt_iff_le_not_le
+
+end Preorder
 
 lemma ARS_le_antisymm {α : Type*} (f g : ARS α) :
   f ≤ g → g ≤ f → f = g := by
@@ -363,6 +429,17 @@ lemma ARS_le_antisymm {α : Type*} (f g : ARS α) :
 
 instance (α : Type*) : PartialOrder (ARS α) where
   le_antisymm := ARS_le_antisymm
+
+end PartialOrder
+
+section Sup
+
+def ARS_sup {α : Type*} (f g : ARS α) : ARS α := f + g
+
+instance (α : Type*) : Sup (ARS α) where
+  sup := ARS_sup
+
+end Sup
 
 lemma ARS_le_sup_left {α : Type*} (f g : ARS α) :
   f ≤ (f + g) := by
@@ -385,11 +462,17 @@ instance (α : Type*) : SemilatticeSup (ARS α) where
   le_sup_right := ARS_le_sup_right
   sup_le := ARS_sup_le
 
+end SemilatticeSup
+
 lemma ARS_bot_le {α : Type*} (f : ARS α) : 0 ≤ f := by
   exact zero_add f
 
 instance (α : Type*) : IdemSemiring (ARS α) where
   bot_le := ARS_bot_le
+
+end IdemSemiring
+
+section KStar
 
 /-- On utilise ici le fait que le quantificateur existentiel peut être vu comme
 une disjonction infinie sur le type sur lequel il quantifie : en d'autres termes,
@@ -403,6 +486,8 @@ instance (α : Type*) : KStar (ARS α) where
 
 notation:1024 elm "∗ " => KStar.kstar elm
 -- pour une raison que j'ignore, cette notation n'est pas déjà définie
+
+end KStar
 
 lemma ARS_one_le_kstar {α : Type*} (f : ARS α) :
   1 ≤ f∗ := by
@@ -471,6 +556,8 @@ lemma ARS_kstar_mul_le_kstar {α : Type*} (f : ARS α) :
       right
       exact hyp
 
+section QuelquesLemmes
+
 -- lemme intermédiare
 lemma ARS_ban_le_bam {α : Type*} {f g : ARS α} :
   f * g ≤ f →
@@ -522,18 +609,13 @@ lemma ARS_bak_le_b {α : Type*} {f g : ARS α} :
       right
       exact hyp
 
-lemma ARS_mul_kstar_le_self {α : Type*} (g f : ARS α) :
-  f * g ≤ f → f * g∗ ≤ f := by
-    intro hyp
-    exact ARS_bak_le_b (ARS_ban_le_b (ARS_ban_le_bam hyp))
-
 -- lemme intermédiare
 lemma ARS_anb_le_amb {α : Type*} {f g : ARS α} :
   g * f ≤ f →
   ∀ (n : ℕ), (g^(n + 1)) * f ≤ g^n * f := by
     intro hyp n
     rw [
-      ARS_npow_succ,
+      pow_succ,
       mul_assoc
     ]
     change g^n * (g*f) + g^n * f = g^n * f
@@ -577,6 +659,14 @@ lemma ARS_akb_le_b {α : Type*} {f g : ARS α} :
       right
       exact hyp
 
+end QuelquesLemmes
+
+lemma ARS_mul_kstar_le_self {α : Type*} (g f : ARS α) :
+  f * g ≤ f → f * g∗ ≤ f := by
+    intro hyp
+    exact ARS_bak_le_b (ARS_ban_le_b (ARS_ban_le_bam hyp))
+
+
 lemma ARS_kstar_mul_le_self {α : Type*} (g f : ARS α) :
   g * f ≤ f → g∗ * f ≤ f := by
     intro hyp
@@ -589,6 +679,14 @@ instance {α : Type*} : KleeneAlgebra (ARS α) where
   mul_kstar_le_self := ARS_mul_kstar_le_self
   kstar_mul_le_self := ARS_kstar_mul_le_self
 
+end KleeneAlgebra
+
+/-
+On montre quelques lemmes basiques :
+- la clôture symmétrique est symétrique,
+- la cloture transitive est transitive,
+- …
+-/
 
 section QuelquesPreuves
 
