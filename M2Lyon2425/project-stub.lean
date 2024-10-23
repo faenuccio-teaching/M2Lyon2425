@@ -256,29 +256,6 @@ instance (α : Type*) : NonUnitalNonAssocSemiring (ARS α) where
 
 end NonUnitalNonAssocSemiring
 
-section One
-
-def ARS_one {α : Type*} : ARS α :=
-  (fun x y ↦ x = y)
-
-instance (α : Type*) : One (ARS α) where
-  one := ARS_one
-
-end One
-
-section NatCast
-
-@[simp]
-def ARS_natCast {α : Type*} (n : ℕ) : ARS α := by
-  match n with
-  | 0 => exact 0
-  | _ + 1 => exact 1
-
-instance (α : Type*) : NatCast (ARS α) where
-  natCast := ARS_natCast
-
-end NatCast
-
 lemma ARS_mul_assoc {α : Type*} (f g h : ARS α) :
    (f * g) * h = f * (g * h) := by
     symm
@@ -308,6 +285,29 @@ instance (α : Type*) : NonUnitalSemiring (ARS α) where
   mul_assoc := ARS_mul_assoc
 
 end NonUnitalSemiring
+
+section One
+
+@[simp] def ARS_one {α : Type*} : ARS α :=
+  (fun x y ↦ x = y)
+
+instance (α : Type*) : One (ARS α) where
+  one := ARS_one
+
+end One
+
+section NatCast
+
+@[simp]
+def ARS_natCast {α : Type*} (n : ℕ) : ARS α := by
+  match n with
+  | 0 => exact 0
+  | _ + 1 => exact 1
+
+instance (α : Type*) : NatCast (ARS α) where
+  natCast := ARS_natCast
+
+end NatCast
 
 lemma ARS_mul_one {α : Type*} (f : ARS α) :
   f * 1 = f := by
@@ -710,18 +710,26 @@ lemma ARS_kstar_is_trans {α : Type*} (f : ARS α) : Transitive f∗ := by
 def ARS_inverse {α : Type*} (f : ARS α) : ARS α := fun x y ↦ f y x
 notation:1024 elm "⇐ " => ARS_inverse elm
 
-@[simp]
-lemma ARS_inverse_involution {α : Type*} (f : ARS α) : f⇐⇐ = f := by
+@[simp] lemma ARS_inverse_involution {α : Type*} (f : ARS α) : f⇐⇐ = f := by
   ext x y
   simp
+
+@[simp] lemma ARS_inv_one {α : Type*} : (1 : ARS α)⇐ = 1 := by
+  ext x y
+  constructor
+  · intro h
+    rw [h]
+    rfl
+  · intro h
+    rw [h]
+    rfl
 
 /-- La plus petite relation contenant une relation et son inverse -/
 @[simp]
 def ARS_symm_closure {α : Type*} (f : ARS α) : ARS α := f + f⇐
 notation:1024 elm "⇔ " => ARS_symm_closure elm
 
-@[simp]
-lemma ARS_symm_over_add {α : Type*} (f g : ARS α) : (f + g)⇐ = f⇐ + g⇐ := by
+@[simp] lemma ARS_symm_over_add {α : Type*} (f g : ARS α) : (f + g)⇐ = f⇐ + g⇐ := by
   ext x y
   change f y x ∨ g y x ↔ f y x ∨ g y x
   rfl
@@ -744,21 +752,59 @@ lemma ARS_symm_closure_is_symm {α : Type*} (f : ARS α) : Symmetric f⇔ := by
     left
     exact indirect
 
+lemma ARS_inv_pow_eq_pow_inv {α : Type*} (f : ARS α) (n : ℕ): f⇐^n = (f^n)⇐ := by
+  match n with
+  | 0 =>
+    simp
+  | m + 1 =>
+    rw [pow_succ, pow_succ, ← ARS_npow_mul_eq_mul_npow]
+    ext x y
+    constructor
+    · intro hyp
+      let w := hyp.choose
+      have ⟨hw, hwm⟩ := hyp.choose_spec
+      use w
+      constructor
+      · rw [← ARS_inverse_involution f, ARS_inv_pow_eq_pow_inv]
+        exact hwm
+      · exact hw
+    · intro hyp
+      let w := hyp.choose
+      have ⟨hwm, hw⟩ := hyp.choose_spec
+      use w
+      constructor
+      · exact hw
+      · rw [ARS_inv_pow_eq_pow_inv]
+        exact hwm
+
+lemma ARS_inv_trans_eq_trans_inv {α : Type*} (f : ARS α) : f⇐∗ = f∗⇐ := by
+  ext x y
+  constructor
+  · intro hyp
+    use hyp.choose
+    have hn := hyp.choose_spec
+    rw [ARS_inv_pow_eq_pow_inv] at hn
+    exact hn
+  · intro hyp
+    simp at hyp
+    use hyp.choose
+    have hn := hyp.choose_spec
+    rw [ARS_inv_pow_eq_pow_inv]
+    simp
+    exact hn
+
 /-- La plus petite relation d'équivalence contenant une relation -/
 @[simp]
-def ARS_symm_trans {α : Type*} (f : ARS α) : ARS α :=  f⇔∗
-notation:1024 elm "≡ " => ARS_symm_trans elm
+def ARS_lubEquiv {α : Type*} (f : ARS α) : ARS α :=  f⇔∗
+notation:1024 elm "≡ " => ARS_lubEquiv elm
 
-lemma ARS_symm_trans_is_trans {α : Type*} (f : ARS α) :
-  Transitive f⇔∗ :=
+lemma ARS_lubEquiv_is_trans {α : Type*} (f : ARS α) : Transitive f≡ :=
     ARS_kstar_is_trans f⇔
 
-lemma ARS_symm_trans_is_refl {α : Type*} (f : ARS α) :
-  Reflexive f⇔∗ :=
+lemma ARS_lubEquiv_is_refl {α : Type*} (f : ARS α) : Reflexive f⇔∗ :=
     ARS_kstar_is_refl f⇔
 
-lemma ARS_symm_n_is_symm {α : Type*} (f : ARS α) :
-  ∀ n, Symmetric (f⇔^n) := by
+lemma ARS_symm_n_is_symm {α : Type*} (f : ARS α) : ∀ n, Symmetric (f⇔^n) := by
     intro n
     cases n with
     | zero =>
@@ -777,7 +823,7 @@ lemma ARS_symm_n_is_symm {α : Type*} (f : ARS α) :
       · exact (ARS_symm_closure_is_symm f) hw.right
       · exact (ARS_symm_n_is_symm f m) hw.left
 
-lemma ARS_symm_trans_is_symm {α : Type*} (f : ARS α) : Symmetric f≡ := by
+lemma ARS_lubEquiv_is_symm {α : Type*} (f : ARS α) : Symmetric f≡ := by
   intro x y hxy
   let n := hxy.choose
   have h := hxy.choose_spec
@@ -785,8 +831,38 @@ lemma ARS_symm_trans_is_symm {α : Type*} (f : ARS α) : Symmetric f≡ := by
   exact (ARS_symm_n_is_symm f n) h
 
 lemma ARS_symm_trans_is_equiv {α : Type*} (f : ARS α) : Equivalence f≡ where
-  refl := @ARS_symm_trans_is_refl α f
-  symm := @ARS_symm_trans_is_symm α f
-  trans := @ARS_symm_trans_is_trans α f
+  refl := @ARS_lubEquiv_is_refl α f
+  symm := @ARS_lubEquiv_is_symm α f
+  trans := @ARS_lubEquiv_is_trans α f
 
 end QuelquesPreuves
+
+section QuelquesProprietes
+
+def isWeaklyCommuting {α : Type*} (f₁ f₂ : ARS α) : Prop := f₁⇐ * f₂ ≤ f₂∗ * f₁⇐∗
+
+def isCommuting {α : Type*} (f₁ f₂ : ARS α) : Prop := f₁⇐ * f₂ ≤ f₂ * f₁⇐
+
+def isDiamond {α : Type*} (f : ARS α) : Prop := isCommuting f f
+
+def isChurchRosser {α : Type*} (f : ARS α) : Prop := f≡ ≤ f∗ * f⇐∗
+
+def isConfluent {α : Type*} (f : ARS α) : Prop := f⇐∗ * f∗ ≤ f∗ * f⇐∗
+
+def isWeaklyConfluent {α : Type*} (f : ARS α) : Prop := f⇐ * f ≤ f∗ * f⇐∗
+
+theorem KleeneChurchRosser {K : Type*} [KleeneAlgebra K] (a b : K) :
+  a∗ * b∗ ≤ b∗ * a∗ ↔ (b + a)∗ ≤ b∗ * a∗ := by
+    constructor
+    · intro hyp
+
+      sorry
+    · sorry
+
+theorem ChurchRosser {α : Type*} (f : ARS α) :  isConfluent f ↔ isChurchRosser f := by
+  have := KleeneChurchRosser f⇐ f
+  rw [isConfluent, isChurchRosser]
+  simp
+  exact this
+
+end QuelquesProprietes
