@@ -14,6 +14,8 @@ dont l'addition est idempotente, et muni d'une opération spéciale `∗`
 
 Ceci étant fait, il est beaucoup plus simple de vérifier certaines propriétés
 d'opérations sur `ARS α` (de même qu'il est plus facile de les énoncer).
+
+On pourra voir le cours en pdf de P. Malbos, trouvable dans le dossier "projet_docs".
 -/
 
 
