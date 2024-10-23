@@ -115,7 +115,7 @@ example (R : Type*) [Ring R] (a b : R) :
     a ^ 3 - b ^ 3 = (a - b) * (a ^ 2 + a * b + b ^ 2) := by
   ring -- does nothing
   sorry
-
+"ring_nf"
 /-
   # Subgroup of units
 -/
@@ -142,13 +142,21 @@ example (a : Rˣ) : a * a⁻¹ = 1 := by
 -- can be promoted to a unit of `R`
 
 example (a : Rˣ) (b : R) : a * b = a ^ 2 * a⁻¹ * b := by
-  sorry
+
 
 example (a : R) (ha : IsUnit a) : a * ha.unit⁻¹ = 1 := by
   sorry
 
-example (x : ℤˣ) : x = 1 ∨ x = -1 := by
-  sorry
+example (x : ℤˣ) : (x : ℤ ) = 1 ∨ (x:ℤ ) = -1 := by
+  obtain hx | hx := le_or_gt 0 (x : ℤ )
+  · left
+    have := Units.val_inv x
+    exact Int.eq_one_of_mul_eq_one_right hx this
+  · right
+    --have := Units.val_inv x
+
+
+
 
 /-
   # Morphisms between rings
@@ -158,17 +166,43 @@ example (x : ℤˣ) : x = 1 ∨ x = -1 := by
 
 example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (a b : R) :
     f (a + b) = f a + f b := by
-  sorry
+  rw[map_add]
+  --RingHom.map_add f a b
 
 example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (a b : R) :
     f (a * b) = f a * f b := by
-  sorry
+  rw[map_mul]
 
-example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (x : R) (hx : IsUnit x) : IsUnit (f x) := by
-  sorry
+lemma map_unit {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (x : R) (hx : IsUnit x) : IsUnit (f x) := by
+  --rw[IsUnit]
+  --obtain ⟨ w ,hw ⟩ := hx
+  --use f x
+  refine ⟨ ?_ , ?_ ⟩
+  · refine ⟨ f x  , ?_ , ?_ , ?_⟩
+    · let u := hx.unit⁻¹
+      use f u
+    · rw[← map_mul]
+      rw[IsUnit.mul_val_inv]
+      rw[map_one]
+    · rw[← map_mul]
+      rw[IsUnit.val_inv_mul]
+      rw[map_one]
+  · dsimp
+--units map
+example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) : Rˣ →* Sˣ where
+  toFun := by
+    intro x
+    have hfx : IsUnit ( f x ) := by
+      refine map_unit f x ?_
+      exact Units.isUnit x
 
-example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) : Rˣ →* Sˣ := by
-  sorry
+  --on peux simplifier toFun pr simplifier le goal
+    exact hfx.unit
+
+  map_one := by
+    simp_only [Units.val_one, map_one,IsUnit.unit]
+
+
 
 /-
   # Ideals and quotients
@@ -182,7 +216,7 @@ variable (R : Type*) [CommRing R] (I J : Ideal R)
 -- Mathlib knows about the addition and multiplication of ideals and the corresponding properties
 
 example {x : R} : x ∈ I + J ↔ ∃ a ∈ I, ∃ b ∈ J, a + b = x := by
-  sorry
+  rw[]
 
 example : I * J ≤ J := by
   sorry
@@ -195,10 +229,10 @@ example : I * J ≤ I := by
 -- intersection
 
 example : I ⊔ J = I + J := by -- use `\lub` to write `⊔`
-  sorry
+  rfl
 
 example : I ⊓ J = (I : Set R) ∩ (J : Set R) := by  -- use `\glb` to write `⊓`
-  sorry
+  rfl
 
 -- An ideal is principal if it is principal as a `Submodule` that is it satifies
 -- `Submodule.IsPrincipal`. Since an ideal `I` is by definition a submodule, we can still use
@@ -239,6 +273,16 @@ variable (α : Type*) (r : α → α → Prop)
 
 example :
     Equivalence r ↔ (∀ x, r x x) ∧ (∀ x y, r x y → r y x) ∧ (∀ x y z, r x y → r y z → r x z) := by
+  refine ⟨ ?_ , ?_ ⟩
+  · rintro ⟨ h1 , h2 , h3 ⟩
+    refine ⟨ ?_ , ?_ , ?_ ⟩
+    . exact h1
+    · intro _ _
+      exact h2
+    · intro _ _ _
+      exact h3
+  ·
+
   refine ⟨fun h ↦ ⟨h.1, ?_, ?_⟩, fun ⟨h₁, h₂, h₃⟩ ↦ ⟨h₁, ?_, ?_⟩⟩
   all_goals sorry
 
@@ -280,18 +324,32 @@ theorem rZ_iff' (x y : ℕ × ℕ) : rZ x y ↔ x.1 + y.2 = y.1 + x.2 := by
   rw [rZ]
 
 theorem rZ_reflexive : Reflexive rZ := by
-  sorry
+  intro x
+  rw[rZ_iff]
+
 
 theorem rZ_symmetric : Symmetric rZ := by
-  sorry
+  intro x y h
+  rw[rZ_iff]
+  rw[rZ_iff] at h
+  symm
+  exact h
+
 
 theorem rZ_transitive : Transitive rZ := by
-  sorry
+  intro x y z h1 h2
+  rw[rZ_iff]
+  rw[rZ_iff ] at h1 h2
+  linarith
+
 
 -- We make an instance so we don't have to precise the setoid every time
 instance rZSetoid : Setoid (ℕ × ℕ) := by
   refine ⟨rZ, ?_, ?_, ?_⟩
-  sorry
+  . exact rZ_reflexive
+  · intro x y h
+    exact rZ_symmetric h
+  · exact
   sorry
   sorry
 
@@ -342,7 +400,7 @@ def neg_aux (x : ℕ × ℕ) : ZZ := ⟦(x.2, x.1)⟧
 def neg : ZZ → ZZ := by
   refine Quotient.lift neg_aux fun x y h ↦ ?_
   rw [neg_aux, neg_aux, Quotient.eq] -- Note the use of the function `Quotient.eq`
-  sorry
+  --linarith
 
 instance : Neg ZZ := ⟨neg⟩
 
