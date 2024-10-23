@@ -684,4 +684,9 @@ lemma ARS_symm_trans_is_symm {α : Type*} (f : ARS α) : Symmetric f≡ := by
   use n
   exact (ARS_symm_n_is_symm f n) h
 
+lemma ARS_symm_trans_is_equiv {α : Type*} (f : ARS α) : Equivalence f≡ where
+  refl := @ARS_symm_trans_is_refl α f
+  symm := @ARS_symm_trans_is_symm α f
+  trans := @ARS_symm_trans_is_trans α f
+
 end QuelquesPreuves
