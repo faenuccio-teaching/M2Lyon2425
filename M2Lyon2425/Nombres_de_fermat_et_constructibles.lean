@@ -219,7 +219,7 @@ theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Comp
         exact h4
 
 
-theorem degQw (α : ℕ) (p : Nat.Primes) : α > 0 → FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { Complex.exp (2*Complex.I*↑Real.pi/(p^α)) }) = p^(α-1)*(p-1) := by
+theorem degQw (α : ℕ) (p : Nat) : Nat.Prime p ∧ α > 0 → FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { Complex.exp (2*Complex.I*↑Real.pi/(p^α)) }) = p^(α-1)*(p-1) := by
   sorry
 --Lemme Gal(ℚ(w)/ℚ) iso ℤ/2^mℤ
 
@@ -248,20 +248,43 @@ II) Constructible implique premier de fermat
 
 
 --(Polynomial.Gal (Polynomial.cyclotomic p ℚ) ≅ (ZMod p)ˣ)
-theorem Gauss_Wantzel_1 (p : Nat.Primes) (α : Nat) : α > 0 ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α))) ↔ ((premierfermat p ∧ α =1) ∨ p=2) :=by
+theorem Gauss_Wantzel_1 (p : Nat) (α : Nat) : Nat.Prime p ∧ α > 0 ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α))) ↔ ((premierfermat p ∧ α =1) ∨ p=2) :=by
 constructor
 · intro h
   cases h with
   | intro left right =>
     let a := Complex.exp (2*Complex.I*↑Real.pi/(p^α))
-    apply Wantzel1 at right
-    let m := right.choose
-    have hm := right.choose_spec
-    have h2 := degQw α p left
-    have h3 := Eq.trans hm.symm h2
-    by_cases h : ↑p = 2
-    · sorry
-    · sorry
+    cases right with
+    | intro left1 right1 =>
+      apply Wantzel1 at right1
+      let m := right1.choose
+      have h2 := (degQw α p)
+      have h3 : FiniteDimensional.finrank ℚ ↥(Algebra.adjoin ℚ {Complex.exp (2 * Complex.I * ↑Real.pi / ↑p ^ α)}) =
+        p ^ (α - 1) * (p - 1) :=by
+        apply h2
+        constructor
+        · exact left
+        · exact left1
+      have h1 := Eq.trans right1.choose_spec.symm h3
+      have h3 : 2 ∣ ↑p^(α-1)*(↑p-1) := by sorry
+        --rw[<-pow_sub_one_mul] at h1
+      --have h3 := Cardinal.nat_is_prime_iff.mpr Nat.prime_two
+      rw [Nat.Prime.dvd_mul] at h3
+      have h4 := Nat.prime_two
+      cases h3 with
+      | inl h =>
+        have h5 := Nat.Prime.dvd_of_dvd_pow h4 h
+        rw[<-even_iff_two_dvd] at h5
+        have h6 := Nat.Prime.even_iff left
+        rw[h6] at h5
+        right
+        exact h5
+      | inr h =>
+
+
+
+
+
 
 · intro h
   cases h with
