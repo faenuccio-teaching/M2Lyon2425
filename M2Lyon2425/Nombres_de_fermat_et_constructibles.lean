@@ -99,25 +99,65 @@ constructor
       use padicValNat 2 n
       exact hyp1.symm
 
-theorem nn1 (n : ℕ): n-1<n:=by
-sorry
+--noncomputable section
 
+--Definition de la structure d'une tour de corps.
+structure TowerOfFields where
+  K : ℕ → Type*
+  instField : ∀ i, Field (K i)
+  instAlgebra : ∀ i, Algebra (K i) (K (i + 1))
 
+--Definition d'être une tour de corps
+def TQ : TowerOfFields := by
+  refine ⟨fun _ ↦ ℚ , fun _ ↦ inferInstance, fun _ ↦ Algebra.id ℚ⟩
 
+--Definition d'être une tour de corps de dimension finie
+def TowerOfFields.isFiniteDimensional (T : TowerOfFields) : Prop :=
+  ∀ i,  letI := T.instField i
+        letI := T.instField (i + 1)
+        letI := T.instAlgebra i
+        FiniteDimensional (T.K i) (T.K (i + 1))
 
+example : TQ.isFiniteDimensional := by
+  intro _
+  exact Module.Finite.self ℚ
 
+--Definiton d'une tour de corps (Kᵢ)ᵢ telle que [Ki+1:Ki]≤ 2
+def TowerOfFields.rankLessTwo (T : TowerOfFields) : Prop :=
+  ∀ i,  letI := T.instField i
+        letI := T.instField (i + 1)
+        letI := T.instAlgebra i
+        FiniteDimensional.finrank (T.K i) (T.K (i + 1)) ≤ 2
+
+example : TQ.rankLessTwo := by
+  intro _
+  rw [TQ, FiniteDimensional.finrank_self]
+  exact one_le_two
 
 --Définition : un nombre a est constructible s'il existe une tour quadratique de ℚ vers ℚ(a).
-def nombre_constructible (a : Complex) :=
-  ∃ n : {n : ℕ+ // 1 < n}, ∃ K : Fin n → Type, ∃ _ : (i : Fin n) → Semiring (K i),
-  (i : Fin n) → IsField (K i) ∧
-  ∃ f : (i : Fin n) → ((K i) →+* (K (i.add ⟨1, n.2⟩))), (i : Fin n) → Function.Injective (f i)
-   ∧ K ⟨0, Fin.size_pos'⟩ = ℚ
-   ∧ K ⟨ Fin.last n-1, nn1⟩
+
+def nombre_constructible (a : ℂ) : Prop :=
+  ∃ (T : TowerOfFields) (n : ℕ), T.isFiniteDimensional ∧ T.rankLessTwo ∧ T.K 0 = ℚ ∧
+    T.K n = Algebra.adjoin ℚ { a }
 
 
-def Wantzel1 (a : Complex) : nombre_constructible a → ∃n, finite_dimensional ℚ (Algebra.adjoin ℚ {a}) = 2^n := by
-sorry
+
+--def nombre_constructible (a : Complex) :=
+ -- ∃ n : {n : ℕ+ // 1 < n}, ∃ K : Fin n → Type, ∃ _ : (i : Fin n) → Semiring (K i),
+  --(i : Fin n) → IsField (K i) ∧
+  --∃ f : (i : Fin n) → ((K i) →+* (K (i.add ⟨1, n.2⟩))), (i : Fin n) → Function.Injective (f i)
+  -- ∧ K ⟨0, Fin.size_pos'⟩ = ℚ
+  -- ∧ K ⟨ Nat.pred (Fin.last n),Nat.pred_lt (Fin.last n)⟩
+
+
+theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
+ intro h
+ cases h with
+ | intro w h =>
+   let n := h.choose
+   let hn := h.choose_spec
+
+
 
 --Lemme : si p est premier de Fermat, Gal(Q(w)/Q) ≅ (Z/pZ)*
 
@@ -212,17 +252,17 @@ II) Constructible implique premier de fermat
 
 
 --(Polynomial.Gal (Polynomial.cyclotomic p ℚ) ≅ (ZMod p)ˣ)
-theorem Gauss_Wantzel_1 (p : ℕ+) (α : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑(p^α))) ↔ premierfermat p ∧ α =1 :=by
+theorem Gauss_Wantzel_1 (p : ℕ+) (α : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑(p^α))) ↔ ((premierfermat p ∧ α =1) ∨ p=2) :=by
 constructor
 · intro h
-
+  sorry
 · intro h
   cases h with
   | intro left1 right1 =>
     rw[right1,pow_one]
     have QwGalois := Qw_est_galois p left1
     have Phi_p_irre := poly_cyclo_p_irre p left1
-    --rw [galCyclotomicEquivUnitsZMod] at Phi_p_irre
+    have h4 := Phi_p_irre.galCyclotomicEquivUnitsZMod
     let Gp_galois := (Polynomial.cyclotomic (↑p) ℚ).Gal
     have h3:= galCyclotomicEquivUnitsZMod Phi_p_irre
 
