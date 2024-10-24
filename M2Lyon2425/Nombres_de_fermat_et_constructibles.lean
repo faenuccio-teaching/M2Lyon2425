@@ -140,23 +140,19 @@ def nombre_constructible (a : ℂ) : Prop :=
   ∃ (T : TowerOfFields) (n : ℕ), T.isFiniteDimensional ∧ T.rankLessTwo ∧ T.K 0 = ℚ ∧
     T.K n = Algebra.adjoin ℚ { a }
 
-
-
---def nombre_constructible (a : Complex) :=
- -- ∃ n : {n : ℕ+ // 1 < n}, ∃ K : Fin n → Type, ∃ _ : (i : Fin n) → Semiring (K i),
-  --(i : Fin n) → IsField (K i) ∧
-  --∃ f : (i : Fin n) → ((K i) →+* (K (i.add ⟨1, n.2⟩))), (i : Fin n) → Function.Injective (f i)
-  -- ∧ K ⟨0, Fin.size_pos'⟩ = ℚ
-  -- ∧ K ⟨ Nat.pred (Fin.last n),Nat.pred_lt (Fin.last n)⟩
-
-
+--Théorème (Wantzel) : si a est constructible, ℚ(a) est de degré 2^m sur ℚ pour un certains m.
 theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
  intro h
  cases h with
  | intro w h =>
    let n := h.choose
    let hn := h.choose_spec
-
+   cases hn with
+   | intro left right =>
+      cases right with
+      | intro left right =>
+        sorry
+      --rw[<-Module.finrank_mul_finrank] at left
 
 
 --Lemme : si p est premier de Fermat, Gal(Q(w)/Q) ≅ (Z/pZ)*
@@ -222,6 +218,9 @@ theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Comp
         have h4 := minpoly.aeval ℚ (Complex.exp (2 * ↑Real.pi * Complex.I / ↑↑p))
         exact h4
 
+
+theorem degQw (α : ℕ) (p : Nat.Primes) : α > 0 → FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { Complex.exp (2*Complex.I*↑Real.pi/(p^α)) }) = p^(α-1)*(p-1) := by
+  sorry
 --Lemme Gal(ℚ(w)/ℚ) iso ℤ/2^mℤ
 
 /- PLAN DE LA PREUVE
@@ -248,14 +247,22 @@ II) Constructible implique premier de fermat
 
 
 
-
-
-
 --(Polynomial.Gal (Polynomial.cyclotomic p ℚ) ≅ (ZMod p)ˣ)
-theorem Gauss_Wantzel_1 (p : ℕ+) (α : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑(p^α))) ↔ ((premierfermat p ∧ α =1) ∨ p=2) :=by
+theorem Gauss_Wantzel_1 (p : Nat.Primes) (α : Nat) : α > 0 ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α))) ↔ ((premierfermat p ∧ α =1) ∨ p=2) :=by
 constructor
 · intro h
-  sorry
+  cases h with
+  | intro left right =>
+    let a := Complex.exp (2*Complex.I*↑Real.pi/(p^α))
+    apply Wantzel1 at right
+    let m := right.choose
+    have hm := right.choose_spec
+    have h2 := degQw α p left
+    have h3 := Eq.trans hm.symm h2
+    by_cases h : ↑p = 2
+    · sorry
+    · sorry
+
 · intro h
   cases h with
   | intro left1 right1 =>
