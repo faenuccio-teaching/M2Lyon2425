@@ -706,7 +706,7 @@ lemma ARS_kstar_is_trans {α : Type*} (f : ARS α) : Transitive f∗ := by
   use y
 
 /-- La relation inverse issue d'une relation donnée -/
-@[simp]
+@[reducible]
 def ARS_inverse {α : Type*} (f : ARS α) : ARS α := fun x y ↦ f y x
 notation:1024 elm "⇐ " => ARS_inverse elm
 
@@ -724,23 +724,25 @@ notation:1024 elm "⇐ " => ARS_inverse elm
     rw [h]
     rfl
 
-/-- La plus petite relation contenant une relation et son inverse -/
-@[simp]
-def ARS_symm_closure {α : Type*} (f : ARS α) : ARS α := f + f⇐
-notation:1024 elm "⇔ " => ARS_symm_closure elm
-
 @[simp] lemma ARS_symm_over_add {α : Type*} (f g : ARS α) : (f + g)⇐ = f⇐ + g⇐ := by
   ext x y
   change f y x ∨ g y x ↔ f y x ∨ g y x
   rfl
 
+/-- La plus petite relation contenant une relation et son inverse -/
+@[reducible]
+def ARS_symm_closure {α : Type*} (f : ARS α) : ARS α := f + f⇐
+notation:1024 elm "⇔ " => ARS_symm_closure elm
+
 lemma ARS_symm_is_idem {α : Type*} (f : ARS α) : f⇔⇔ = f⇔ := by
+  change (f + f⇐) + (f + f⇐)⇐ = f + f⇐
   simp
   rw [add_assoc]
   nth_rw 2 [← add_assoc]
+  rw [ARS_addIdem]
   nth_rw 2 [add_comm]
   nth_rw 1 [← add_assoc]
-  rw [ARS_addIdem, ARS_addIdem] -- une fois pour f, une fois pour f⇔
+  rw [ARS_addIdem] -- une fois pour f, une fois pour f⇔
 
 lemma ARS_symm_closure_is_symm {α : Type*} (f : ARS α) : Symmetric f⇔ := by
   intro x y hxy
@@ -790,11 +792,10 @@ lemma ARS_inv_trans_eq_trans_inv {α : Type*} (f : ARS α) : f⇐∗ = f∗⇐ :
     use hyp.choose
     have hn := hyp.choose_spec
     rw [ARS_inv_pow_eq_pow_inv]
-    simp
     exact hn
 
 /-- La plus petite relation d'équivalence contenant une relation -/
-@[simp]
+@[reducible]
 def ARS_lubEquiv {α : Type*} (f : ARS α) : ARS α :=  f⇔∗
 notation:1024 elm "≡ " => ARS_lubEquiv elm
 
@@ -862,7 +863,6 @@ theorem KleeneChurchRosser {K : Type*} [KleeneAlgebra K] (a b : K) :
 theorem ChurchRosser {α : Type*} (f : ARS α) :  isConfluent f ↔ isChurchRosser f := by
   have := KleeneChurchRosser f⇐ f
   rw [isConfluent, isChurchRosser]
-  simp
   exact this
 
 end QuelquesProprietes
