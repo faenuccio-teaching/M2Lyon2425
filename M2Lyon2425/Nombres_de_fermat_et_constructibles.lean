@@ -280,11 +280,20 @@ constructor
             cases haaa with
             | inl h => have haaaa := Nat.ne_of_gt left1; contradiction
             | inr h => contradiction
-          have hb : p ∣ 2 := by
+          have han : α -1 ≠ 0 := by
+            by_contra han1
+            apply Nat.le_of_sub_eq_zero at han1
+            rw[le_iff_lt_or_eq] at han1
+            cases han1 with
+            | inl h => apply LT.lt.gt at haa
+                       apply Nat.lt_asymm at haa
+                       contradiction
+            | inr h => contradiction
+          have hf : p ∣ 2 :=by
             sorry
-          have hbb : p=2 := by
-            exact ((Nat.Prime.dvd_iff_eq (Nat.prime_two) (Nat.Prime.ne_one left)).mp hb).symm
+          apply (Nat.prime_dvd_prime_iff_eq left Nat.prime_two).mp at hf
           contradiction
+          --Nat.primeFactors_prime_pow
         rw[Nat.mul_sub] at h1
         simp at h1
         rw[<-ha, Nat.sub_self,Nat.pow_zero] at h1
