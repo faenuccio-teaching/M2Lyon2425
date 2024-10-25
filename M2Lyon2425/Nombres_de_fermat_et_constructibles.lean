@@ -70,7 +70,7 @@ rw[hh4H,<-Nat.mul_assoc,Nat.mul_comm,<-Nat.pow_add_one,Nat.eq_iff_prime_padicVal
   contradiction
 
 --Lemme : Tout premier de la forme 2^m+1 est de Fermat et réciproquement.
-theorem premierfermat_equ (p : ℕ) : (premierfermat p) ↔ ((Nat.Prime p) ∧ (∃ m : ℕ, m>0 ∧ p=2^m+1)) := by
+theorem premierfermat_eq (p : ℕ) : (premierfermat p) ↔ ((Nat.Prime p) ∧ (∃ m : ℕ, m>0 ∧ p=2^m+1)) := by
 constructor
 · intro hf
   cases hf with
@@ -248,7 +248,7 @@ II) Constructible implique premier de fermat
 
 
 --(Polynomial.Gal (Polynomial.cyclotomic p ℚ) ≅ (ZMod p)ˣ)
-theorem Gauss_Wantzel_1 (p : Nat) (α : Nat) : Nat.Prime p ∧ α > 0 ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α))) ↔ ((premierfermat p ∧ α =1) ∨ p=2) :=by
+theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α))) ↔ ((premierfermat p ∧ α =1) ∨ p=2) :=by
 constructor
 · intro h
   cases h with
@@ -266,26 +266,86 @@ constructor
         · exact left
         · exact left1
       have h1 := Eq.trans right1.choose_spec.symm h3
-      have h3 : 2 ∣ ↑p^(α-1)*(↑p-1) := by sorry
-        --rw[<-pow_sub_one_mul] at h1
-      --have h3 := Cardinal.nat_is_prime_iff.mpr Nat.prime_two
-      rw [Nat.Prime.dvd_mul] at h3
-      have h4 := Nat.prime_two
-      cases h3 with
-      | inl h =>
-        have h5 := Nat.Prime.dvd_of_dvd_pow h4 h
-        rw[<-even_iff_two_dvd] at h5
-        have h6 := Nat.Prime.even_iff left
-        rw[h6] at h5
-        right
-        exact h5
-      | inr h =>
+      by_cases hp : p=2
+      · right
+        exact hp
+      · have hodd := Nat.Prime.odd_of_ne_two left hp
+        have ha : α = 1 := by
+          by_contra hna
+          push_neg at hna hp
+          have haa : α > 1 := by
+            by_contra haaa
+            push_neg at haaa
+            rw[Nat.le_one_iff_eq_zero_or_eq_one] at haaa
+            cases haaa with
+            | inl h => have haaaa := Nat.ne_of_gt left1; contradiction
+            | inr h => contradiction
+          have hb : p ∣ 2 := by
+            sorry
+          have hbb : p=2 := by
+            exact ((Nat.Prime.dvd_iff_eq (Nat.prime_two) (Nat.Prime.ne_one left)).mp hb).symm
+          contradiction
+        rw[Nat.mul_sub] at h1
+        simp at h1
+        rw[<-ha, Nat.sub_self,Nat.pow_zero] at h1
+        simp at h1
+        have h12 := Nat.eq_add_of_sub_eq (Nat.Prime.one_le left) h1.symm
+        have h13 := (premierfermat_eq p).mpr
+        left
+        constructor
+        · apply h13
+          constructor
+          · exact left
+          · use right1.choose
+            constructor
+            · by_contra h14
+              push_neg at h14
+              have h15 := Nat.eq_zero_of_le_zero h14
+              rw[h15] at h12
+              simp at h12
+              have h16 := (Nat.Prime.even_iff left).mpr h12
+              contradiction
+            · exact h12
+        · exact ha
+sorry
+
+      /-
+     by_cases ha : α = 1
+        · rw[Nat.mul_sub] at h1
+          simp at h1
+          rw[<-ha, Nat.sub_self,Nat.pow_zero] at h1
+          simp at h1
+          have h12 := Nat.eq_add_of_sub_eq (Nat.Prime.one_le left) h1.symm
+          have h13 := (premierfermat_eq p).mpr
+          left
+          constructor
+          · apply h13
+            constructor
+            · exact left
+            · use right1.choose
+              constructor
+              · by_contra h14
+                push_neg at h14
+                have h15 := Nat.eq_zero_of_le_zero h14
+                rw[h15] at h12
+                simp at h12
+                have h16 := (Nat.Prime.even_iff left).mpr h12
+                contradiction
+              · exact h12
+          · exact ha
+        · push_neg at ha hp
+          have haa : α > 1 := by
+            by_contra haaa
+            push_neg at haaa
+            rw[Nat.le_one_iff_eq_zero_or_eq_one] at haaa
+            cases haaa with
+            | inl h => have haaaa := Nat.ne_of_gt left1; contradiction
+            | inr h => contradiction
+-/
 
 
 
-
-
-
+/-
 · intro h
   cases h with
   | intro left1 right1 =>
@@ -295,7 +355,7 @@ constructor
     have h4 := Phi_p_irre.galCyclotomicEquivUnitsZMod
     let Gp_galois := (Polynomial.cyclotomic (↑p) ℚ).Gal
     have h3:= galCyclotomicEquivUnitsZMod Phi_p_irre
-
+-/
 
 theorem Gauss_Wantzel (n : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑n)) ↔ ∀ (p : Nat.Primes), p ∣ n → (premierfermat p ∧ padicValNat p n = 1):= by
 sorry
