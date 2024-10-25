@@ -44,21 +44,68 @@ def set_dist (A B : Set (ℝ × ℝ)) : Set ℝ := setOf (∃ p ∈ A, ∃ q ∈
 
 noncomputable def distance (A B : Set (ℝ × ℝ)):= InfSet.sInf (set_dist A B)
 
-lemma dist_F1_F2_eq_zero : distance F1 F2 = 0 := by
-  have h : ∀ x ∈ set_dist F1 F2, 0 ≤ x := sorry
-  have h₂ := Real.sInf_nonneg _ h
-  have h₃ : ¬0 < sInf (set_dist F1 F2) := by
-    intro h₃
-    have h₄ : sInf (set_dist F1 F2) ∈ lowerBounds (set_dist F1 F2) := by
-      change ∀ a, a ∈ (set_dist F1 F2) → sInf (set_dist F1 F2) ≤ a
-      intro a ha
-      sorry
-    change ∀ a, a ∈ (set_dist F1 F2) → sInf (set_dist F1 F2) ≤ a at h₄
-    let ε := sInf (set_dist F1 F2)
-    specialize h₄ (Dist.dist (2/ε, ε/2) (2/ε, 0))
-    have h₅ : dist (2 / ε, ε / 2) (2 / ε, 0) ∈ set_dist F1 F2 := sorry
-    specialize h₄ h₅
-    change ε ≤ ((2/ε - 2/ε)^2 + (0 - ε/2)^2)^(1/2) at h₄
-    sorry
-  have h₄ := eq_of_le_of_not_lt h₂ h₃
-  exact h₄.symm
+lemma dist_F1_F2_less_zero : distance F1 F2 ≤ 0 := by
+  rw [distance, Real.sInf_le_iff]
+  · intros ε hε
+    use dist (2 / ε, ε / 2) (2 / ε, 0)
+    refine ⟨?_, ?_⟩
+    · use (2 / ε, ε / 2)
+      refine ⟨?_, ?_⟩
+      change (2/ε) * (ε/2) = 1
+      norm_num
+      exact div_self (ne_of_gt hε)
+      use (2 / ε, 0)
+      refine ⟨?_, rfl⟩
+      change 0 = 0
+      rfl
+    · rw [zero_add]
+      change ((2/ε - 2/ε)^2 + (0 - ε/2)^2)^(1/2) < ε
+      rw [sub_self, zero_sub, Real.zero_rpow two_ne_zero, zero_add]
+      simp only [Real.rpow_two, even_two, Even.neg_pow]
+      rw [← Real.sqrt_eq_rpow, Real.sqrt_sq]
+      simp only [half_lt_self_iff]
+      exact hε
+      linarith
+  · rw [BddBelow, lowerBounds, Set.Nonempty]
+    use 0
+    dsimp
+    intros a ha
+    obtain ⟨p, ⟨_, ⟨q, ⟨_, hdist⟩⟩⟩⟩ := ha
+    rw [← hdist]
+    change 0 ≤ ((q.1 - p.1)^(2 : ℝ) + (q.2 - p.2)^(2 : ℝ))^(1/(2 : ℝ))
+    rw [← Real.sqrt_eq_rpow]
+    exact Real.sqrt_nonneg _
+  · rw [Set.Nonempty]
+    use dist ((2 : ℝ), (1 : ℝ) / (2 : ℝ)) ((2 : ℝ), (0 : ℝ))
+    use (2, 1 / 2)
+    refine ⟨?_, ?_⟩
+    change 2 * (1/2) = 1
+    norm_num
+    use (2,0)
+    refine ⟨?_, ?_⟩
+    change 0 = 0
+    rfl
+    rfl
+
+lemma zero_less_dist_F1_F2 : 0 ≤ distance F1 F2 := by
+  apply le_csInf
+  · rw [Set.Nonempty]
+    use dist ((2 : ℝ), (1 : ℝ) / (2 : ℝ)) ((2 : ℝ), (0 : ℝ))
+    use (2, 1 / 2)
+    refine ⟨?_, ?_⟩
+    change 2 * (1/2) = 1
+    norm_num
+    use (2,0)
+    refine ⟨?_, ?_⟩
+    change 0 = 0
+    rfl
+    rfl
+  · intros a ha
+    obtain ⟨p, ⟨_, ⟨q, ⟨_, hdist⟩⟩⟩⟩ := ha
+    rw [← hdist]
+    change 0 ≤ ((q.1 - p.1)^(2 : ℝ) + (q.2 - p.2)^(2 : ℝ))^(1/(2 : ℝ))
+    rw [← Real.sqrt_eq_rpow]
+    exact Real.sqrt_nonneg _
+
+lemma dist_F1_F2_eq_zero : distance F1 F2 = 0 :=
+  ((LE.le.ge_iff_eq zero_less_dist_F1_F2).1 dist_F1_F2_less_zero).symm
