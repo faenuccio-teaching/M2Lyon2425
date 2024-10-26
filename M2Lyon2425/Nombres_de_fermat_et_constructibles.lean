@@ -144,13 +144,13 @@ def nombre_constructible (a : ℂ) : Prop :=
 theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
  intro h
  cases h with
- | intro w h =>
+ | intro TF h =>
    let n := h.choose
    let hn := h.choose_spec
    cases hn with
    | intro left right =>
       cases right with
-      | intro left right =>
+      | intro left1 right1 =>
         sorry
       --rw[<-Module.finrank_mul_finrank] at left
 
@@ -314,22 +314,35 @@ theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < �
            · exact h12
        · exact ha
 
+--Lemme : (Z/pZ)ˣ est cyclique
+theorem ZModx_cyclic (p : ℕ) : Nat.Prime p → IsCyclic (ZMod p)ˣ := by
+  intro h
+  have factp := jacobiSym.proof_1 p h
+  have card := ZMod.card_units p
+  have puiss_card := ZMod.units_pow_card_sub_one_eq_one p
+  have zmodexp := ZMod.exponent (p-1)
+  apply IsCyclic.iff_exponent_eq_card.mpr
+  rw[card]
+  sorry
 
-theorem Gauss_Wantzel_p_sens_reciproque (p : Nat) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
+theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
 intro h
 cases h with
 | intro hp ha =>
-  cases hp with
-  | intro hp_prime hp_ferm =>
     constructor
-    · exact hp_prime
+    · exact hp.left
     · constructor
-      · sorry
-      · sorry
-
-
-theorem Gauss_Wantzel (n : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑n)) ↔ ∀ (p : Nat.Primes), p ∣ n → (premierfermat p ∧ padicValNat p n = 1):= by
-sorry
+      · rw[ha]; exact Nat.one_pos
+      · have Gp_Galois := Polynomial.Gal.instGroup (Polynomial.cyclotomic (↑p) ℚ)
+        have Gp_Galois_iso := (Polynomial.cyclotomic.irreducible_rat (Nat.Prime.pos hp.left))
+        apply galCyclotomicEquivUnitsZMod at Gp_Galois_iso
+        have zmodcycl := ZModx_cyclic p hp.left
+        have Gp_Galois_cycl : IsCyclic (Polynomial.cyclotomic ↑p ℚ).Gal :=by
+          sorry
+        have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois Gp_Galois_cycl
+        let ζ := exist_gen.choose
+        have hz := exist_gen.choose_spec
+        sorry
 
 --Lemme : bijection corps intermédiaires/sous-groupes IsGalois.intermediateFieldEquivSubgroup
 --theorem groupe_galois_Qw_ZpZ {p : ℕ} (hp : 0 < (p : Nat)) : premierfermat p → galCyclotomicEquivUnitsZMod (Polynomial.cyclotomic.irreducible_rat hp):= by
