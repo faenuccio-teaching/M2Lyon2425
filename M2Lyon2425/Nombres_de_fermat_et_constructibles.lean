@@ -180,38 +180,44 @@ theorem Z2mZ_resoluble (m : Nat) : IsSolvable (ZMod (2^m))ˣ := by
     rw[Units.instCommGroupUnits.proof_1]
   exact isSolvable_of_comm h
 
-
---Lemme : w est algébrique sur ℚ
-theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Complex.exp (2*↑Real.pi*Complex.I/p)) := by
-  intro h1
-  cases h1 with
-  | intro left right =>
-    constructor
-    · have h2 := Complex.isPrimitiveRoot_exp p (Nat.Prime.ne_zero left)
-      constructor
-      · exact Polynomial.cyclotomic_ne_zero p ℚ
-      · have h3 := Polynomial.cyclotomic_eq_minpoly_rat h2 (PNat.pos p)
-        rw[h3]
-        have h4 := minpoly.aeval ℚ (Complex.exp (2 * ↑Real.pi * Complex.I / ↑↑p))
-        exact h4
-
 --Lemme : le polynôme minimal de w_α est Phi p^α
-theorem poly_min_w_sur_Q (p : ℕ+) (α : ℕ) : premierfermat p → 0 < α → minpoly ℚ (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) = (Polynomial.cyclotomic (↑p^α) ℚ) := by
+theorem poly_min_w_sur_Q (p : ℕ) (α : ℕ) : Nat.Prime p → 0 < α → minpoly ℚ (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) = (Polynomial.cyclotomic (↑p^α) ℚ) := by
   intro h _
-  cases h with
-  | intro left right =>
-    have h1 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos left)))
-    have h2 := (Polynomial.cyclotomic_eq_minpoly_rat h1 (@Nat.pow_pos p α (Nat.Prime.pos left))).symm
-    simp at h2
-    exact h2
+  have h1 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h)))
+  have h2 := (Polynomial.cyclotomic_eq_minpoly_rat h1 (@Nat.pow_pos p α (Nat.Prime.pos h))).symm
+  simp at h2
+  exact h2
+
+--Lemme : w_α est algébrique sur ℚ
+theorem wa_algebrique_sur_Q (p α : ℕ) : Nat.Prime p → 0 < α →  IsAlgebraic ℚ (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) := by
+  intro h a
+  have h1 : minpoly ℚ (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) = (Polynomial.cyclotomic (↑p^α) ℚ) := by
+    exact poly_min_w_sur_Q p α  h a
+  constructor
+  · constructor
+    · exact Polynomial.cyclotomic_ne_zero (p^α) ℚ
+    · rw[h1.symm]
+      simp
 
 
-
-theorem degQw (α : ℕ) (p : Nat) : Nat.Prime p ∧ α > 0 → FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { Complex.exp (2*Complex.I*↑Real.pi/(p^α)) }) = p^(α-1)*(p-1) := by
+theorem degQw (α : ℕ) (p : Nat) : Nat.Prime p ∧ 0 < α → FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { Complex.exp (2*↑Real.pi*Complex.I/(p^α)) }) = p^(α-1)*(p-1) := by
   intro h
+  have h1 : IsIntegral ℚ (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) := by
+    apply IsAlgebraic.isIntegral
+    apply wa_algebrique_sur_Q
+    · exact h.left
+    · exact h.right
   cases h with
   | intro left right =>
-    sorry
+    have h2 := IntermediateField.adjoin.finrank h1
+    rw[poly_min_w_sur_Q p α left right, Polynomial.natDegree_cyclotomic,Nat.totient_prime_pow] at h2
+    rw[h2.symm]
+    have h3 := IntermediateField.adjoin_simple_toSubalgebra_of_integral h1
+    simp at h3
+    · sorry
+    · exact left
+    · exact right
+
 
 -- La valuation p-adique de p-1 est 0
 theorem valplone (p : Nat) : Nat.Prime p → padicValNat p (p-1) = 0 := by
@@ -236,7 +242,7 @@ theorem valplone (p : Nat) : Nat.Prime p → padicValNat p (p-1) = 0 := by
 
 
 -- Sens direct du théorème. Ajout du paramètre "Fact" pour utiliser les théorèmes sur les valutations.
-theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α))) → ((premierfermat p ∧ α =1) ∨ p=2) :=by
+theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) → ((premierfermat p ∧ α =1) ∨ p=2) :=by
  intro h
  cases h with
  | intro left right =>
@@ -244,8 +250,8 @@ theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < �
    | intro left1 right1 =>
      apply Wantzel1 at right1
      have h2 := (degQw α p)
-     have h3 : FiniteDimensional.finrank ℚ ↥(Algebra.adjoin ℚ {Complex.exp (2 * Complex.I * ↑Real.pi / ↑p ^ α)}) =
-       p ^ (α - 1) * (p - 1) :=by
+     have h3 : (FiniteDimensional.finrank ℚ ↥(Algebra.adjoin ℚ {Complex.exp (2 * ↑Real.pi * Complex.I/ ↑p ^ α)})) =
+       p ^ (α - 1) * (p - 1) := by
        apply h2
        constructor
        · exact left
@@ -308,6 +314,18 @@ theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < �
            · exact h12
        · exact ha
 
+
+theorem Gauss_Wantzel_p_sens_reciproque (p : Nat) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
+intro h
+cases h with
+| intro hp ha =>
+  cases hp with
+  | intro hp_prime hp_ferm =>
+    constructor
+    · exact hp_prime
+    · constructor
+      · sorry
+      · sorry
 
 
 theorem Gauss_Wantzel (n : Nat) : nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/↑n)) ↔ ∀ (p : Nat.Primes), p ∣ n → (premierfermat p ∧ padicValNat p n = 1):= by
