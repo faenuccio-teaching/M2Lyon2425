@@ -195,9 +195,24 @@ theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Comp
         have h4 := minpoly.aeval ℚ (Complex.exp (2 * ↑Real.pi * Complex.I / ↑↑p))
         exact h4
 
+--Lemme : le polynôme minimal de w_α est Phi p^α
+theorem poly_min_w_sur_Q (p : ℕ+) (α : ℕ) : premierfermat p → 0 < α → minpoly ℚ (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) = (Polynomial.cyclotomic (↑p^α) ℚ) := by
+  intro h _
+  cases h with
+  | intro left right =>
+    have h1 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos left)))
+    have h2 := (Polynomial.cyclotomic_eq_minpoly_rat h1 (@Nat.pow_pos p α (Nat.Prime.pos left))).symm
+    simp at h2
+    exact h2
+
+
 
 theorem degQw (α : ℕ) (p : Nat) : Nat.Prime p ∧ α > 0 → FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { Complex.exp (2*Complex.I*↑Real.pi/(p^α)) }) = p^(α-1)*(p-1) := by
-  sorry
+  intro h
+  cases h with
+  | intro left right =>
+    sorry
+
 -- La valuation p-adique de p-1 est 0
 theorem valplone (p : Nat) : Nat.Prime p → padicValNat p (p-1) = 0 := by
   intro hp
