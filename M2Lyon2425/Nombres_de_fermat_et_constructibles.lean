@@ -198,23 +198,35 @@ theorem algebrique_sur_Q (p : ℕ+) : premierfermat p →  IsAlgebraic ℚ (Comp
 
 theorem degQw (α : ℕ) (p : Nat) : Nat.Prime p ∧ α > 0 → FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { Complex.exp (2*Complex.I*↑Real.pi/(p^α)) }) = p^(α-1)*(p-1) := by
   sorry
-
-theorem valplone (p : Nat) : Nat.Prime p → padicValNat p (p-1) =0 := by
+-- La valuation p-adique de p-1 est 0
+theorem valplone (p : Nat) : Nat.Prime p → padicValNat p (p-1) = 0 := by
   intro hp
   by_contra h
   push_neg at h
-  sorry
+  rw[<-neZero_iff] at h
+  apply NeZero.one_le at h
+  apply dvd_of_one_le_padicValNat at h
+  have h2 : 0 < p-1 := by
+    apply Nat.Prime.one_lt at hp
+    apply Nat.sub_ne_zero_of_lt at hp
+    apply Nat.zero_lt_of_ne_zero at hp
+    exact hp
+  apply (Nat.le_of_dvd h2) at h
+  rw[<-Nat.pred_eq_sub_one] at h
+  have h3 := Nat.pred_lt_self (Nat.Prime.pos hp)
+  rw[le_iff_eq_or_lt] at h
+  cases h with
+  | inl h => apply Nat.ne_of_lt at h3; have h:= h.symm; contradiction
+  | inr h => apply le_of_lt at h; apply Nat.not_lt.mpr at h; contradiction
 
 
---(Polynomial.Gal (Polynomial.cyclotomic p ℚ) ≅ (ZMod p)ˣ)
-theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Fact (Nat.Prime p) ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α))) ∧ Fact (Nat.Prime 2) → ((premierfermat p ∧ α =1) ∨ p=2) :=by
+-- Sens direct du théorème. Ajout du paramètre "Fact" pour utiliser les théorèmes sur les valutations.
+theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α))) → ((premierfermat p ∧ α =1) ∨ p=2) :=by
  intro h
  cases h with
- | intro left2 right =>
-   have left := left2.out
+ | intro left right =>
    cases right with
-   | intro left1 right3 => cases right3 with
-   | intro right1 right4 =>
+   | intro left1 right1 =>
      apply Wantzel1 at right1
      have h2 := (degQw α p)
      have h3 : FiniteDimensional.finrank ℚ ↥(Algebra.adjoin ℚ {Complex.exp (2 * Complex.I * ↑Real.pi / ↑p ^ α)}) =
@@ -241,6 +253,7 @@ theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Fact (Nat.Prime p) �
           · exact Nat.sub_ne_zero_of_lt (Nat.Prime.one_lt left)
          apply (Nat.eq_iff_prime_padicValNat_eq (2^right1.choose) (p^(α-1)*(p-1)) twone neprod).mp at h1
          specialize h1 p left
+         have factp := jacobiSym.proof_1 p left
          rw[padicValNat.mul,padicValNat.prime_pow] at h1
          · have hvalplone := valplone p left
            rw[hvalplone] at h1
