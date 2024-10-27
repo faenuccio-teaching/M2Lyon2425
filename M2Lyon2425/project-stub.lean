@@ -19,9 +19,174 @@ On pourra voir le cours en pdf de P. Malbos, trouvable dans le dossier "projet_d
 -/
 
 
+variable {α : Type*}
+
+notation:1024 elm "∗" => KStar.kstar elm
+-- pour une raison que j'ignore, cette notation n'est pas déjà définie
+
+section QuelquesProprietesKleeneAlgebra
+
+variable {K : Type*} [KleeneAlgebra K]
+
+lemma add_respects_le {a₁ b₁ a₂ b₂ : K}
+  (h₁ : a₁ ≤ b₁) (h₂ : a₂ ≤ b₂) : a₁ + a₂ ≤ b₁ + b₂ := by
+    rw [← add_eq_right_iff_le] at h₁ h₂ ⊢
+    rw [
+      add_assoc,
+      add_comm a₂,
+      ← add_assoc,
+      ← add_assoc,
+      h₁,
+      add_assoc,
+      add_comm b₂,
+      h₂
+    ]
+
+lemma mul_respects_le {a₁ b₁ a₂ b₂ : K}
+  (h₁ : a₁ ≤ b₁) (h₂ : a₂ ≤ b₂) : a₁ * a₂ ≤ b₁ * b₂ := by
+    rw [← add_eq_right_iff_le] at h₁ h₂
+    have calcul : (a₁ + b₁) * (a₂ + b₂) = b₁ * b₂ := by rw [h₁, h₂]
+    rw [
+      left_distrib,
+      right_distrib,
+      right_distrib,
+      ← add_assoc,
+      add_eq_right_iff_le,
+      add_assoc
+    ] at calcul
+    exact (add_le_iff.mp calcul).1
+
+lemma unfold_left (a : K) : 1 + a∗ * a ≤ a∗ := by
+    nth_rw 2 [← add_idem a∗]
+    exact add_respects_le
+      (KleeneAlgebra.one_le_kstar a)
+      (KleeneAlgebra.kstar_mul_le_kstar a)
+
+lemma unfold_right (a : K) : 1 + a * a∗ ≤ a∗ := by
+    nth_rw 2 [← add_idem a∗]
+    exact add_respects_le
+      (KleeneAlgebra.one_le_kstar a)
+      (KleeneAlgebra.mul_kstar_le_kstar a)
+
+lemma induction_left {a b c : K} : b + a * c ≤ c → a∗ * b ≤ c := by
+  intro hyp
+  rw [add_le_iff] at hyp
+  exact kstar_mul_le hyp.left hyp.right
+
+lemma induction_right {a b c : K} : b + c * a ≤ c → b * a∗ ≤ c := by
+  intro hyp
+  rw [add_le_iff] at hyp
+  exact mul_kstar_le hyp.left hyp.right
+
+lemma le_add_left' {a b : K} : a ≤ a + b := by
+  rw [← add_eq_right_iff_le, ← add_assoc, add_idem]
+
+lemma le_add_right' {a b : K} : b ≤ a + b := by
+  rw [← add_eq_right_iff_le, add_comm, add_assoc, add_idem]
+
+lemma add_kstar {a b : K} : (a + b)∗ = a∗ * (b * a∗)∗ := by
+  refine le_antisymm ?_ ?_
+  · rw [← mul_one (a+b)∗]
+    refine induction_left ?_
+    · refine add_le_iff.mpr ?_
+      · constructor
+        · rw [← mul_one 1]
+          exact mul_respects_le one_le_kstar one_le_kstar
+        · rw [right_distrib]
+          refine add_le_iff.mpr ?_
+          · constructor
+            · rw [← mul_assoc]
+              exact mul_respects_le (mul_kstar_le_kstar) (by simp)
+            · rw [← mul_assoc]
+              nth_rw 1 [← one_mul b]
+              rw [mul_assoc, mul_assoc, ← mul_assoc b]
+              exact mul_respects_le one_le_kstar mul_kstar_le_kstar
+  · refine induction_right ?_
+    · refine add_le_iff.mpr ?_
+      · constructor
+        · refine kstar_mono ?_
+          rw [
+            ← add_eq_right_iff_le,
+            ← add_assoc,
+            add_idem
+          ]
+        · calc
+            (a + b)∗ * (b * a∗)
+              ≤ (a + b)∗ * ((a + b) * a∗ ):= ?_
+            _ ≤ (a + b)∗ * (a + b) * a∗ := by rw [mul_assoc]
+            _ ≤ (a + b)∗ * (a + b)∗  * a∗ :=  ?_
+            _ ≤ (a + b)∗ * (a + b)∗  * (a + b)∗ := ?_
+            _ = (a+b)∗ := by repeat rw [kstar_mul_kstar]
+          · exact mul_respects_le
+              (le_refl (a + b)∗)
+              (mul_respects_le
+                (le_add_right')
+                (le_refl a∗))
+          · exact mul_respects_le
+              (mul_respects_le
+                (le_refl (a + b)∗ )
+                le_kstar)
+              (le_refl a∗)
+          · exact mul_respects_le
+              (le_refl ((a + b)∗ * (a + b)∗))
+              (kstar_mono le_add_left')
+
+lemma mul_kstar_le_kstar_revmul_kstar {a b : K} :
+  b * a∗ ≤ a∗ * b∗ → (a + b)∗ ≤ a∗ * b∗ := by
+    intro hyp
+    have h₀ : a ≤ a∗ := le_kstar
+    have h₁ : a∗ * b∗ ≤ a∗ * b∗ := le_refl (a∗ * b∗)
+    have h₂ : a * (a∗ * b∗) ≤ a∗ * (a∗ * b∗) := mul_respects_le (h₀) (h₁)
+    rw [← mul_assoc, ← mul_assoc, kstar_mul_kstar, mul_assoc] at h₂
+    have h₃ : b∗ ≤ b∗ := le_refl b∗
+    have h₄ : b * a∗ * b∗ ≤ a∗ * b∗ * b∗ := mul_respects_le hyp h₃
+    rw [mul_assoc, mul_assoc, kstar_mul_kstar] at h₄
+    have h₅ := add_respects_le h₂ h₄
+    rw [← right_distrib, add_idem] at h₅
+    have h₆ : 1 ≤ a∗ := one_le_kstar
+    have h₇ : 1 ≤ b∗ := one_le_kstar
+    have h₈ := mul_respects_le h₆ h₇
+    rw [one_mul] at h₈
+    have h₉ := add_respects_le h₈ h₅
+    rw [add_idem] at h₉
+    have h₁₀ := induction_left h₉
+    rw [mul_one] at h₁₀
+    exact h₁₀
+
+lemma kstar_mul_kstar_le_kstar_revmul_kstar {a b : K} :
+  b∗ * a∗ ≤ a∗ * b∗ → (a + b)∗ ≤ a∗ * b∗ := by
+    intro hyp
+    refine mul_kstar_le_kstar_revmul_kstar ?_
+    · have h₀ : b ≤ b∗ := le_kstar
+      rw [← add_eq_right_iff_le] at h₀
+      nth_rw 1 [← h₀] at hyp
+      rw [right_distrib, add_le_iff] at hyp
+      exact hyp.left
+
+theorem KleeneChurchRosser {a b : K} :
+  b∗ * a∗ ≤ a∗ * b∗ ↔ (a + b)∗ ≤ a∗ * b∗ := by
+    constructor
+    · intro hyp
+      exact kstar_mul_kstar_le_kstar_revmul_kstar hyp
+    · intro hyp
+      nth_rw 1 [← mul_one a]
+      refine le_trans ?_ hyp
+      rw [add_comm, add_kstar]
+      refine mul_respects_le
+        (le_refl b∗)
+        (kstar_mono
+          (mul_respects_le
+            (le_refl a)
+            (one_le_kstar)))
+
+end QuelquesProprietesKleeneAlgebra
+
+
 /-- Un alias pour le type des relations binaires sur un type  `α`. -/
 @[reducible]
-def ARS (α : Type*) := α → α → Prop
+def ARS (β : Type*) := β → β → Prop
+
+namespace ARS
 
 /- On montre qu'il y a une structure d'algèbre de Kleene sur le type `ARS α` -/
 
@@ -42,59 +207,59 @@ section AddMonoid
 section Add
 
 @[simp]
-def ARS_add {α : Type*} (f g : ARS α) : ARS α :=
+def add (f g : ARS α) : ARS α :=
   fun x y ↦ (f x y ∨ g x y)
 
-instance (α : Type*) : Add (ARS α) where
-  add := ARS_add
+instance instAdd : Add (ARS α) where
+  add := add
 
 end Add
 
 section Zero
 
-def ARS_zero {α : Type*} : ARS α :=
+def zero : ARS α :=
   fun _ _ ↦ False
 
-instance (α : Type*) : Zero (ARS α) where
-  zero := ARS_zero
+instance instZeroARS : Zero (ARS α) where
+  zero := zero
 
 end Zero
 
-lemma ARS_add_assoc {α : Type*} (f g h : ARS α ) :
+lemma add_assoc (f g h : ARS α ) :
   (f + g) + h = f + (g + h) := by
     ext x y
     change (fun u v ↦ (f u v ∨ g u v) ∨ h u v) x y ↔ (fun u v ↦ f u v ∨ (g u v ∨ h u v)) x y
     simp
     rw [or_assoc]
 
-instance (α : Type*) : AddSemigroup (ARS α) where
-  add_assoc := ARS_add_assoc
+instance instAddSemigroupARS : AddSemigroup (ARS α) where
+    add_assoc := add_assoc
 
-lemma ARS_zero_add {α : Type*} (f : ARS α) :
+lemma zero_add (f : ARS α) :
   0 + f = f := by
     ext x y
     change False ∨ f x y ↔ f x y
     simp
 
-lemma ARS_add_zero {α : Type*} (f : ARS α) :
+lemma add_zero (f : ARS α) :
   f + 0 = f := by
     ext x y
     change f x y ∨ False ↔ f x y
     simp
 
-def ARS_nsmul {α : Type*} (n : ℕ) (f : ARS α) : ARS α := by -- nécessaire
+def nsmul (n : ℕ) (f : ARS α) : ARS α := by -- nécessaire
   match n with
-  | 0 => exact ARS_zero
+  | 0 => exact 0
   | _ => exact f
 
 -- lemme intermédiare
-lemma ARS_nsmul_succ_succ {α : Type*} (n : ℕ) (f : ARS α) -- nécessaire
-  : ARS_nsmul (n + 1) f = f := by
+lemma nsmul_succ_succ (n : ℕ) (f : ARS α) -- nécessaire
+  : nsmul (n + 1) f = f := by
     trivial
 
 -- lemme intermédiare
 @[simp]
-lemma ARS_addIdem {α : Type*} (f : ARS α) : f + f = f := by
+lemma addIdem (f : ARS α) : f + f = f := by
   ext x y
   constructor
   · intro h
@@ -106,53 +271,53 @@ lemma ARS_addIdem {α : Type*} (f : ARS α) : f + f = f := by
     exact h
 
 -- lemme intermédiare
-lemma ARS_nsmul_succ_zero {α : Type*} (f : ARS α) -- nécessaire
-  : ARS_nsmul 0 f = ARS_zero := by
+lemma nsmul_succ_zero (f : ARS α) -- nécessaire
+  : nsmul 0 f = zero := by
     trivial
 
-lemma ARS_nsmul_succ {α : Type*} (n : ℕ ) (f : ARS α) :
-  ARS_nsmul (n+1) f = ARS_add (ARS_nsmul n f) f := by
-    rw [ARS_nsmul_succ_succ]
+lemma nsmul_succ (n : ℕ ) (f : ARS α) :
+  nsmul (n+1) f = add (nsmul n f) f := by
+    rw [nsmul_succ_succ]
     cases n with
     | zero =>
-      rw [ARS_nsmul_succ_zero]
+      rw [nsmul_succ_zero]
       symm
-      exact ARS_zero_add f
+      exact zero_add f
     | succ m =>
-      rw [ARS_nsmul_succ_succ]
+      rw [nsmul_succ_succ]
       symm
-      exact ARS_addIdem f
+      exact addIdem f
 
-instance (α : Type*) : AddMonoid (ARS α) where
-  zero_add := ARS_zero_add
-  add_zero := ARS_add_zero
-  nsmul := ARS_nsmul
-  nsmul_succ := ARS_nsmul_succ
+instance instAddMonoidARS : AddMonoid (ARS α) where
+  zero_add := zero_add
+  add_zero := add_zero
+  nsmul := nsmul
+  nsmul_succ := nsmul_succ
 
 end AddMonoid
 
-lemma ARS_add_comm {α : Type*} (f g : ARS α) :
+lemma add_comm (f g : ARS α) :
   f + g = g + f := by
     ext x y
     change (fun u v  ↦ f u v ∨ g u v) x y ↔ (fun u v  ↦ g u v ∨ f u v) x y
     exact or_comm
 
-instance (α : Type*) : AddCommMonoid (ARS α) where
-  add_comm := ARS_add_comm
+instance instAddCommMonoidARS : AddCommMonoid (ARS α) where
+  add_comm := add_comm
 
 end AddCommMonoid
 
 section Mul
 
-def ARS_mul {α : Type*} (f g : ARS α) : ARS α :=
+def mul (f g : ARS α) : ARS α :=
   fun u v ↦ (∃ w, f u w ∧ g w v)
 
-instance (α : Type*) : Mul (ARS α) where
-  mul := ARS_mul
+instance instMulARS : Mul (ARS α) where
+  mul := mul
 
 end Mul
 
-lemma ARS_left_distrib {α : Type*} (f g h : ARS α) :
+lemma left_distrib (f g h : ARS α) :
   f * (g + h) = (f * g) + (f * h) := by
     ext x y
     change
@@ -189,7 +354,7 @@ lemma ARS_left_distrib {α : Type*} (f g h : ARS α) :
         · right
           exact hw1.right
 
-lemma ARS_right_distrib {α : Type*} (f g h : ARS α) :
+lemma right_distrib (f g h : ARS α) :
   (f + g) * h = (f * h) + (g * h) := by
     ext x y
     change
@@ -226,7 +391,7 @@ lemma ARS_right_distrib {α : Type*} (f g h : ARS α) :
           exact hwl
         · exact hwr
 
-lemma ARS_zero_mul {α : Type*} (f : ARS α) : 0 * f = 0 := by
+lemma zero_mul (f : ARS α) : 0 * f = 0 := by
   ext x y
   constructor
   · intro hyp
@@ -237,7 +402,7 @@ lemma ARS_zero_mul {α : Type*} (f : ARS α) : 0 * f = 0 := by
     exfalso
     exact absu
 
-lemma ARS_mul_zero {α : Type*} (f : ARS α) : f * 0 = 0 := by
+lemma mul_zero (f : ARS α) : f * 0 = 0 := by
   ext x y
   constructor
   · intro hyp
@@ -248,15 +413,15 @@ lemma ARS_mul_zero {α : Type*} (f : ARS α) : f * 0 = 0 := by
     exfalso
     exact absu
 
-instance (α : Type*) : NonUnitalNonAssocSemiring (ARS α) where
-  left_distrib := ARS_left_distrib
-  right_distrib := ARS_right_distrib
-  zero_mul := ARS_zero_mul
-  mul_zero := ARS_mul_zero
+instance instNonUnitalNonAssocSemiringARS : NonUnitalNonAssocSemiring (ARS α) where
+  left_distrib := left_distrib
+  right_distrib := right_distrib
+  zero_mul := zero_mul
+  mul_zero := mul_zero
 
 end NonUnitalNonAssocSemiring
 
-lemma ARS_mul_assoc {α : Type*} (f g h : ARS α) :
+lemma mul_assoc (f g h : ARS α) :
    (f * g) * h = f * (g * h) := by
     symm
     ext x y
@@ -281,35 +446,35 @@ lemma ARS_mul_assoc {α : Type*} (f g h : ARS α) :
       · exact hw2l
       · use w1
 
-instance (α : Type*) : NonUnitalSemiring (ARS α) where
-  mul_assoc := ARS_mul_assoc
+instance instNonUnitalSemiringARS : NonUnitalSemiring (ARS α) where
+  mul_assoc := mul_assoc
 
 end NonUnitalSemiring
 
 section One
 
-@[simp] def ARS_one {α : Type*} : ARS α :=
+@[simp] def one : ARS α :=
   (fun x y ↦ x = y)
 
-instance (α : Type*) : One (ARS α) where
-  one := ARS_one
+instance instOneARS : One (ARS α) where
+  one := one
 
 end One
 
 section NatCast
 
 @[simp]
-def ARS_natCast {α : Type*} (n : ℕ) : ARS α := by
+def natCast (n : ℕ) : ARS α := by
   match n with
   | 0 => exact 0
   | _ + 1 => exact 1
 
-instance (α : Type*) : NatCast (ARS α) where
-  natCast := ARS_natCast
+instance instNatCastARS : NatCast (ARS α) where
+  natCast := natCast
 
 end NatCast
 
-lemma ARS_mul_one {α : Type*} (f : ARS α) :
+lemma mul_one (f : ARS α) :
   f * 1 = f := by
     ext x y
     constructor
@@ -323,7 +488,7 @@ lemma ARS_mul_one {α : Type*} (f : ARS α) :
       use y
       trivial
 
-lemma ARS_one_mul {α : Type*} (f : ARS α) :
+lemma one_mul  (f : ARS α) :
   1 * f = f := by
     ext x y
     constructor
@@ -337,23 +502,23 @@ lemma ARS_one_mul {α : Type*} (f : ARS α) :
       use x
       trivial
 
-lemma ARS_natCast_succ {α : Type*} (n : ℕ) : @ARS_natCast α (n + 1) = ARS_natCast n + 1 := by
+lemma natCast_succ (n : ℕ) : @natCast α (n + 1) = natCast n + 1 := by
   cases n with
   | zero =>
     simp
   | succ m =>
     simp
 
-def ARS_npow {α : Type*} (n : ℕ) (f : ARS α) :
+def npow (n : ℕ) (f : ARS α) :
   ARS α := by
     match n with
     | 0 => exact 1
-    | m + 1 => exact (ARS_npow m f) * f
+    | m + 1 => exact (npow m f) * f
 
-instance (α : Type*) : Semiring (ARS α) where
-  one_mul := ARS_one_mul
-  mul_one := ARS_mul_one
-  natCast_succ := ARS_natCast_succ
+instance instSemiringARS : Semiring (ARS α) where
+  one_mul := one_mul
+  mul_one := mul_one
+  natCast_succ := natCast_succ
 
 end Semiring
 
@@ -365,31 +530,30 @@ section Preorder
 
 section LE
 
-@[simp]
-def ARS_le {α : Type*} (f g : ARS α) : Prop :=
+def le (f g : ARS α) : Prop :=
   f + g = g
 
-instance (α : Type*) : LE (ARS α) where
-  le := ARS_le
+instance instLEARS : LE (ARS α) where
+  le := le
 
 end LE
 
 section LT
 
 @[simp]
-def ARS_lt {α : Type*} (f g : ARS α) : Prop :=
+def lt (f g : ARS α) : Prop :=
   f ≤ g ∧ ¬ (f = g)
 
-instance (α : Type*) : LT (ARS α) where
-  lt := ARS_lt
+instance instLTARS : LT (ARS α) where
+  lt := lt
 
 end LT
 
-lemma ARS_le_refl {α : Type*} (f : ARS α) :
+lemma le_refl (f : ARS α) :
   f ≤ f := by
-    exact ARS_addIdem f
+    exact addIdem f
 
-lemma ARS_le_trans {α : Type*} (f g h : ARS α) :
+lemma le_trans {f g h : ARS α} :
   f ≤ g → g ≤ h → f ≤ h := by
     intro add_fg add_gh
     change f + h = h
@@ -397,7 +561,7 @@ lemma ARS_le_trans {α : Type*} (f g h : ARS α) :
     nth_rw 2 [← add_fg]
     rw [add_assoc]
 
-lemma ARS_lt_iff_le_not_le {α : Type*} (f g : ARS α) :
+lemma lt_iff_le_not_le (f g : ARS α) :
   f < g ↔ f ≤ g ∧ ¬ g ≤ f := by
     constructor
     · intro ⟨le_fg, neq_fg⟩
@@ -413,64 +577,64 @@ lemma ARS_lt_iff_le_not_le {α : Type*} (f g : ARS α) :
       · exact le_fg
       · intro eq_fg
         rw [eq_fg] at nle_gf
-        exact nle_gf (ARS_le_refl g)
+        exact nle_gf (le_refl g)
 
-instance (α : Type*) : Preorder (ARS α) where
-  le_refl := ARS_le_refl
-  le_trans := ARS_le_trans
-  lt_iff_le_not_le := ARS_lt_iff_le_not_le
+instance instPreorderARS : Preorder (ARS α) where
+  le_refl := le_refl
+  le_trans := @le_trans α
+  lt_iff_le_not_le := lt_iff_le_not_le
 
 end Preorder
 
-lemma ARS_le_antisymm {α : Type*} (f g : ARS α) :
+lemma le_antisymm (f g : ARS α) :
   f ≤ g → g ≤ f → f = g := by
     intro add_fg add_gf
     rw [← add_fg]
     nth_rw 1 [← add_gf]
     exact add_comm g f
 
-instance (α : Type*) : PartialOrder (ARS α) where
-  le_antisymm := ARS_le_antisymm
+instance instPartialOrderARS : PartialOrder (ARS α) where
+  le_antisymm := le_antisymm
 
 end PartialOrder
 
 section Sup
 
-def ARS_sup {α : Type*} (f g : ARS α) : ARS α := f + g
+def sup (f g : ARS α) : ARS α := f + g
 
-instance (α : Type*) : Sup (ARS α) where
-  sup := ARS_sup
+instance instSupARS : Sup (ARS α) where
+  sup := sup
 
 end Sup
 
-lemma ARS_le_sup_left {α : Type*} (f g : ARS α) :
+lemma le_sup_left (f g : ARS α) :
   f ≤ (f + g) := by
     change f + (f + g) = f + g
-    rw [← add_assoc, ARS_addIdem]
+    rw [← add_assoc, addIdem]
 
-lemma ARS_le_sup_right {α : Type*} (f g : ARS α) :
+lemma le_sup_right (f g : ARS α) :
   g ≤ (f + g) := by
     change g + (f + g) = f +g
-    rw [add_comm, add_assoc, ARS_addIdem]
+    rw [add_comm, add_assoc, addIdem]
 
-lemma ARS_sup_le {α : Type*} (f g h : ARS α) :
+lemma sup_le (f g h : ARS α) :
   f ≤ h → g ≤ h → (f + g) ≤ h := by
     intro add_fh add_gh
     change f + g + h = h
     rw [add_assoc, add_gh, add_fh]
 
-instance (α : Type*) : SemilatticeSup (ARS α) where
-  le_sup_left := ARS_le_sup_left
-  le_sup_right := ARS_le_sup_right
-  sup_le := ARS_sup_le
+instance instSemilatticeSupARS : SemilatticeSup (ARS α) where
+  le_sup_left := le_sup_left
+  le_sup_right := le_sup_right
+  sup_le := sup_le
 
 end SemilatticeSup
 
-lemma ARS_bot_le {α : Type*} (f : ARS α) : 0 ≤ f := by
+lemma bot_le (f : ARS α) : 0 ≤ f := by
   exact zero_add f
 
-instance (α : Type*) : IdemSemiring (ARS α) where
-  bot_le := ARS_bot_le
+instance instIdemSemiringARS : IdemSemiring (ARS α) where
+  bot_le := bot_le
 
 end IdemSemiring
 
@@ -480,42 +644,38 @@ section KStar
 une disjonction infinie sur le type sur lequel il quantifie : en d'autres termes,
 `∃ (x : α), P x` est équivalent à `⋁ (x : α), P x`
 Puisque `+` est une disjontion binaire, une somme infinie est une disjonction infinie -/
-def ARS_kstar {α : Type*} (f : ARS α) :
+def kstar (f : ARS α) :
   ARS α := fun u v ↦ ∃ n, (f ^ n) u v
 
-instance (α : Type*) : KStar (ARS α) where
-  kstar := ARS_kstar
-
-notation:1024 elm "∗ " => KStar.kstar elm
--- pour une raison que j'ignore, cette notation n'est pas déjà définie
+instance instKStarARS : KStar (ARS α) where
+  kstar := kstar
 
 end KStar
 
-lemma ARS_one_le_kstar {α : Type*} (f : ARS α) :
-  1 ≤ f∗ := by
-    ext x y
-    constructor
-    · intro hyp
-      cases hyp with
-      | inl l =>
-        use 0
-        exact l
-      | inr r => exact r
-    · intro hyp
-      right
-      exact hyp
+lemma one_le_kstar (f : ARS α) : 1 ≤ f∗ := by
+  ext x y
+  constructor
+  · intro hyp
+    cases hyp with
+    | inl l =>
+      use 0
+      exact l
+    | inr r => exact r
+  · intro hyp
+    right
+    exact hyp
 
 /- On a f^n f = f f^n, par récurrence -/
 -- lemme intermédiare
-lemma ARS_npow_mul_eq_mul_npow {α : Type*} (n : ℕ) (f : ARS α) :
+lemma npow_mul_eq_mul_npow (n : ℕ) (f : ARS α) :
   f * (f^n) = (f ^ n) * f := by
     match n with
     | 0 =>
       rw [pow_zero, one_mul, mul_one]
     | m + 1 =>
-      rw [pow_succ, ← mul_assoc, ARS_npow_mul_eq_mul_npow]
+      rw [pow_succ, ← mul_assoc, npow_mul_eq_mul_npow]
 
-lemma ARS_mul_kstar_le_kstar {α : Type*} (f : ARS α) :
+lemma mul_kstar_le_kstar (f : ARS α) :
   f * f∗ ≤ f∗ := by
     ext x y
     constructor
@@ -529,7 +689,7 @@ lemma ARS_mul_kstar_le_kstar {α : Type*} (f : ARS α) :
         use (n+1)
         rw [
           pow_succ,
-          ← ARS_npow_mul_eq_mul_npow
+          ← npow_mul_eq_mul_npow
         ]
         use w
       | inr hypr =>
@@ -538,7 +698,7 @@ lemma ARS_mul_kstar_le_kstar {α : Type*} (f : ARS α) :
       right
       exact hyp
 
-lemma ARS_kstar_mul_le_kstar {α : Type*} (f : ARS α) :
+lemma kstar_mul_le_kstar (f : ARS α) :
    f∗ * f ≤ f∗ := by
     ext x y
     constructor
@@ -561,13 +721,13 @@ lemma ARS_kstar_mul_le_kstar {α : Type*} (f : ARS α) :
 section QuelquesLemmes
 
 -- lemme intermédiare
-lemma ARS_ban_le_bam {α : Type*} {f g : ARS α} :
+lemma ban_le_bam {f g : ARS α} :
   f * g ≤ f →
   ∀ (n : ℕ), f * (g^(n + 1)) ≤ f * g^n := by
     intro hyp n
     rw [
       pow_succ,
-      ← ARS_npow_mul_eq_mul_npow,
+      ← npow_mul_eq_mul_npow,
       ← mul_assoc
     ]
     change f*g * g^n + f * g^n = f*g^n
@@ -577,7 +737,7 @@ lemma ARS_ban_le_bam {α : Type*} {f g : ARS α} :
     ]
 
 -- lemme intermédiare
-lemma ARS_ban_le_b {α : Type*} {f g : ARS α} :
+lemma ban_le_b {f g : ARS α} :
   (∀ n, f * g^(n + 1) ≤ f * g^n) →
   ∀ n, f * g ^ n ≤ f := by
     intro hyp n
@@ -585,10 +745,10 @@ lemma ARS_ban_le_b {α : Type*} {f g : ARS α} :
     | zero =>
       simp
     | succ m =>
-      exact le_trans (hyp m) (ARS_ban_le_b hyp m)
+      exact le_trans (hyp m) (ban_le_b hyp m)
 
 -- lemme intermédiare
-lemma ARS_bak_le_b {α : Type*} {f g : ARS α} :
+lemma bak_le_b {f g : ARS α} :
   (∀ (n : ℕ), f * g^n ≤ f) →
   f * g∗ ≤ f := by
     intro hyp
@@ -612,7 +772,7 @@ lemma ARS_bak_le_b {α : Type*} {f g : ARS α} :
       exact hyp
 
 -- lemme intermédiare
-lemma ARS_anb_le_amb {α : Type*} {f g : ARS α} :
+lemma anb_le_amb {f g : ARS α} :
   g * f ≤ f →
   ∀ (n : ℕ), (g^(n + 1)) * f ≤ g^n * f := by
     intro hyp n
@@ -627,7 +787,7 @@ lemma ARS_anb_le_amb {α : Type*} {f g : ARS α} :
     ]
 
 -- lemme intermédiare
-lemma ARS_anb_le_b {α : Type*} {f g : ARS α} :
+lemma anb_le_b {f g : ARS α} :
   (∀ n, g^(n + 1) * f ≤ g^n * f) →
   ∀ n, g^n * f ≤ f := by
     intro hyp n
@@ -635,10 +795,10 @@ lemma ARS_anb_le_b {α : Type*} {f g : ARS α} :
     | zero =>
       simp
     | succ m =>
-      exact le_trans (hyp m) (ARS_anb_le_b hyp m)
+      exact le_trans (hyp m) (anb_le_b hyp m)
 
 -- lemme intermédiare
-lemma ARS_akb_le_b {α : Type*} {f g : ARS α} :
+lemma akb_le_b {f g : ARS α} :
   (∀ (n : ℕ), g^n * f ≤ f) →
   g∗ * f ≤ f := by
     intro hyp
@@ -663,28 +823,30 @@ lemma ARS_akb_le_b {α : Type*} {f g : ARS α} :
 
 end QuelquesLemmes
 
-lemma ARS_mul_kstar_le_self {α : Type*} (g f : ARS α) :
+lemma mul_kstar_le_self (g f : ARS α) :
   f * g ≤ f → f * g∗ ≤ f := by
     intro hyp
-    exact ARS_bak_le_b (ARS_ban_le_b (ARS_ban_le_bam hyp))
+    exact bak_le_b (ban_le_b (ban_le_bam hyp))
 
 
-lemma ARS_kstar_mul_le_self {α : Type*} (g f : ARS α) :
+lemma kstar_mul_le_self (g f : ARS α) :
   g * f ≤ f → g∗ * f ≤ f := by
     intro hyp
-    exact ARS_akb_le_b (ARS_anb_le_b (ARS_anb_le_amb hyp))
+    exact akb_le_b (anb_le_b (anb_le_amb hyp))
 
-instance {α : Type*} : KleeneAlgebra (ARS α) where
-  one_le_kstar := ARS_one_le_kstar
-  mul_kstar_le_kstar := ARS_mul_kstar_le_kstar
-  kstar_mul_le_kstar := ARS_kstar_mul_le_kstar
-  mul_kstar_le_self := ARS_mul_kstar_le_self
-  kstar_mul_le_self := ARS_kstar_mul_le_self
+instance instKleeneAlgebra : KleeneAlgebra (ARS α) where
+  one_le_kstar := one_le_kstar
+  mul_kstar_le_kstar := mul_kstar_le_kstar
+  kstar_mul_le_kstar := kstar_mul_le_kstar
+  mul_kstar_le_self := mul_kstar_le_self
+  kstar_mul_le_self := kstar_mul_le_self
 
 end KleeneAlgebra
 
+end ARS
+
 /-
-On montre quelques lemmes basiques :
+On montre quelques lemmes basiques spécifique aux ARS :
 - la clôture symmétrique est symétrique,
 - la cloture transitive est transitive,
 - …
@@ -692,12 +854,12 @@ On montre quelques lemmes basiques :
 
 section QuelquesPreuves
 
-lemma ARS_kstar_is_refl {α : Type*} (f : ARS α) : Reflexive f∗ := by
+lemma kstar_is_refl (f : ARS α) : Reflexive f∗ := by
   intro x
   use 0
   trivial
 
-lemma ARS_kstar_is_trans {α : Type*} (f : ARS α) : Transitive f∗ := by
+lemma kstar_is_trans (f : ARS α) : Transitive f∗ := by
   intro x y z hxy hyz
   have pnxy := hxy.choose_spec
   have pnyz := hyz.choose_spec
@@ -707,14 +869,14 @@ lemma ARS_kstar_is_trans {α : Type*} (f : ARS α) : Transitive f∗ := by
 
 /-- La relation inverse issue d'une relation donnée -/
 @[reducible]
-def ARS_inverse {α : Type*} (f : ARS α) : ARS α := fun x y ↦ f y x
-notation:1024 elm "⇐ " => ARS_inverse elm
+def inverse (f : ARS α) : ARS α := fun x y ↦ f y x
+notation:1024 elm "⇐" => inverse elm
 
-@[simp] lemma ARS_inverse_involution {α : Type*} (f : ARS α) : f⇐⇐ = f := by
+@[simp] lemma inverse_involution (f : ARS α) : f⇐⇐ = f := by
   ext x y
   simp
 
-@[simp] lemma ARS_inv_one {α : Type*} : (1 : ARS α)⇐ = 1 := by
+@[simp] lemma inverse_one : (1 : ARS α)⇐ = 1 := by
   ext x y
   constructor
   · intro h
@@ -724,27 +886,26 @@ notation:1024 elm "⇐ " => ARS_inverse elm
     rw [h]
     rfl
 
-@[simp] lemma ARS_symm_over_add {α : Type*} (f g : ARS α) : (f + g)⇐ = f⇐ + g⇐ := by
+@[simp] lemma symm_over_add (f g : ARS α) : (f + g)⇐ = f⇐ + g⇐ := by
   ext x y
-  change f y x ∨ g y x ↔ f y x ∨ g y x
   rfl
 
 /-- La plus petite relation contenant une relation et son inverse -/
 @[reducible]
-def ARS_symm_closure {α : Type*} (f : ARS α) : ARS α := f + f⇐
-notation:1024 elm "⇔ " => ARS_symm_closure elm
+def symm_closure (f : ARS α) : ARS α := f + f⇐
+notation:1024 elm "⇔" => symm_closure elm
 
-lemma ARS_symm_is_idem {α : Type*} (f : ARS α) : f⇔⇔ = f⇔ := by
+lemma symm_is_idem (f : ARS α) : f⇔⇔ = f⇔ := by
   change (f + f⇐) + (f + f⇐)⇐ = f + f⇐
   simp
   rw [add_assoc]
   nth_rw 2 [← add_assoc]
-  rw [ARS_addIdem]
+  rw [add_idem]
   nth_rw 2 [add_comm]
   nth_rw 1 [← add_assoc]
-  rw [ARS_addIdem] -- une fois pour f, une fois pour f⇔
+  rw [add_idem] -- une fois pour f, une fois pour f⇔
 
-lemma ARS_symm_closure_is_symm {α : Type*} (f : ARS α) : Symmetric f⇔ := by
+lemma symm_closure_is_symm (f : ARS α) : Symmetric f⇔ := by
   intro x y hxy
   cases hxy with
   | inl direct =>
@@ -754,12 +915,12 @@ lemma ARS_symm_closure_is_symm {α : Type*} (f : ARS α) : Symmetric f⇔ := by
     left
     exact indirect
 
-lemma ARS_inv_pow_eq_pow_inv {α : Type*} (f : ARS α) (n : ℕ): f⇐^n = (f^n)⇐ := by
+lemma inv_pow_eq_pow_inv (f : ARS α) (n : ℕ): f⇐^n = (f^n)⇐ := by
   match n with
   | 0 =>
     simp
   | m + 1 =>
-    rw [pow_succ, pow_succ, ← ARS_npow_mul_eq_mul_npow]
+    rw [pow_succ, pow_succ, ← ARS.npow_mul_eq_mul_npow]
     ext x y
     constructor
     · intro hyp
@@ -767,7 +928,7 @@ lemma ARS_inv_pow_eq_pow_inv {α : Type*} (f : ARS α) (n : ℕ): f⇐^n = (f^n)
       have ⟨hw, hwm⟩ := hyp.choose_spec
       use w
       constructor
-      · rw [← ARS_inverse_involution f, ARS_inv_pow_eq_pow_inv]
+      · rw [← inverse_involution f, inv_pow_eq_pow_inv]
         exact hwm
       · exact hw
     · intro hyp
@@ -776,36 +937,36 @@ lemma ARS_inv_pow_eq_pow_inv {α : Type*} (f : ARS α) (n : ℕ): f⇐^n = (f^n)
       use w
       constructor
       · exact hw
-      · rw [ARS_inv_pow_eq_pow_inv]
+      · rw [inv_pow_eq_pow_inv]
         exact hwm
 
-lemma ARS_inv_trans_eq_trans_inv {α : Type*} (f : ARS α) : f⇐∗ = f∗⇐ := by
+lemma inv_trans_eq_trans_inv (f : ARS α) : f⇐∗ = f∗⇐ := by
   ext x y
   constructor
   · intro hyp
     use hyp.choose
     have hn := hyp.choose_spec
-    rw [ARS_inv_pow_eq_pow_inv] at hn
+    rw [inv_pow_eq_pow_inv] at hn
     exact hn
   · intro hyp
     simp at hyp
     use hyp.choose
     have hn := hyp.choose_spec
-    rw [ARS_inv_pow_eq_pow_inv]
+    rw [inv_pow_eq_pow_inv]
     exact hn
 
 /-- La plus petite relation d'équivalence contenant une relation -/
 @[reducible]
-def ARS_lubEquiv {α : Type*} (f : ARS α) : ARS α :=  f⇔∗
-notation:1024 elm "≡ " => ARS_lubEquiv elm
+def lubEquiv (f : ARS α) : ARS α :=  f⇔∗
+notation:1024 elm "≡" => lubEquiv elm
 
-lemma ARS_lubEquiv_is_trans {α : Type*} (f : ARS α) : Transitive f≡ :=
-    ARS_kstar_is_trans f⇔
+lemma lubEquiv_is_trans (f : ARS α) : Transitive f≡ :=
+    kstar_is_trans f⇔
 
-lemma ARS_lubEquiv_is_refl {α : Type*} (f : ARS α) : Reflexive f⇔∗ :=
-    ARS_kstar_is_refl f⇔
+lemma lubEquiv_is_refl (f : ARS α) : Reflexive f≡ :=
+    kstar_is_refl f⇔
 
-lemma ARS_symm_n_is_symm {α : Type*} (f : ARS α) : ∀ n, Symmetric (f⇔^n) := by
+lemma symm_n_is_symm (f : ARS α) : ∀ n, Symmetric (f⇔^n) := by
     intro n
     cases n with
     | zero =>
@@ -818,51 +979,45 @@ lemma ARS_symm_n_is_symm {α : Type*} (f : ARS α) : ∀ n, Symmetric (f⇔^n) :
       intro x y hxy
       let w := hxy.choose
       have hw := hxy.choose_spec
-      rw [← ARS_npow_mul_eq_mul_npow]
+      rw [← ARS.npow_mul_eq_mul_npow]
       use w
       constructor
-      · exact (ARS_symm_closure_is_symm f) hw.right
-      · exact (ARS_symm_n_is_symm f m) hw.left
+      · exact (symm_closure_is_symm f) hw.right
+      · exact (symm_n_is_symm f m) hw.left
 
-lemma ARS_lubEquiv_is_symm {α : Type*} (f : ARS α) : Symmetric f≡ := by
+lemma lubEquiv_is_symm (f : ARS α) : Symmetric f≡ := by
   intro x y hxy
   let n := hxy.choose
   have h := hxy.choose_spec
   use n
-  exact (ARS_symm_n_is_symm f n) h
+  exact (symm_n_is_symm f n) h
 
-lemma ARS_symm_trans_is_equiv {α : Type*} (f : ARS α) : Equivalence f≡ where
-  refl := @ARS_lubEquiv_is_refl α f
-  symm := @ARS_lubEquiv_is_symm α f
-  trans := @ARS_lubEquiv_is_trans α f
+lemma lubEquiv_is_equiv (f : ARS α) : Equivalence f≡ where
+  refl := @lubEquiv_is_refl α f
+  symm := @lubEquiv_is_symm α f
+  trans := @lubEquiv_is_trans α f
 
 end QuelquesPreuves
 
-section QuelquesProprietes
+/- Dans la section suivante, on établit quelques propriétés de élémentaires
+des algèbres de Kleene. Beaucoup sont déjà prouvées dans Mathlib/Algebra/Order/Kleene. -/
 
-def isWeaklyCommuting {α : Type*} (f₁ f₂ : ARS α) : Prop := f₁⇐ * f₂ ≤ f₂∗ * f₁⇐∗
+section QuelquesProprietesARS
 
-def isCommuting {α : Type*} (f₁ f₂ : ARS α) : Prop := f₁⇐ * f₂ ≤ f₂ * f₁⇐
+def isWeaklyCommuting (f₁ f₂ : ARS α) : Prop := f₁⇐ * f₂ ≤ f₂∗ * f₁⇐∗
 
-def isDiamond {α : Type*} (f : ARS α) : Prop := isCommuting f f
+def isCommuting (f₁ f₂ : ARS α) : Prop := f₁⇐ * f₂ ≤ f₂ * f₁⇐
 
-def isChurchRosser {α : Type*} (f : ARS α) : Prop := f≡ ≤ f∗ * f⇐∗
+def isDiamond (f : ARS α) : Prop := isCommuting f f
 
-def isConfluent {α : Type*} (f : ARS α) : Prop := f⇐∗ * f∗ ≤ f∗ * f⇐∗
+def isChurchRosser (f : ARS α) : Prop := f≡ ≤ f∗ * f⇐∗
 
-def isWeaklyConfluent {α : Type*} (f : ARS α) : Prop := f⇐ * f ≤ f∗ * f⇐∗
+def isConfluent (f : ARS α) : Prop := f⇐∗ * f∗ ≤ f∗ * f⇐∗
 
-theorem KleeneChurchRosser {K : Type*} [KleeneAlgebra K] (a b : K) :
-  a∗ * b∗ ≤ b∗ * a∗ ↔ (b + a)∗ ≤ b∗ * a∗ := by
-    constructor
-    · intro hyp
+def isWeaklyConfluent (f : ARS α) : Prop := f⇐ * f ≤ f∗ * f⇐∗
 
-      sorry
-    · sorry
-
-theorem ChurchRosser {α : Type*} (f : ARS α) :  isConfluent f ↔ isChurchRosser f := by
-  have := KleeneChurchRosser f⇐ f
+theorem ChurchRosser (f : ARS α) :  isConfluent f ↔ isChurchRosser f := by
   rw [isConfluent, isChurchRosser]
-  exact this
+  exact KleeneChurchRosser
 
-end QuelquesProprietes
+end QuelquesProprietesARS
