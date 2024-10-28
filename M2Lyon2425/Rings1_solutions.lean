@@ -203,7 +203,7 @@ noncomputable example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) : Rˣ →*
 
 /-
   # Ideals and quotients
-  The theory of ideals in Mathlib has only been developped in the case of commutative rings
+  The theory of ideals in Mathlib has only been developed in the case of commutative rings
   for historical reason, so we will only focus on this case.
   The type of ideal of `R` is defined as `Submodule R R` (see the linear algebra section).
 -/
@@ -232,7 +232,7 @@ example : I ⊔ J = I + J := by -- use `\lub` to write `⊔`
 example : I ⊓ J = (I : Set R) ∩ (J : Set R) := by  -- use `\glb` to write `⊓`
   rfl
 
--- An ideal is principal if it is principal as a `Submodule` that is it satifies
+-- An ideal is principal if it is principal as a `Submodule` that is it satisfies
 -- `Submodule.IsPrincipal`. Since an ideal `I` is by definition a submodule, we can still use
 -- the `.` notation.
 
@@ -265,7 +265,7 @@ noncomputable example (S : Type*) [CommRing S] (f : R →+* S) :
   # Digression: quotient in Lean / Mathlib
 -/
 
--- Quotient in Lean are defined using a setoid, that is a type equiped with an equivalence relation
+-- Quotient in Lean are defined using a setoid, that is a type equipped with an equivalence relation
 
 variable (α : Type*) (r : α → α → Prop)
 
@@ -291,7 +291,7 @@ example (a b : α) (s : Setoid α) (h : a ≈ b) : -- (Use `\~~` to write `≈`)
 
 -- Note that the quotient and the quotient map comes in three different versions: `Quotient.mk`,
 -- `Quotient.mk'` and `Quotient.mk''` depending (respectively) if the setoid is given as an
--- argument, should be infered by typeclass inference or is given as an implicit argument.
+-- argument, should be inferred by typeclass inference or is given as an implicit argument.
 
 -- If `I` is an ideal of `R`, then there is an equivalence relation and thus a setoid of `R`
 -- constructed from it (in fact, it is constructed for submodules) and Lean can infer from that
@@ -403,7 +403,7 @@ instance : Add ZZ := ⟨add⟩
 @[simp]
 theorem add_def (a b c d : ℕ) : (⟦(a, b)⟧ + ⟦(c, d)⟧ : ZZ) = ⟦(a + c, b + d)⟧ := rfl
 
--- Defining substraction is now direct
+-- Defining subtraction is now direct
 
 def sub (x y : ZZ) : ZZ := x + -y
 
