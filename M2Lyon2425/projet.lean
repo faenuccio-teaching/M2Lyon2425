@@ -16,8 +16,13 @@ Ceci étant fait, il est beaucoup plus simple de vérifier certaines propriété
 d'opérations sur `ARS α` (de même qu'il est plus facile de les énoncer).
 
 On pourra voir le cours en pdf de P. Malbos, trouvable dans le dossier "projet_docs".
--/
 
+La structure du fichier est la suivante :
+1. on prouve d'abord des résultats portants sur les algèbres de Kleene,
+2. on montre que l'on peut munir `ARS α` d'une structure d'algèbre de Kleene,
+3. on applique les théorèmes de la première partie aux ARS.
+4. Éventuellement, on pourrait faire les mêmes preuves sans la structure algébrique.
+-/
 
 variable {α : Type*}
 
@@ -55,6 +60,14 @@ lemma mul_respects_le {a₁ b₁ a₂ b₂ : K}
       add_assoc
     ] at calcul
     exact (add_le_iff.mp calcul).1
+
+lemma topown_mono (n : ℕ) {f g : K} : f ≤ g → f^n ≤ g^n := by
+  intro lefg
+  induction n with
+  | zero => simp
+  | succ m hm =>
+    rw [pow_succ, pow_succ]
+    exact mul_respects_le hm lefg
 
 lemma unfold_left (a : K) : 1 + a∗ * a ≤ a∗ := by
     nth_rw 2 [← add_idem a∗]
@@ -181,13 +194,11 @@ theorem KleeneChurchRosser {a b : K} :
 
 end QuelquesProprietesKleeneAlgebra
 
-
 /-- Un alias pour le type des relations binaires sur un type  `α`. -/
 @[reducible]
 def ARS (β : Type*) := β → β → Prop
 
 namespace ARS
-
 /- On montre qu'il y a une structure d'algèbre de Kleene sur le type `ARS α` -/
 
 section KleeneAlgebra
@@ -645,7 +656,7 @@ une disjonction infinie sur le type sur lequel il quantifie : en d'autres termes
 `∃ (x : α), P x` est équivalent à `⋁ (x : α), P x`
 Puisque `+` est une disjontion binaire, une somme infinie est une disjonction infinie -/
 def kstar (f : ARS α) :
-  ARS α := fun u v ↦ ∃ n, (f ^ n) u v
+  ARS α := fun u v ↦ ∃ n, (f^n) u v
 
 instance instKStarARS : KStar (ARS α) where
   kstar := kstar
@@ -843,8 +854,79 @@ instance instKleeneAlgebra : KleeneAlgebra (ARS α) where
 
 end KleeneAlgebra
 
+lemma le_iff_imp {f g : ARS α} : f ≤ g ↔ ∀ x y, f x y → g x y := by
+  constructor
+  · intro hyp x y hfxy
+    rw [← add_eq_right_iff_le] at hyp
+    rw [← hyp]
+    left
+    exact hfxy
+  · intro hyp
+    ext x y
+    constructor
+    · intro ou
+      cases ou with
+      | inl fxy =>
+        exact hyp x y fxy
+      | inr gxy =>
+        exact gxy
+    · intro hgxy
+      right
+      exact hgxy
+
+@[reducible]
+def indexed_op (ι β : Type*) := ι → ARS β → ARS β
+
+@[reducible]
+def big_sum {ι : Type*} (t : indexed_op ι α) (f : ARS α) : ARS α :=
+  fun x y ↦ ∃ i, t i f x y
+
+def big_sum_respects_le {ι : Type*} {g : ARS α} (t : indexed_op ι α) :
+  ∀ f, (∀ i, t i f ≤ g) → big_sum t f ≤ g := by
+    intro f htflef
+    rw [le_iff_imp]
+    intro x y hbigsum
+    exact le_iff_imp.mp (htflef hbigsum.choose) x y hbigsum.choose_spec
+
+def big_sum_comm_from_comm {ι : Type*} {f g : ARS α} (t : indexed_op ι α) :
+  (∀ i, t i f * g = g * t i f) → big_sum t f * g = g * big_sum t f := by
+    intro hypcomm
+    ext x y
+    constructor
+    · intro hyp
+      let z1 := hyp.choose
+      let ⟨hz1bs, hz1g⟩ := hyp.choose_spec
+      let i := hz1bs.choose
+      have hi := hz1bs.choose_spec
+      have hypcommi := (hypcomm i)
+      have h₀ : ((t i f * g) x y ↔ (g * t i f) x y) :=  by rw [hypcommi]
+      have h₁ : (t i f * g) x y := by use z1
+      have h₃ := h₀.mp h₁
+      let z2 := h₃.choose
+      have ⟨hz2g, hz2bs⟩ := h₃.choose_spec
+      use z2
+      constructor
+      · exact hz2g
+      · use i
+    · intro hyp
+      let z1 := hyp.choose
+      let ⟨hz1g, hz1bs⟩ := hyp.choose_spec
+      let i := hz1bs.choose
+      have hi := hz1bs.choose_spec
+      have hypcommi := (hypcomm i)
+      have h₀ : ((t i f * g) x y ↔ (g * t i f) x y) :=  by rw [hypcommi]
+      have h₁ : (g * t i f) x y := by use z1
+      have h₃ := h₀.mpr h₁
+      let z2 := h₃.choose
+      have ⟨hz2bs, hz2g⟩ := h₃.choose_spec
+      use z2
+      constructor
+      · use i
+      · exact hz2g
+
 end ARS
 
+section QuelquesPreuves
 /-
 On montre quelques lemmes basiques spécifique aux ARS :
 - la clôture symmétrique est symétrique,
@@ -852,8 +934,12 @@ On montre quelques lemmes basiques spécifique aux ARS :
 - …
 -/
 
-section QuelquesPreuves
+/-- Une définition alternative de `∗`.-/
+lemma kstar' (f : ARS α) :
+  f∗ = ARS.big_sum (Semiring.npow) f := by
+    rfl
 
+/- `∗` n'est pas la clôture transitive, mais bien la clôture transitive *et* réflexive.-/
 lemma kstar_is_refl (f : ARS α) : Reflexive f∗ := by
   intro x
   use 0
@@ -866,6 +952,108 @@ lemma kstar_is_trans (f : ARS α) : Transitive f∗ := by
   use hxy.choose + hyz.choose
   rw [pow_add]
   use y
+
+/-- La plus petite relation transitive issue d'une relation donnée-/
+@[reducible]
+def trans_closure (f : ARS α) : ARS α := fun x y ↦ ∃ n, (f^n) x y ∧ 0 < n
+notation:1024 elm "⁺" => trans_closure elm
+
+/-- Une définition alternative de `⁺`.-/
+lemma trans_closure' (f : ARS α) :
+  f⁺ = ARS.big_sum (fun i g ↦ g^(i+1)) f := by
+    ext x y
+    constructor
+    · intro hyp
+      let n := hyp.choose
+      have ⟨hf, _⟩ := hyp.choose_spec
+      use hyp.choose - 1
+      simp
+      have : n - 1 + 1 = n := by omega
+      rw [this]
+      exact hf
+    · intro hyp
+      have hf := hyp.choose_spec
+      simp at hf
+      use hyp.choose + 1
+      exact ⟨hf, by omega⟩
+
+lemma le_plus (f : ARS α) : f ≤ f⁺ := by
+  rw [ARS.le_iff_imp]
+  intro _ _ fxy
+  use 1
+  rw [pow_one]
+  exact ⟨fxy, by omega⟩
+
+lemma plus_mono {f g : ARS α} : f ≤ g → f⁺ ≤ g⁺  := by
+  intro lefg
+  rw [ARS.le_iff_imp]
+  intro x y fpxy
+  let n := fpxy.choose
+  have ⟨hfnxy, hn⟩ := fpxy.choose_spec
+  use n
+  exact ⟨ARS.le_iff_imp.mp (topown_mono n lefg) x y hfnxy, hn⟩
+
+lemma plus_comm_pown {f : ARS α} {n : ℕ} : f⁺ * f^n = f^n * f⁺ := by
+  rw [trans_closure']
+  refine ARS.big_sum_comm_from_comm (fun i g ↦ g^(i+1)) ?_
+  intro i
+  simp
+  rw [← pow_add, ← pow_add, add_comm]
+
+lemma plus_mul_pown {f : ARS α} {n : ℕ} : f⁺^(n+1) = f^n * f⁺ := by
+  rw [pow_succ]
+  have hn := eq_zero_or_pos n
+  cases hn with
+  | inl zero =>
+    rw [zero]
+    simp
+  | inr pos =>
+
+    sorry
+
+lemma plus_is_idem {f : ARS α} : f⁺⁺ = f⁺ := by
+  rw [le_antisymm_iff]
+  constructor
+  · nth_rw 1 [trans_closure' f, ARS.le_iff_imp]
+    intro x y hbs
+    use hbs.choose
+    sorry
+  · exact plus_mono (le_plus f)
+
+lemma plus_is_transitive (f : ARS α) : Transitive f⁺ := by
+  intro x y z hxy hyz
+  have pnxy := hxy.choose_spec
+  have pnyz := hyz.choose_spec
+  use hxy.choose + hyz.choose
+  constructor
+  · rw [pow_add]
+    use y
+    exact ⟨pnxy.left, pnyz.left⟩
+  · omega -- on utilise ici, de façon cachée, `pnxy.right` et `pnyz.right`
+
+lemma plus_add_one (f : ARS α) : f∗ = 1 + f⁺ := by
+  ext x y
+  constructor
+  · intro hyp
+    have hn := hyp.choose_spec
+    have := eq_zero_or_pos hyp.choose
+    cases this with
+    | inl zero =>
+      rw [zero, pow_zero] at hn
+      left
+      exact hn
+    | inr pos =>
+      right
+      use hyp.choose
+  · intro hyp
+    cases hyp with
+    | inl eg =>
+      use 0
+      rw [pow_zero]
+      exact eg
+    | inr pos =>
+      use pos.choose
+      exact pos.choose_spec.left
 
 /-- La relation inverse issue d'une relation donnée -/
 @[reducible]
@@ -886,7 +1074,7 @@ notation:1024 elm "⇐" => inverse elm
     rw [h]
     rfl
 
-@[simp] lemma symm_over_add (f g : ARS α) : (f + g)⇐ = f⇐ + g⇐ := by
+@[simp] lemma inverse_over_add (f g : ARS α) : (f + g)⇐ = f⇐ + g⇐ := by
   ext x y
   rfl
 
@@ -1016,8 +1204,10 @@ def isConfluent (f : ARS α) : Prop := f⇐∗ * f∗ ≤ f∗ * f⇐∗
 
 def isWeaklyConfluent (f : ARS α) : Prop := f⇐ * f ≤ f∗ * f⇐∗
 
-theorem ChurchRosser (f : ARS α) :  isConfluent f ↔ isChurchRosser f := by
+theorem ChurchRosser (f : ARS α) : isConfluent f ↔ isChurchRosser f := by
   rw [isConfluent, isChurchRosser]
   exact KleeneChurchRosser
+
+def isNormalForm (f : ARS α) (a : α) : Prop := ∀ b, ¬(f a b)
 
 end QuelquesProprietesARS
