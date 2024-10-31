@@ -1,0 +1,44 @@
+#+TITLE: Project Proposition
+#+AUTHOR: Johann Rosain
+
+* Introduction to Lean: Project Proposition
+
+** Proposition
+
+My goal in the near future is to study type theory. In this field, we study types and the elements that populate these types. One such kind of elements, naturally suited to type theory, is Church's λ-calculus. It is defined by the following inductive grammar:
+#+begin_center
+M, N ::= x | λ x. M | (M) N
+#+end_center
+for x ∈ X, a countable set. This defines a model of computation, using the β-reduction -- the least binary relation that contains the following β-rule:
+#+begin_center
+(\lambda x. M) N \rightarrow_\beta M[N/x],
+#+end_center
+where M[N/x] substitutes all occurrences of x to N "appropriately" (i.e., without binding the variables in N).
+
+In fact, β-reduction defines a rewriting system. It is well-known that, in untyped λ-calculus, β-reduction enjoys the following properties:
+   - confluency (or, equivalently, the Church-Rosser property),
+   - standardization (or weak normalization, i.e., there exists a reduction strategy such that the term gets reduced in normal form if it exists).
+It is also well-known that, throwing types (simple types, system T, system F, etc) in the mix, β-reduction enjoys further properties, for instance:
+   - subject reduction (if Γ ⊢ M : A and M \rightarrow_\beta N, then Γ ⊢ N : A) and
+   - strong normalization (if Γ ⊢ M : A, then it has a normal form and *every* reduction path leads to a normal form).
+
+The goal of this project is to formalize these properties in Lean. The work would follow the subsequent outline:
+   1) Definition of the λ-calculus in a suitable fashion (with a reflexion on the representation of the different objects, for instance De Bruijn's [1] indices instead of string-like variables).
+   2) Basic definitions and proofs on abstract rewriting systems, including: (reflexive, transitive, symmetric) closure of a binary relation, (locally) confluent relation, Church-Rosser relation, relation with the diamond property, (strongly) normalizing relation, Newmann lemma, Church-Rosser iff confluent, idempotence of reflexive and transitive closure.
+   3) Confluency of the β-reduction for untyped λ-calculus using the parallel β-reduction (see [2, §3.4] for a detailed proof).
+   4) Non-triviality of the β-reduction ([2, §3.4]), which is an almost direct corollary of the previous result.
+   5) Standardization theorem [3, Th. 1.5.8] by leftmost reduction.
+   6) Definition of the (simply-)typed λ-calculus.
+   7) Subject reduction [2, §4.1.8] and strong normalization [2, §4.2] via reducibility candidates.
+
+Implementing all these tasks might be too ambitious for the given timetable. Consequently, the proposition is as follows: points 1 to 3 shall be implemented. Point 4 is a small bonus. Point 5 is a nice bonus. Points 6 and 7 are a big bonus.
+
+All the PDFs of the references can be found in the [[file:docs/][docs/]] folder.
+
+** References
+
+[1] Nicolas Govert de Bruijn, /Lambda Calculus Notation with Nameless Dummies: A Tool for Automatic Formula Manipulation, with Application to the Church-Rosser Theorem/, Indagationes Mathematicae 1972.
+
+[2] Samuel Mimram, /Program = Proof/, 2022.
+
+[3] M. H. Sorensen and P. Urzyczyn, /Lectures on the Curry-Howard Isomorphism/, Studies in Logic and the Foundation of Mathematics 2006.

@@ -8,6 +8,8 @@
 import Mathlib.Tactic.Basic
 import Mathlib.RingTheory.IntegralClosure.IntegrallyClosed
 import Mathlib.Data.Real.Basic
+import Mathlib.Tactic.SlimCheck
+import Mathlib.RingTheory.DedekindDomain.Basic
 
 /-
   # Modified operations
@@ -15,31 +17,29 @@ import Mathlib.Data.Real.Basic
   Therefore, it is sometimes necessary to ``extend'' the existing definitions.
 -/
 
-example : (5 : ℕ) - 3 = 2 := by
-  sorry
+example : (5 : ℕ) - 3 = 2 := by rfl
 
-example : (1 : ℕ) - 3 = 0 :=  by
-  sorry
+example : (1 : ℕ) - 3 = 0 :=  by rfl
 
-example : (2 : ℝ) / 2 = 1 := by
-  sorry
+example : (2 : ℝ) / 2 = 1 := by 
+  norm_num
 
 example : (2 : ℝ) / 0 = 0 := by
-  sorry
+  exact div_zero 2
 
 -- This result is false
-example (a b : ℕ) : a - b + b = a := by
-  sorry
+-- example (a b : ℕ) : a - b + b = a := by
+--   sorry
 
 example (a b : ℕ) (h : b ≤ a) : a - b + b = a := by
-  sorry
+  exact Nat.sub_add_cancel h
 
--- This result is false
-example (a b : ℝ) : a * (a⁻¹ * b) = b := by
-  sorry
+-- This result is false: a can be 0 but a * a⁻¹ should be 1 hence b should be 0.
+-- example (a b : ℝ) : a * (a⁻¹ * b) = b := by
+--   sorry
 
 example (a b : ℝ) (h : a ≠ 0): a * (a⁻¹ * b) = b := by
-  sorry
+  exact mul_inv_cancel_left₀ h b
 
 /-
   # All flavors of rings
@@ -47,41 +47,41 @@ example (a b : ℝ) (h : a ≠ 0): a * (a⁻¹ * b) = b := by
 -/
 
 -- This result is false
-example {R : Type*} [Ring R] (a b : R) : a * b = b * a := by
-  sorry
+-- example {R : Type*} [Ring R] (a b : R) : a * b = b * a := by
+--   sorry
 
 example {R : Type*} [CommRing R] (a b : R) : a * b = b * a := by
-  sorry
+  exact CommMonoid.mul_comm a b
 
 -- Integral domain
 class integralDomain (R : Type*) extends CommRing R, IsDomain R
 
 example : integralDomain ℤ := by
-  sorry
+  exact integralDomain.mk
 
 -- Principal ideal domain
 class PID (R : Type*) extends CommRing R, IsDomain R, IsPrincipalIdealRing R
 
 example : PID ℤ := by
-  sorry
+  exact PID.mk
 
 -- Unique factorization domain
 class UFD (R : Type*) extends CommRing R, IsDomain R, UniqueFactorizationMonoid R
 
 example : UFD ℤ := by
-  sorry
+  exact UFD.mk
 
 -- GCD domain
 class GCDdomain (R : Type*) extends CommRing R, IsDomain R, GCDMonoid R
 
 example : GCDdomain ℤ := by
-  sorry
+  exact GCDdomain.mk
 
 -- Integrally closed domain
 class ICR (R : Type*) extends CommRing R, IsIntegralClosure R R (FractionRing R)
 
 example : ICR ℤ := by
-  sorry
+  exact ICR.mk
 
 -- However, defining classes like above is not a good idea since they carry data and it is
 -- better to use mixin to avoid diamonds. For example, assume we want to work with a ring that is
@@ -90,13 +90,13 @@ example : ICR ℤ := by
 variable (R₁ : Type*) [ICR R₁] [GCDdomain R₁]
 
 -- Does not work
-example (a b : R₁) : gcd a b ∣ a :=
-  sorry
+-- example (a b : R₁) : gcd a b ∣ a :=
+--   sorry
 
 variable (R : Type*) [CommRing R] [IsIntegralClosure R R (FractionRing R)] [IsDomain R] [GCDMonoid R]
 
 example (a b : R) : gcd a b ∣ a := by
-  sorry
+  exact gcd_dvd_left a b
 
 -- It is also possible to not require addition to form a group (only a monoid) in this case, we
 -- have the classes `Semiring` and `CommSemiRing`
@@ -111,10 +111,10 @@ example (R : Type*) [CommRing R] (a b : R) :
   ring
 
 -- This result is false
-example (R : Type*) [Ring R] (a b : R) :
-    a ^ 3 - b ^ 3 = (a - b) * (a ^ 2 + a * b + b ^ 2) := by
-  ring -- does nothing
-  sorry
+-- example (R : Type*) [Ring R] (a b : R) :
+--     a ^ 3 - b ^ 3 = (a - b) * (a ^ 2 + a * b + b ^ 2) := by
+--   ring -- does nothing
+--   sorry
 
 /-
   # Subgroup of units
@@ -123,32 +123,41 @@ example (R : Type*) [Ring R] (a b : R) :
 variable {R : Type*} [Ring R]
 
 -- Fails
-example (a : R) : a* a⁻¹ = 1 := sorry
+-- example (a : R) : a * a⁻¹ = 1 := sorry
 
 -- Every ring (in fact, monoid) `R` comes with a function `IsUnit : R → Prop` asserting the
 -- existence of inverses on both sides (since `R` may not be commutative).
 
 -- Still fails
-example (a : R) (ha : IsUnit a) : a * a⁻¹ = 1 := sorry
+-- example (a : R) (ha : IsUnit a) : a * a⁻¹ = 1 := sorry
 
 -- The type of units of `R` is denoted `Rˣ` (use `R\^x` to write `Rˣ`). it is a group
 
 #synth Group Rˣ
 
 example (a : Rˣ) : a * a⁻¹ = 1 := by
-  sorry
+  exact mul_inv_cancel a
 
 -- There is a coercion for `Rˣ` to `R` and an element of `a : R` that satisfies `ha : IsUnit a`
 -- can be promoted to a unit of `R`
 
 example (a : Rˣ) (b : R) : a * b = a ^ 2 * a⁻¹ * b := by
-  sorry
+  rw [sq, Units.mul_inv_cancel_right]
 
 example (a : R) (ha : IsUnit a) : a * ha.unit⁻¹ = 1 := by
-  sorry
+  exact IsUnit.mul_val_inv ha
 
-example (x : ℤˣ) : x = 1 ∨ x = -1 := by
-  sorry
+example (x : ℤˣ) : (x : ℤ) = 1 ∨ (x : ℤ) = -1 := by
+  obtain h | h := le_or_gt 0 (x : ℤ)
+  · left
+    have := Units.val_inv x
+    exact Int.eq_one_of_mul_eq_one_right h this
+  · right
+    apply Int.eq_neg_comm.mp
+    have := Units.val_inv x
+    have h: 0 ≤ -(x : ℤ) := by omega
+    rw [← Int.neg_mul_neg] at this
+    symm; exact Int.eq_one_of_mul_eq_one_right h this
 
 /-
   # Morphisms between rings
@@ -158,18 +167,41 @@ example (x : ℤˣ) : x = 1 ∨ x = -1 := by
 
 example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (a b : R) :
     f (a + b) = f a + f b := by
-  sorry
+  exact f.map_add a b
 
 example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (a b : R) :
     f (a * b) = f a * f b := by
-  sorry
+  exact f.map_mul a b
 
-example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (x : R) (hx : IsUnit x) : IsUnit (f x) := by
-  sorry
+lemma map_unit {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (x : R) (hx : IsUnit x) : IsUnit (f x) := by
+  cases hx with
+  | intro u e => 
+    let a := u.val; let b := u.inv; 
+    refine ⟨ ?_, ?_ ⟩
+    · have fval_inv : f a * f b = 1 := by rw [← RingHom.map_mul, u.val_inv]; exact f.map_one
+      have finv_val : f b * f a = 1 := by rw [← RingHom.map_mul, u.inv_val]; exact f.map_one
+      refine { 
+        val := f a, 
+        inv := f b, 
+        val_inv := fval_inv,
+        inv_val := finv_val }
+    · simp; rw [←e]
 
 example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) : Rˣ →* Sˣ := by
-  sorry
-
+  refine MonoidHom.mk ?_ ?_
+  · refine OneHom.mk ?_ ?_
+    · intro x      
+      have val_inv : f x * f x.inv = 1 := by
+        rw [← RingHom.map_mul, Units.val_inv]; exact f.map_one
+      have inv_val : f x.inv * f x = 1 := by
+        rw [← RingHom.map_mul, Units.inv_val]; exact f.map_one
+      refine {
+        val := f x, 
+        inv := f x.inv, 
+        val_inv := val_inv,
+        inv_val := inv_val }
+    · simp; ext; trivial
+  · intros x y; ext; simp
 /-
   # Ideals and quotients
   The theory of ideals in Mathlib has only been developed in the case of commutative rings
@@ -182,34 +214,39 @@ variable (R : Type*) [CommRing R] (I J : Ideal R)
 -- Mathlib knows about the addition and multiplication of ideals and the corresponding properties
 
 example {x : R} : x ∈ I + J ↔ ∃ a ∈ I, ∃ b ∈ J, a + b = x := by
-  sorry
+  constructor
+  · intro h; exact Submodule.mem_sup.mp h
+  · intro ⟨ a, ⟨ ha, ⟨ b, ⟨ hb, h ⟩ ⟩ ⟩ ⟩
+    rw [←h]; intro S K; simp at K; cases K with
+    | intro K h' => rw [←h']; rw [Set.mem_iInter]; intro ⟨ IK, JK ⟩
+                    apply add_mem; apply IK; trivial; apply JK; trivial
 
 example : I * J ≤ J := by
-  sorry
+  exact Ideal.mul_le_left
 
 example : I * J ≤ I := by
-  sorry
+  exact Ideal.mul_le_right
 
 -- Note that the ideals form a complete lattice for the inclusion. In particular, the LUB
 -- (least upper bound) of two ideals is their sum and the GLB (greatest lower bound) is the
 -- intersection
 
 example : I ⊔ J = I + J := by -- use `\lub` to write `⊔`
-  sorry
+  rfl
 
 example : I ⊓ J = (I : Set R) ∩ (J : Set R) := by  -- use `\glb` to write `⊓`
-  sorry
+  rfl
 
 -- An ideal is principal if it is principal as a `Submodule` that is it satisfies
 -- `Submodule.IsPrincipal`. Since an ideal `I` is by definition a submodule, we can still use
 -- the `.` notation.
 
 example (hI : I.IsPrincipal) : ∃ a, I = Submodule.span R { a } := by
-  sorry
+  exact hI.principal
 
 -- A PID is a ring in which all ideals are principal
 example [IsPrincipalIdealRing R] : I.IsPrincipal := by
-  sorry
+  exact IsPrincipalIdealRing.principal I
 
 -- The quotient of a ring by an ideal is defined. it is also a commutative ring
 #synth CommRing (R ⧸ I) -- use `\quo` to write `⧸`
@@ -218,16 +255,16 @@ example [IsPrincipalIdealRing R] : I.IsPrincipal := by
 example : R →+* (R ⧸ I) := Ideal.Quotient.mk I
 
 example (a : R) : Ideal.Quotient.mk I a = 0 ↔ a ∈ I := by
-  sorry
+  exact Ideal.Quotient.eq_zero_iff_mem
 
 example (S : Type*) [CommRing S] (f : R →+* S) (h : I ≤ RingHom.ker f) :
     R ⧸ I →+* S := by
-  sorry
+  exact Ideal.Quotient.lift I f h
 
 -- The first isomorphism
-example (S : Type*) [CommRing S] (f : R →+* S) :
+noncomputable example (S : Type*) [CommRing S] (f : R →+* S) :
     R ⧸ RingHom.ker f ≃+* RingHom.range f := by
-  sorry
+  exact f.quotientKerEquivRange
 
 /-
   # Digression: quotient in Lean / Mathlib
@@ -240,7 +277,10 @@ variable (α : Type*) (r : α → α → Prop)
 example :
     Equivalence r ↔ (∀ x, r x x) ∧ (∀ x y, r x y → r y x) ∧ (∀ x y z, r x y → r y z → r x z) := by
   refine ⟨fun h ↦ ⟨h.1, ?_, ?_⟩, fun ⟨h₁, h₂, h₃⟩ ↦ ⟨h₁, ?_, ?_⟩⟩
-  all_goals sorry
+  · intros x y hxy; apply h.symm; trivial
+  · intro x y z hxy hyz; apply h.trans <;> trivial
+  · intros x y hxy; apply h₂; trivial
+  · intros x y z hxy hyz; apply h₃ <;> trivial
 
 example (h : Equivalence r) : Setoid α := ⟨r, h⟩
 
@@ -280,20 +320,20 @@ theorem rZ_iff' (x y : ℕ × ℕ) : rZ x y ↔ x.1 + y.2 = y.1 + x.2 := by
   rw [rZ]
 
 theorem rZ_reflexive : Reflexive rZ := by
-  sorry
+  intro x; rw [rZ]
 
 theorem rZ_symmetric : Symmetric rZ := by
-  sorry
+  intro ⟨ a, b ⟩ ⟨ c, d ⟩; rw [rZ]; simp; intro h; rw [rZ]; simp; symm; trivial
 
 theorem rZ_transitive : Transitive rZ := by
-  sorry
+  intro ⟨ a, b ⟩ ⟨ c, d ⟩ ⟨ e, f ⟩; rw [rZ, rZ, rZ]; simp; intro h₀ h₁; omega
 
 -- We make an instance so we don't have to precise the setoid every time
 instance rZSetoid : Setoid (ℕ × ℕ) := by
   refine ⟨rZ, ?_, ?_, ?_⟩
-  sorry
-  sorry
-  sorry
+  · exact rZ_reflexive
+  · apply rZ_symmetric
+  · apply rZ_transitive
 
 -- Note: try to remove the `by`
 example (x y : ℕ × ℕ) : x ≈ y ↔ rZ x y := by rfl
@@ -342,7 +382,7 @@ def neg_aux (x : ℕ × ℕ) : ZZ := ⟦(x.2, x.1)⟧
 def neg : ZZ → ZZ := by
   refine Quotient.lift neg_aux fun x y h ↦ ?_
   rw [neg_aux, neg_aux, Quotient.eq] -- Note the use of the function `Quotient.eq`
-  sorry
+  simp; change (x.1 + y.2 = y.1 + x.2) at h; omega
 
 instance : Neg ZZ := ⟨neg⟩
 
@@ -356,7 +396,10 @@ def add_aux (x y : ℕ × ℕ) : ZZ := ⟦(x.1 + y.1, x.2 + y.2)⟧
 def add : ZZ → ZZ → ZZ := by
   apply Quotient.lift₂ add_aux  -- Note the use of `Quotient.lift₂`
   intro x₁ x₂ y₁ y₂ h₁ h₂
-  sorry
+  rw [add_aux, add_aux, Quotient.eq]
+  change (x₁.1 + y₁.2 = y₁.1 + x₁.2) at h₁
+  change (x₂.1 + y₂.2 = y₂.1 + x₂.2) at h₂
+  simp; omega
 
 instance : Add ZZ := ⟨add⟩
 
@@ -388,13 +431,20 @@ instance addCommGroup : AddCommGroup ZZ where
     refine Quotient.inductionOn x ?_
     rintro ⟨a, b⟩
     simp
-  add_zero := sorry
+  add_zero := by
+    intro x
+    refine Quotient.inductionOn x ?_
+    intro ⟨ a, b ⟩; simp    
   add_comm := by
     intro x y
     refine Quotient.inductionOn₂ x y ?_
-    sorry
+    intro ⟨ a₁, b₁ ⟩ ⟨ a₂, b₂ ⟩
+    simp; omega
   add_assoc := by
-    sorry
+    intro x y z
+    refine Quotient.inductionOn₃ x y z ?_
+    intro ⟨ a₁, b₁ ⟩ ⟨ a₂, b₂ ⟩ ⟨ a₃, b₃ ⟩
+    simp; omega
   neg_add_cancel := by
     intro x
     refine Quotient.inductionOn x ?_
@@ -436,12 +486,37 @@ instance commRing : CommRing ZZ where
     rintro ⟨a, b⟩ ⟨c, d⟩ ⟨e, f⟩
     simp
     ring
-  right_distrib := sorry
-  zero_mul := sorry
-  mul_zero := sorry
-  one_mul := sorry
-  mul_one := sorry
-  mul_comm := sorry
+  right_distrib := by
+    intro x y z
+    refine Quotient.inductionOn₃ x y z ?_
+    intro ⟨ a₁, b₁ ⟩ ⟨ a₂, b₂ ⟩ ⟨ a₃, b₃ ⟩
+    simp; ring
+  zero_mul := by
+    intro x
+    refine Quotient.inductionOn x ?_
+    intro ⟨ a, b ⟩
+    simp
+  mul_zero := by
+    intro x
+    refine Quotient.inductionOn x ?_
+    intro ⟨ a, b ⟩
+    simp
+  one_mul := by
+    intro x
+    refine Quotient.inductionOn x ?_
+    intro ⟨ a, b ⟩
+    simp
+  mul_one := by
+    intro x
+    refine Quotient.inductionOn x ?_
+    intro ⟨ a, b ⟩
+    simp
+  mul_comm := by
+    intro x y
+    refine Quotient.inductionOn₂ x y ?_
+    intro ⟨ a₁, b₁ ⟩ ⟨ a₂, b₂ ⟩
+    simp
+    ring
   zsmul := zsmulRec -- I don't know why we need to define this again...
   neg_add_cancel := neg_add_cancel -- I don't know why we need to define this again...
 
@@ -452,7 +527,15 @@ def N2Z (x : ℕ × ℕ) : ℤ := x.1 - x.2
 #print N2Z
 
 theorem N2Z_surjective : Function.Surjective N2Z := by
-  sorry
+  intro x
+  obtain h | h := le_or_gt 0 (x : ℤ)
+  · cases x with
+    | ofNat n => exists ⟨ n, 0 ⟩
+    | negSucc c => exfalso; apply (Int.negSucc_not_nonneg c).mp; trivial
+  · set y := x.natAbs
+    exists ⟨ 0, y ⟩; unfold N2Z; simp; rw [Int.natCast_natAbs, Int.neg_eq_neg_one_mul]
+    have : x.sign = -1 := (Int.sign_eq_neg_one_iff_neg x).mpr h
+    rw [←this]; apply Int.sign_mul_abs
 
 -- A function `f` define a setoid with the relation : `x ≈ y ↔ f x = f y`.
 -- It is called `Setoid.ker`. We prove that the setoid `rZSetoid` is equal to `Setoid.ker N2Z`.
@@ -499,10 +582,19 @@ def ringEquiv : ZZ ≃+* ℤ where
   invFun := equiv.symm
   left_inv := equiv.leftInverse_symm
   right_inv := equiv.rightInverse_symm
-  map_add' := sorry
-  map_mul' := sorry
+  map_add' := by 
+    simp; intro x y; refine Quotient.inductionOn₂ x y ?_
+    intro ⟨ a₁, b₁ ⟩ ⟨ a₂, b₂ ⟩
+    simp; omega
+  map_mul' := by
+    simp; intro x y; refine Quotient.inductionOn₂ x y ?_
+    intro ⟨ a₁, b₁ ⟩ ⟨ a₂, b₂ ⟩
+    simp; ring
 
 theorem ringEquiv_apply (x : ℕ × ℕ) : ringEquiv ⟦x⟧ = x.1 - x.2 := rfl
 
 -- Can you fill in the following statement and proof?
-theorem ringEquiv_apply_symm (z : ℤ) : ringEquiv.symm z = sorry := sorry
+theorem ringEquiv_apply_symm (z : ℤ) : ringEquiv.symm z = ⟦(z.toNat, (-z).toNat)⟧ := by
+  have : Function.Injective ringEquiv := RingEquiv.injective ringEquiv
+  rw [← Function.Injective.eq_iff this, RingEquiv.apply_symm_apply, ringEquiv_apply]
+  simp
