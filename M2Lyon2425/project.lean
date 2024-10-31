@@ -73,3 +73,42 @@ lemma distance_F1_F2_pos : 0 ≤ distance F1 F2 :=
 
 lemma distance_F1_F2_eq_zero : distance F1 F2 = 0 :=
   (LE.le.ge_iff_eq distance_F1_F2_neg).1 distance_F1_F2_pos
+
+-- Counterexample 2: A bounded plane set contained in no minimum closed disk
+
+def IsClosedDisk (D : Set (ℝ × ℝ)) (h k r : ℝ) (_ : 0 < r) : Prop :=
+    ∀ x ∈ D, (x.1 - h)^2 + (x.2 - k)^2 ≤ r^2
+
+def MinimumClosedDisk (A D : Set (ℝ × ℝ)) {h k r : ℝ} {hr : 0 < r} (_ : IsClosedDisk D h k r hr ∧ A ⊆ D)  : Prop :=
+    ∀ (D' : Set (ℝ × ℝ)) (_ : (∃ (h' k' r' : ℝ) (hr' : 0 < r'), IsClosedDisk D' h' k' r' hr') ∧ A ⊆ D'), D ⊆ D'
+
+def Line (a b c : ℝ) : Set (ℝ × ℝ) := setOf (fun x ↦ a*x.1 + b*x.2 = c)
+
+def IsTwoPointSet (S : Set (ℝ × ℝ)) : Prop :=
+  ∀ (a b c : ℝ), Cardinal.mk (Subtype (· ∈ Line a b c ∩ S)) = 2
+
+example (S : Set (ℝ × ℝ)) (hS : IsTwoPointSet S) :
+    ¬(∃ (D : Set (ℝ × ℝ)) (h k r : ℝ) (hr : 0 < r) (hD : IsClosedDisk D h k r hr ∧ S ⊆ D),
+    MinimumClosedDisk S D hD) := by
+  intro h
+  obtain ⟨D, h, k, r, hr, ⟨hD, hD₂⟩, hD₃⟩ := h
+  let L := Line 1 0 (h + r^2 + 1)
+  have : L ∩ D = ∅ := by
+    by_contra h₂
+    rw [Set.ext_iff] at h₂
+    push_neg at h₂
+    obtain ⟨w, hw⟩ := h₂
+    cases hw with
+    | inl h₃ =>
+        obtain ⟨⟨hw, hw₂⟩, hw₃⟩ := h₃
+        rw [IsClosedDisk] at hD
+        specialize hD w hw₂
+        change 1*w.1 + 0*w.2 = (h + r ^ 2 + 1) at hw
+        rw [one_mul, zero_mul, add_zero] at hw
+        rw [hw] at hD
+        sorry
+    | inr h₃ => exact h₃.2
+  have : L ∩ S = ∅ := sorry
+  unfold IsTwoPointSet at hS
+  specialize hS 1 0 (h + r^2 + 1)
+  sorry
