@@ -92,7 +92,7 @@ example (S : Set (ℝ × ℝ)) (hS : IsTwoPointSet S) :
     MinimumClosedDisk S D hD) := by
   intro h
   obtain ⟨D, h, k, r, hr, ⟨hD, hD₂⟩, hD₃⟩ := h
-  let L := Line 1 0 (h + r^2 + 1)
+  let L := Line 1 0 (h + r + 1)
   have : L ∩ D = ∅ := by
     by_contra h₂
     rw [Set.ext_iff] at h₂
@@ -103,12 +103,26 @@ example (S : Set (ℝ × ℝ)) (hS : IsTwoPointSet S) :
         obtain ⟨⟨hw, hw₂⟩, hw₃⟩ := h₃
         rw [IsClosedDisk] at hD
         specialize hD w hw₂
-        change 1*w.1 + 0*w.2 = (h + r ^ 2 + 1) at hw
+        change 1*w.1 + 0*w.2 = (h + r + 1) at hw
         rw [one_mul, zero_mul, add_zero] at hw
-        rw [hw] at hD
-        sorry
+        rw [hw, add_sub_right_comm, add_sub_right_comm, sub_self, zero_add] at hD
+        have : r ^ 2 < (r + 1) ^ 2 := by
+          linarith
+        have : r ^ 2 < (r + 1) ^ 2 + (w.2 - k) ^ 2 := by
+          rw [add_comm]
+          exact lt_add_of_nonneg_of_lt (even_two.pow_nonneg (w.2 - k)) this
+        exact not_lt.2 hD this
     | inr h₃ => exact h₃.2
-  have : L ∩ S = ∅ := sorry
+  have : L ∩ S = ∅ := by
+    ext x
+    refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
+    · rw [Set.ext_iff] at this
+      exact (this x).1 ⟨h'.1, hD₂ h'.2⟩
+    · exfalso
+      exact h'
   unfold IsTwoPointSet at hS
-  specialize hS 1 0 (h + r^2 + 1)
-  sorry
+  specialize hS 1 0 (h + r + 1)
+  apply_fun Cardinal.mk at this
+  simp only [Cardinal.mk_eq_zero] at this
+  rw [this] at hS
+  exact two_ne_zero hS.symm
