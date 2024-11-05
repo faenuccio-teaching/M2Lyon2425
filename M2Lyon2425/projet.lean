@@ -924,6 +924,62 @@ def big_sum_comm_from_comm {ι : Type*} {f g : ARS α} (t : indexed_op ι α) :
       · use i
       · exact hz2g
 
+def existsChaine (f :ARS α) (n : ℕ) (x y : α) :=
+  ∃ w : ℕ → α, (w 0 = x ∧ w n = y) ∧ (∀ i, n < i+1 ∨ f (w i) (w (i+1)))
+
+lemma npow' {f : ARS α} :
+  ∀ n : ℕ, ∀ x y : α,
+  (f^n) x y →
+  existsChaine f n x y := by
+    intro n
+    induction n with
+    | zero =>
+      intro x y hypf0
+      use (fun _ ↦ x)
+      simp at hypf0
+      constructor
+      · constructor <;> rw [hypf0]
+      · intro i
+        left
+        omega
+    | succ m hm =>
+      intro x y' hypfn
+      rw [pow_succ] at hypfn
+      let wn := hypfn.choose
+      have ⟨hfmwn, hfwn⟩ := hypfn.choose_spec
+      let w := (hm x wn hfmwn).choose
+      have hw := (hm x wn hfmwn).choose_spec
+      let w' :=  fun (i: ℕ) ↦ by match i with
+        | m+1 => exact y'
+        | _ => exact w i
+      use w'
+      simp
+      constructor
+      · calc
+          w' 0 = w 0 := by rfl
+          _ = x := hw.left.left
+      · intro i'
+        by_cases him : m < i'
+        · left; exact him
+        · right
+          have him' := le_of_not_lt him
+          --apply Nat.succ_le_succ at him'
+          --change i'+1 ≤ m+1 at him'
+          have := (hw.right i')
+          cases this with
+          | inl relou =>
+            have this₁ : i' = m := by omega
+            rw [this₁]
+            have this₂ : m ≠ m + 1 := by omega
+            have whatiswm : w' i' = wn := by calc
+              w' i' = w' m := by rw [this₁]
+              _ = w m := by sorry
+              _ = wn := by sorry
+            sorry
+          | inr cool =>
+            have weqwi' : w i' = w' i' := by sorry
+            sorry
+
 end ARS
 
 section QuelquesPreuves
@@ -1000,16 +1056,35 @@ lemma plus_comm_pown {f : ARS α} {n : ℕ} : f⁺ * f^n = f^n * f⁺ := by
   simp
   rw [← pow_add, ← pow_add, add_comm]
 
-lemma plus_mul_pown {f : ARS α} {n : ℕ} : f⁺^(n+1) = f^n * f⁺ := by
-  rw [pow_succ]
-  have hn := eq_zero_or_pos n
-  cases hn with
-  | inl zero =>
-    rw [zero]
-    simp
-  | inr pos =>
-
+lemma self_mul_plus {f : ARS α} : f * f⁺ = f⁺^2 := by
+  rw [← one_add_one_eq_two, pow_add, pow_one]
+  refine le_antisymm ?_ ?_
+  · exact mul_respects_le (le_plus f) (le_refl f⁺)
+  · rw [ARS.le_iff_imp]
+    intro x y hyp
     sorry
+
+lemma plus_mul_pown {f : ARS α} {n : ℕ} : f⁺^(n+1) = f^n * f⁺ := by
+  induction n with
+  | zero =>
+    simp
+  | succ m hm  =>
+    rw [
+      add_assoc,
+      one_add_one_eq_two,
+      add_comm,
+      pow_add,
+      add_comm,
+      pow_add,
+      pow_one,
+      mul_assoc,
+      ← hm,
+      add_comm,
+      pow_add,
+      pow_one,
+      ← mul_assoc,
+      self_mul_plus
+    ]
 
 lemma plus_is_idem {f : ARS α} : f⁺⁺ = f⁺ := by
   rw [le_antisymm_iff]
