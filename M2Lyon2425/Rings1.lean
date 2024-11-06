@@ -197,8 +197,8 @@ variable (R : Type*) [CommRing R] (I J : Ideal R)
 
 -- Mathlib knows about the addition and multiplication of ideals and the corresponding properties
 
-example {x : R} : x ∈ I + J ↔ ∃ a ∈ I, ∃ b ∈ J, a + b = x := by
-  sorry
+example {x : R} : x ∈ I + J ↔ ∃ a ∈ I, ∃ b ∈ J, a + b = x :=
+  Submodule.mem_sup
 
 example : I * J ≤ J := by
   exact Ideal.mul_le_left
@@ -255,8 +255,11 @@ variable (α : Type*) (r : α → α → Prop)
 
 example :
     Equivalence r ↔ (∀ x, r x x) ∧ (∀ x y, r x y → r y x) ∧ (∀ x y z, r x y → r y z → r x z) := by
-  refine ⟨fun h ↦ ⟨h.1, ?_, ?_⟩, fun ⟨h₁, h₂, h₃⟩ ↦ ⟨h₁, ?_, ?_⟩⟩
-  sorry
+  refine ⟨fun h ↦ ⟨h.1, fun _ _ ↦ h.2, fun _ _ _ ↦ h.3⟩, fun ⟨h₁, h₂, h₃⟩ ↦ ⟨h₁, ?_, ?_⟩⟩
+  · intros x y
+    exact h₂ x y
+  · intros x y z
+    exact h₃ x y z
 
 example : Setoid α := EqvGen.Setoid r
 
@@ -309,7 +312,8 @@ theorem rZ_symmetric : Symmetric rZ := by
 theorem rZ_transitive : Transitive rZ := by
   rw [Transitive]
   intros x y z hxy hyz
-  sorry
+  rw [rZ_iff] at hxy hyz ⊢
+  linarith
 
 -- We make an instance so we don't have to precise the setoid every time
 instance rZSetoid : Setoid (ℕ × ℕ) := by
