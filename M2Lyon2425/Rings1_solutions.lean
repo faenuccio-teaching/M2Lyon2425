@@ -581,6 +581,7 @@ def ringEquiv : ZZ ≃+* ℤ where
   right_inv := equiv.rightInverse_symm
   map_add' := by
     intro x y
+    dsimp
     refine Quotient.inductionOn₂ x y ?_
     rintro ⟨a, b⟩ ⟨c, d⟩
     simp
