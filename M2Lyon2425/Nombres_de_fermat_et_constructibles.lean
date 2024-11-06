@@ -6,7 +6,7 @@ import Mathlib.Data.Nat.MaxPowDiv
 import Mathlib.Data.Nat.Multiplicity
 
 
---TENTATIVE DE PREUVE DU THEOREME DE  GAUSS-WANTZEl--
+--TENTATIVE DE PREUVE DU THEOREME DE GAUSS-WANTZEl--
 
 -- Le p^α gone régulier (p premier) est constructible à la règle et au compas (définition de Wantzel) si et
 -- seulement si [p=2] ou [α=1 et p est de Fermat].
@@ -149,13 +149,9 @@ theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteD
    let hn := h.choose_spec
    cases hn with
    | intro left right =>
-      cases right with
-      | intro left1 right1 =>
-        sorry
+      sorry
+
       --rw[<-Module.finrank_mul_finrank] at left
-
-
---Lemme : si p est premier de Fermat, Gal(Q(w)/Q) ≅ (Z/pZ)*
 
 --Lemme : si p est premier de Fermat, alors Φₚ(X) est irréductible sur ℚ.
 theorem poly_cyclo_p_irre (p : ℕ) : premierfermat p → Irreducible (Polynomial.cyclotomic (↑p) ℚ) :=by
@@ -200,20 +196,31 @@ theorem wa_algebrique_sur_Q (p α : ℕ) : Nat.Prime p → 0 < α →  IsAlgebra
       simp
 
 
+theorem adjoin_is_integral (α : ℕ) (p : ℕ) : Nat.Prime p ∧ 0 < α → IsIntegral ℚ (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) := by
+  intro h
+  apply IsAlgebraic.isIntegral
+  apply wa_algebrique_sur_Q
+  · exact h.left
+  · exact h.right
+
+--Lemme : dim (ℚ(w)/ℚ)=p^(α-1)*(p-1)
 theorem degQw (α : ℕ) (p : Nat) : Nat.Prime p ∧ 0 < α → FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { Complex.exp (2*↑Real.pi*Complex.I/(p^α)) }) = p^(α-1)*(p-1) := by
   intro h
-  have h1 : IsIntegral ℚ (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) := by
-    apply IsAlgebraic.isIntegral
-    apply wa_algebrique_sur_Q
-    · exact h.left
-    · exact h.right
+  have h1 := IntermediateField.adjoin.finrank ((adjoin_is_integral α p) h)
+  have h2 := IntermediateField.adjoin_simple_toSubalgebra_of_integral ((adjoin_is_integral α p) h)
+  let S := {z : ℂ | z = Complex.exp (2*↑Real.pi*Complex.I/(p^α)) }
+  let ζ := Complex.exp (2*↑Real.pi*Complex.I/(p^α))
+  have h4 : ∀ z ∈ S, IsAlgebraic ℚ z :=by
+    intro z
+    intro hz
+    change (z = Complex.exp (2*↑Real.pi*Complex.I/(p^α))) at hz
+    rw[hz]
+    exact (wa_algebrique_sur_Q p α h.left h.right)
+  have h3 := IntermediateField.adjoin_algebraic_toSubalgebra h4
   cases h with
   | intro left right =>
-    have h2 := IntermediateField.adjoin.finrank h1
-    rw[poly_min_w_sur_Q p α left right, Polynomial.natDegree_cyclotomic,Nat.totient_prime_pow] at h2
-    rw[h2.symm]
-    have h3 := IntermediateField.adjoin_simple_toSubalgebra_of_integral h1
-    simp at h3
+    rw[poly_min_w_sur_Q p α left right, Polynomial.natDegree_cyclotomic,Nat.totient_prime_pow] at h1
+    rw[h1.symm]
     · sorry
     · exact left
     · exact right
@@ -314,16 +321,40 @@ theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < �
            · exact h12
        · exact ha
 
+
+--Lemme : ℚ(w)/ℚ est l'extension cyclotomic p ℚ
+
+--theorem Qw_est_cyclo (p : ℕ+) : Nat.Prime p → (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/p)) } = CyclotomicField p ℚ ) := by
+--intro hp
+--have h1 := Complex.isPrimitiveRoot_exp p (Nat.ne_zero_iff_zero_lt.mpr (PNat.pos p))
+--have h2 := CyclotomicRing.eq_adjoin_primitive_root p ℚ
+
 --Lemme : (Z/pZ)ˣ est cyclique
 theorem ZModx_cyclic (p : ℕ) : Nat.Prime p → IsCyclic (ZMod p)ˣ := by
-  intro h
-  have factp := jacobiSym.proof_1 p h
-  have card := ZMod.card_units p
-  have puiss_card := ZMod.units_pow_card_sub_one_eq_one p
-  have zmodexp := ZMod.exponent (p-1)
-  apply IsCyclic.iff_exponent_eq_card.mpr
-  rw[card]
+--preuve dans Perrin, à voir si j'implémente modulo le temps restant.
   sorry
+
+--theorem tower_normal (m : ℕ) (G : Type*) [inst1 : Group G] [inst2 : IsCyclic G] : G ≃* ZMod (2^m) → ∃ (ζ : G), ((Subgroup.zpowers ζ = G) ∧ (Subgroup.zpowers (ζ^(2^m))=IsSubgroup.trivial G) ∧ (∀ k < m, @IsNormalSubgroup (Subgroup.zpowers (ζ^(2^k))) ) := by
+
+theorem adjoin_is_cyclo (p : ℕ+) (α : ℕ): Nat.Prime p ∧ 0 < α  → IsCyclotomicExtension {p^α} ℚ (Algebra.adjoin ℚ {Complex.exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))}) := by
+intro h
+rw[IsCyclotomicExtension.iff_singleton]
+constructor
+· let ζ := (Complex.exp (2 * ↑Real.pi * Complex.I/ ↑(p^α)))
+  have h2 := adjoin_is_integral α p h
+  --have h1 := Algebra.adjoin.powerBasisAux h2
+  --have h3 := poly_min_w_sur_Q p α h.left h.right
+  --rw[h3,Polynomial.natDegree_cyclotomic,Nat.totient_prime_pow] at h1
+  have a :=  (Algebra.adjoin.powerBasis h2).gen.2
+  rw[Algebra.adjoin.powerBasis_gen h2] at a
+  sorry
+         --have h1 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
+· intro x
+  have h2 := adjoin_is_integral α p h
+  have a :=  (Algebra.adjoin.powerBasis h2).gen.2
+  sorry
+
+
 
 theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
 intro h
@@ -342,8 +373,12 @@ cases h with
         have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois Gp_Galois_cycl
         let ζ := exist_gen.choose
         have hz := exist_gen.choose_spec
+        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) })
         sorry
-
+        sorry
+        sorry
+        sorry
+        sorry
 --Lemme : bijection corps intermédiaires/sous-groupes IsGalois.intermediateFieldEquivSubgroup
 --theorem groupe_galois_Qw_ZpZ {p : ℕ} (hp : 0 < (p : Nat)) : premierfermat p → galCyclotomicEquivUnitsZMod (Polynomial.cyclotomic.irreducible_rat hp):= by
 -- Lemme : si p est de Fermat, alors Gal(ℚ(w)/ℚ)≅(ℤ/pℤ)*
