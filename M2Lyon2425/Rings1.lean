@@ -15,31 +15,28 @@ import Mathlib.Data.Real.Basic
   Therefore, it is sometimes necessary to ``extend'' the existing definitions.
 -/
 
-example : (5 : ℕ) - 3 = 2 := by
-  sorry
+example : (5 : ℕ) - 3 = 2 := by rfl
 
-example : (1 : ℕ) - 3 = 0 :=  by
-  sorry
+example : (1 : ℕ) - 3 = 0 :=  by rfl
 
-example : (2 : ℝ) / 2 = 1 := by
-  sorry
+example : (2 : ℝ) / 2 = 1 := by norm_num
 
-example : (2 : ℝ) / 0 = 0 := by
-  sorry
+example : (2 : ℝ) / 0 = 0 := by norm_num
 
 -- This result is false
 example (a b : ℕ) : a - b + b = a := by
+  slim_check
   sorry
 
 example (a b : ℕ) (h : b ≤ a) : a - b + b = a := by
-  sorry
+  exact Nat.sub_add_cancel h
 
 -- This result is false
 example (a b : ℝ) : a * (a⁻¹ * b) = b := by
   sorry
 
 example (a b : ℝ) (h : a ≠ 0): a * (a⁻¹ * b) = b := by
-  sorry
+  exact mul_inv_cancel_left₀ h b
 
 /-
   # All flavors of rings
@@ -51,37 +48,37 @@ example {R : Type*} [Ring R] (a b : R) : a * b = b * a := by
   sorry
 
 example {R : Type*} [CommRing R] (a b : R) : a * b = b * a := by
-  sorry
+  exact CommMonoid.mul_comm a b
 
 -- Integral domain
 class integralDomain (R : Type*) extends CommRing R, IsDomain R
 
 example : integralDomain ℤ := by
-  sorry
+  exact integralDomain.mk
 
 -- Principal ideal domain
 class PID (R : Type*) extends CommRing R, IsDomain R, IsPrincipalIdealRing R
 
 example : PID ℤ := by
-  sorry
+  exact PID.mk
 
 -- Unique factorization domain
 class UFD (R : Type*) extends CommRing R, IsDomain R, UniqueFactorizationMonoid R
 
 example : UFD ℤ := by
-  sorry
+  exact UFD.mk
 
 -- GCD domain
 class GCDdomain (R : Type*) extends CommRing R, IsDomain R, GCDMonoid R
 
 example : GCDdomain ℤ := by
-  sorry
+  exact GCDdomain.mk
 
 -- Integrally closed domain
 class ICR (R : Type*) extends CommRing R, IsIntegralClosure R R (FractionRing R)
 
 example : ICR ℤ := by
-  sorry
+  exact ICR.mk
 
 -- However, defining classes like above is not a good idea since they carry data and it is
 -- better to use mixin to avoid diamonds. For example, assume we want to work with a ring that is
@@ -113,7 +110,7 @@ example (R : Type*) [CommRing R] (a b : R) :
 -- This result is false
 example (R : Type*) [Ring R] (a b : R) :
     a ^ 3 - b ^ 3 = (a - b) * (a ^ 2 + a * b + b ^ 2) := by
-  ring -- does nothing
+  ring_nf -- does nothing
   sorry
 
 /-
@@ -123,7 +120,7 @@ example (R : Type*) [Ring R] (a b : R) :
 variable {R : Type*} [Ring R]
 
 -- Fails
-example (a : R) : a* a⁻¹ = 1 := sorry
+example (a : R) : a * a⁻¹ = 1 := sorry
 
 -- Every ring (in fact, monoid) `R` comes with a function `IsUnit : R → Prop` asserting the
 -- existence of inverses on both sides (since `R` may not be commutative).
@@ -136,19 +133,25 @@ example (a : R) (ha : IsUnit a) : a * a⁻¹ = 1 := sorry
 #synth Group Rˣ
 
 example (a : Rˣ) : a * a⁻¹ = 1 := by
-  sorry
+  rw [@mul_inv_eq_one]
 
 -- There is a coercion for `Rˣ` to `R` and an element of `a : R` that satisfies `ha : IsUnit a`
 -- can be promoted to a unit of `R`
 
 example (a : Rˣ) (b : R) : a * b = a ^ 2 * a⁻¹ * b := by
-  sorry
+  rw [@sq,@Units.mul_inv_cancel_right]
 
 example (a : R) (ha : IsUnit a) : a * ha.unit⁻¹ = 1 := by
-  sorry
+  rw [@IsUnit.mul_val_inv]
 
 example (x : ℤˣ) : x = 1 ∨ x = -1 := by
+  obtain hx | hx := le_or_gt 0 (x : ℤ)
+  left 
+  have := Units.val_inv x
+  exact Int.eq_one_of_mul_eq_one_right hx this
+  right
   sorry
+
 
 /-
   # Morphisms between rings
@@ -158,17 +161,21 @@ example (x : ℤˣ) : x = 1 ∨ x = -1 := by
 
 example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (a b : R) :
     f (a + b) = f a + f b := by
-  sorry
+  exact RingHom.map_add f a b
 
 example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (a b : R) :
     f (a * b) = f a * f b := by
-  sorry
+  exact RingHom.map_mul f a b
 
 example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (x : R) (hx : IsUnit x) : IsUnit (f x) := by
-  sorry
+  exact RingHom.isUnit_map f hx
 
-example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) : Rˣ →* Sˣ := by
-  sorry
+example {R S : Type*} [Ring R] [Ring S] (f : R →+* S) : Rˣ →* Sˣ where
+  toFun := fun x ↦ (f.isUnit_map x.isUnit).unit
+  map_one' := by
+    sorry
+  map_mul' := by
+    sorry
 
 /-
   # Ideals and quotients
@@ -185,10 +192,10 @@ example {x : R} : x ∈ I + J ↔ ∃ a ∈ I, ∃ b ∈ J, a + b = x := by
   sorry
 
 example : I * J ≤ J := by
-  sorry
+  exact Ideal.mul_le_left
 
 example : I * J ≤ I := by
-  sorry
+  exact Ideal.mul_le_right
 
 -- Note that the ideals form a complete lattice for the inclusion. In particular, the LUB
 -- (least upper bound) of two ideals is their sum and the GLB (greatest lower bound) is the
@@ -267,7 +274,7 @@ example (a b : α) (s : Setoid α) (h : a ≈ b) : -- (Use `\~~` to write `≈`)
   We will prove the following result: The ring `ℤ` is isomorphic to the quotient of `ℕ × ℕ`
   by the equivalence relation `(a, b) ≈ (c, d)` iff `a + d = c + b`.
   The ideal being that the class of `(a,b)` corresponds to the integer `a - b`.
--/
+-/ 
 
 noncomputable section
 
