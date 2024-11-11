@@ -4,6 +4,7 @@ import Mathlib.Topology.Defs.Basic
 import Mathlib.Topology.Constructions
 import Mathlib.Topology.Instances.EReal
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.SetTheory.Cardinal.Continuum
 
 /-- Goal of the project: formalize the counterexamples of the chapter 10
 of the book "Counterexamples in Analysis" by Bernard R. Gelbaum and
@@ -126,3 +127,36 @@ example (S : Set (ℝ × ℝ)) (hS : IsTwoPointSet S) :
   simp only [Cardinal.mk_eq_zero] at this
   rw [this] at hS
   exact two_ne_zero hS.symm
+
+-- Construction of the two-point set
+
+def IsColinear (a b : ℝ × ℝ) : Prop := ∃ (a' b' c' : ℝ), a ∈ Line a' b' c' ∧ b ∈ Line a' b' c'
+
+def NoThreeColinearPoints {α : Type*} (s : α → Set (ℝ × ℝ)) : Prop :=
+    ¬(∃ a b c, a ∈ Set.iUnion s ∧ b ∈ Set.iUnion s ∧ c ∈ Set.iUnion s ∧ IsColinear a b ∧ IsColinear b c)
+
+def ordinals_lt (o : Ordinal) : Set Ordinal := setOf (· < o)
+
+def Lines : setOf (· < Cardinal.continuum.ord) → setOf (∃ a b c, · = Line a b c) := sorry
+
+def Lines_v2 (o : Ordinal) : setOf (· < o) → setOf (∃ a b c, · = Line a b c) := sorry
+
+class seq_A (f : ordinals_lt Cardinal.continuum.ord → Set (ℝ × ℝ)) where
+  prop₁ : ∀ ε : Subtype (ordinals_lt Cardinal.continuum.ord), Cardinal.mk (f ε) ≤ 2
+  prop₂ : ∀ ε : Subtype (ordinals_lt Cardinal.continuum.ord),
+    NoThreeColinearPoints (fun (i : setOf (fun (i : ordinals_lt Cardinal.continuum.ord) ↦ i ≤ ε)) ↦ f i)
+  prop₃ : ∀ ε : Subtype (ordinals_lt Cardinal.continuum.ord),
+    Cardinal.mk (Subtype (· ∈ Set.iUnion (fun (i : setOf (fun (i : ordinals_lt Cardinal.continuum.ord) ↦ i ≤ ε)) ↦ f i) ∩
+    Lines ε)) = 2
+
+class seq_A_v2 (o : Ordinal) (f : ordinals_lt o → Set (ℝ × ℝ)) where
+  prop₁ := ∀ ε : Subtype (ordinals_lt o), Cardinal.mk (f ε) ≤ 2
+  prop₂ := ∀ ε : Subtype (ordinals_lt o),
+    NoThreeColinearPoints (fun (i : setOf (fun (i : ordinals_lt o) ↦ i ≤ ε)) ↦ f i)
+  prop₃ := ∀ ε : Subtype (ordinals_lt o),
+    Cardinal.mk (Subtype (· ∈ Set.iUnion (fun (i : setOf (fun (i : ordinals_lt o) ↦ i ≤ ε)) ↦ f i) ∩
+    Lines_v2 o ε)) = 2
+
+def existence_seqA : ∃ (f : ordinals_lt Cardinal.continuum.ord → Set (ℝ × ℝ)), Nonempty (seq_A_v2 Cardinal.continuum.ord f) := by
+  apply @Ordinal.induction (p := fun (o : Ordinal) ↦ ∃ (f : ordinals_lt o → Set (ℝ × ℝ)), Nonempty (seq_A_v2 o f)) Cardinal.continuum.ord
+  intros ε hε
