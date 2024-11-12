@@ -130,33 +130,63 @@ example (S : Set (ℝ × ℝ)) (hS : IsTwoPointSet S) :
 
 -- Construction of the two-point set
 
-def IsColinear (a b : ℝ × ℝ) : Prop := ∃ (a' b' c' : ℝ), a ∈ Line a' b' c' ∧ b ∈ Line a' b' c'
+def IsColinear (a b : ℝ × ℝ) : Prop :=
+  ∃ (a' b' c' : ℝ), a ∈ Line a' b' c' ∧ b ∈ Line a' b' c'
 
 def NoThreeColinearPoints {α : Type*} (s : α → Set (ℝ × ℝ)) : Prop :=
-    ¬(∃ a b c, a ∈ Set.iUnion s ∧ b ∈ Set.iUnion s ∧ c ∈ Set.iUnion s ∧ IsColinear a b ∧ IsColinear b c)
+  ¬(∃ a b c, a ∈ Set.iUnion s ∧ b ∈ Set.iUnion s ∧ c ∈ Set.iUnion s
+  ∧ IsColinear a b ∧ IsColinear b c)
 
 def ordinals_lt (o : Ordinal) : Set Ordinal := setOf (· < o)
 
-def Lines : setOf (· < Cardinal.continuum.ord) → setOf (∃ a b c, · = Line a b c) := sorry
+def ordinals_le_lt (o₁ o₂ : Ordinal) : Set (ordinals_lt o₁) := setOf (· ≤ o₂)
 
-def Lines_v2 (o : Ordinal) : setOf (· < o) → setOf (∃ a b c, · = Line a b c) := sorry
+-- Should I prove this?
+def Lines : ordinals_lt Cardinal.continuum.ord → setOf (∃ a b c, · = Line a b c) := sorry
 
-class seq_A (f : ordinals_lt Cardinal.continuum.ord → Set (ℝ × ℝ)) where
-  prop₁ : ∀ ε : Subtype (ordinals_lt Cardinal.continuum.ord), Cardinal.mk (f ε) ≤ 2
-  prop₂ : ∀ ε : Subtype (ordinals_lt Cardinal.continuum.ord),
-    NoThreeColinearPoints (fun (i : setOf (fun (i : ordinals_lt Cardinal.continuum.ord) ↦ i ≤ ε)) ↦ f i)
-  prop₃ : ∀ ε : Subtype (ordinals_lt Cardinal.continuum.ord),
-    Cardinal.mk (Subtype (· ∈ Set.iUnion (fun (i : setOf (fun (i : ordinals_lt Cardinal.continuum.ord) ↦ i ≤ ε)) ↦ f i) ∩
-    Lines ε)) = 2
+lemma Lines_bijective : Lines.Bijective := sorry
+--
 
-class seq_A_v2 (o : Ordinal) (f : ordinals_lt o → Set (ℝ × ℝ)) where
-  prop₁ := ∀ ε : Subtype (ordinals_lt o), Cardinal.mk (f ε) ≤ 2
-  prop₂ := ∀ ε : Subtype (ordinals_lt o),
-    NoThreeColinearPoints (fun (i : setOf (fun (i : ordinals_lt o) ↦ i ≤ ε)) ↦ f i)
-  prop₃ := ∀ ε : Subtype (ordinals_lt o),
-    Cardinal.mk (Subtype (· ∈ Set.iUnion (fun (i : setOf (fun (i : ordinals_lt o) ↦ i ≤ ε)) ↦ f i) ∩
-    Lines_v2 o ε)) = 2
+def Lines₂ (o : Ordinal) (ho : o ≤ Cardinal.continuum.ord) :
+    ordinals_lt o → setOf (∃ a b c, · = Line a b c) :=
+  fun ⟨o₂, ho₂⟩ ↦ Lines ⟨o₂, lt_of_lt_of_le ho₂ ho⟩
 
-def existence_seqA : ∃ (f : ordinals_lt Cardinal.continuum.ord → Set (ℝ × ℝ)), Nonempty (seq_A_v2 Cardinal.continuum.ord f) := by
-  apply @Ordinal.induction (p := fun (o : Ordinal) ↦ ∃ (f : ordinals_lt o → Set (ℝ × ℝ)), Nonempty (seq_A_v2 o f)) Cardinal.continuum.ord
+-- We want to build a sequence with the properties prop₁, prop₂, prop₃ below.
+def seq_A_prop₁ (o : Ordinal) (f : ordinals_lt o → Set (ℝ × ℝ)) : Prop :=
+  ∀ ε : ordinals_lt o, Cardinal.mk (f ε) ≤ 2
+
+def seq_A_prop₂ (o : Ordinal) (f : ordinals_lt o → Set (ℝ × ℝ)) : Prop :=
+  ∀ ε : ordinals_lt o, NoThreeColinearPoints (fun (i : ordinals_le_lt o ε) ↦ f i)
+
+def seq_A_prop₃ (o : Ordinal) (f : ordinals_lt o → Set (ℝ × ℝ)) : Prop :=
+  ∀ ε : ordinals_lt o, (ho : o ≤ Cardinal.continuum.ord) →
+  Cardinal.mk (Subtype (· ∈ Set.iUnion (fun (i : ordinals_le_lt o ε) ↦ f i)
+  ∩ Lines₂ o ho ε)) = 2
+--
+
+def exists_seq_A : ∃ (f : ordinals_lt Cardinal.continuum.ord → Set (ℝ × ℝ)),
+    seq_A_prop₁ Cardinal.continuum.ord f
+    ∧ seq_A_prop₂ Cardinal.continuum.ord f
+    ∧ seq_A_prop₃ Cardinal.continuum.ord f := by
+  apply Ordinal.induction
+    (p := fun (o : Ordinal) ↦ ∃ (f : ordinals_lt o → Set (ℝ × ℝ)),
+    seq_A_prop₁ o f ∧ seq_A_prop₂ o f ∧ seq_A_prop₃ o f) Cardinal.continuum.ord
   intros ε hε
+  have := ε.zero_or_succ_or_limit
+  cases' this with h₁ h₂
+  · rw [h₁]
+    use (fun _ ↦ ∅)
+    refine ⟨fun ε ↦ ?_, fun ε ↦ ?_, fun ε ↦ ?_⟩
+    exfalso
+    exact ε.1.not_lt_zero ε.2
+    exfalso
+    exact ε.1.not_lt_zero ε.2
+    exfalso
+    exact ε.1.not_lt_zero ε.2
+  · cases' h₂ with h₂ h₃
+    · obtain ⟨a, ha⟩ := h₂
+      rw [ha] at hε
+      specialize hε a (Order.lt_succ a)
+      obtain ⟨f, hf⟩ := hε
+      sorry
+    . sorry
