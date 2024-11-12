@@ -242,7 +242,7 @@ example :
   refine ⟨fun h ↦ ⟨h.1, ?_, ?_⟩, fun ⟨h₁, h₂, h₃⟩ ↦ ⟨h₁, ?_, ?_⟩⟩
   all_goals sorry
 
-example : Setoid α := EqvGen.Setoid r
+example (h : Equivalence r) : Setoid α := ⟨r, h⟩
 
 -- The quotient of `α` by the setoid `s`is called `Quotient s`, it comes with the
 -- natural map `Quotient.mk s` from `α` to `Q`
