@@ -126,7 +126,7 @@ example (r : R) (s : S) (t : T) : (r • s) • t = r • (s • t) := by
   exact?
 
 example [IsScalarTower R S T] (r : R) (s : S) (t : T) : (r • s) • t = r • (s • t) := by
-  sorry
+  exact IsScalarTower.smul_assoc r s t
 
 -- The algebra of polynomials with coefficients in `R` is `Polynomial R` with the notation `R[X]` available
 -- in the namespace `Polynomial`. The indeterminate is denote `X` and we use the notation `C` to denote the
@@ -279,8 +279,11 @@ example (v w : V) : φ (v + w) = φ v + φ w := map_add φ v w
 
 def mul_by (x : K) : V →ₗ[K] V where
   toFun := fun v ↦ x • v
-  map_add' := sorry
-  map_smul' := sorry
+  map_add' y z := by simp
+  map_smul' k y := by
+    simp only [RingHom.id_apply]
+    exact smul_comm x k y
+
 
 -- Some API
 theorem mul_by_apply (x : K) (v : V) : mul_by V x v = x • v := rfl
@@ -288,16 +291,18 @@ theorem mul_by_apply (x : K) (v : V) : mul_by V x v = x • v := rfl
 -- Since the set of linear map on `V` is a vector space, we can add these maps
 
 theorem mul_by_add (x y : K) : mul_by V (x + y) = mul_by V x + mul_by V y := by
-  ext
+  ext z
   simp_rw [mul_by_apply]
   rw [LinearMap.add_apply]
   simp_rw [mul_by_apply]
-  sorry
+  exact Module.add_smul x y z
 
 -- And look at the scalar multiplication
 
 theorem smul_mul_by (k x : K) : mul_by V (k * x) = k • mul_by V x := by
-  sorry
+  ext z
+  rw [mul_by_apply, LinearMap.smul_apply, mul_by_apply, smul_smul]
+
 
 -- Hum, can we use these properties to prove that the set `mul_by` is a subvector-space?
 
