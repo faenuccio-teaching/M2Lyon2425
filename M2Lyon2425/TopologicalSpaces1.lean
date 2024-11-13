@@ -3,8 +3,6 @@ import Mathlib.MeasureTheory.OuterMeasure.AE
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.MeasureTheory.Measure.MeasureSpaceDef
 
-section Filter
-
 open Filter Set Topology
 
 /- Filters. -/
@@ -483,6 +481,13 @@ example (f : ℝ → ℝ) (a b : ℝ) :
     Tendsto f (𝓝 a) (𝓝 b) ↔ ∀ (U : Set ℝ), IsOpen U ∧ b ∈ U →
     ∃ (V : Set ℝ), IsOpen V ∧ a ∈ V ∧ V ⊆ f ⁻¹' U := by sorry
 
+-- If we know a basis of a filter, it is easy to describe
+-- its members.
+#check Filter.HasBasis.mem_iff
+
+example (A : Set ℕ) : A ∈ atTop ↔ ∃ n, Set.Ici n ⊆ A := by
+  rw [Filter.HasBasis.mem_iff (atTop_basis)]
+  simp
 
 /- Another use of filters is that they give a convenient
 way to talk about properties that are true for `x` big enough,
@@ -518,3 +523,93 @@ example : ∀ᶠ x in nhds (0 : ℝ), |x| ≤ 1/2 := sorry
 
 example (P Q : ℕ → Prop) (hP : ∀ᶠ n in atTop, P n) (hQ : ∀ᶠ n in atTop, Q n) :
     ∀ᶠ n in atTop, P n ∧ Q n := sorry
+
+/- There are two special cases of `Filter.Eventually` for equalities
+and inequalities:-/
+#print Filter.EventuallyEq
+#print Filter.EventuallyLE
+
+
+/- They have special notation too:-/
+example (u v : ℕ → ℝ) : (∀ᶠ n in atTop, u n = v n) ↔ u =ᶠ[atTop] v := Iff.refl _
+
+example (u v : ℕ → ℝ) : (∀ᶠ n in atTop, u n ≤ v n) ↔ u ≤ᶠ[atTop] v := Iff.refl _
+
+-- For example, two sequences that are eventually equal
+-- for the filter `atTop` have the same limit.
+example (u v : ℕ → ℝ) (h : u =ᶠ[atTop] v) (x₀ : ℝ) :
+    Tendsto u atTop (𝓝 x₀) ↔ Tendsto v atTop (𝓝 x₀) :=
+  tendsto_congr' h
+
+/- There is a tactic called `filter_upwards` to deal with goals
+of the `∀ᶠ s in F, ...`.-/
+
+/-- From the documentation:
+`filter_upwards [h₁, ⋯, hₙ]` replaces a goal of the form `s ∈ f` and terms
+`h₁ : t₁ ∈ f, ⋯, hₙ : tₙ ∈ f` with `∀ x, x ∈ t₁ → ⋯ → x ∈ tₙ → x ∈ s`.
+The list is an optional parameter, `[]` being its default value.
+
+`filter_upwards [h₁, ⋯, hₙ] with a₁ a₂ ⋯ aₖ` is a short form for
+`{ filter_upwards [h₁, ⋯, hₙ], intros a₁ a₂ ⋯ aₖ }`.
+
+`filter_upwards [h₁, ⋯, hₙ] using e` is a short form for
+`{ filter_upwards [h1, ⋯, hn], exact e }`.
+
+Combining both shortcuts is done by writing
+`filter_upwards [h₁, ⋯, hₙ] with a₁ a₂ ⋯ aₖ using e`.
+Note that in this case, the `aᵢ` terms can be used in `e`.
+-/
+
+-- Without `filter_upwards`.
+example (P Q R : ℕ → Prop) (hP : ∀ᶠ n in atTop, P n) (hQ : ∀ᶠ n in atTop, Q n)
+    (hR : ∀ᶠ n in atTop, P n ∧ Q n → R n) : ∀ᶠ n in atTop, R n := by
+  apply (hP.and (hQ.and hR)).mono
+  rintro n ⟨h, h', h''⟩
+  exact h'' ⟨h, h'⟩
+
+example (P Q R : ℕ → Prop) (hP : ∀ᶠ n in atTop, P n) (hQ : ∀ᶠ n in atTop, Q n)
+    (hR : ∀ᶠ n in atTop, P n ∧ Q n → R n) : ∀ᶠ n in atTop, R n := by
+  filter_upwards [hP, hQ, hR] with n h h' h''
+  exact h'' ⟨h, h'⟩
+
+-- An exercise: if the sequence `u` converges to `x` and
+-- `u n` is in `M` for `n` big enough, then `x` is in the closure
+-- of `M`.
+
+example (u : ℕ → ℝ) (M : Set ℝ) (x : ℝ) (hux : Tendsto u atTop (𝓝 x))
+    (huM : ∀ᶠ n in atTop, u n ∈ M) : x ∈ closure M :=
+  sorry
+
+--Useful lemmas for the exercise:
+#check mem_closure_iff_clusterPt
+#print ClusterPt -- note that `ClusterPt F x` means by definition
+                 -- that `𝓝 x ⊓ F` is not the `⊥` filter
+#check le_principal_iff
+#check neBot_of_le
+
+/- Another filter notion is `Filter.Frequently`. You
+would use it for example to express something like
+"there exist arbitrarily large `n` in `ℕ` such that so and so".-/
+
+#print Filter.Frequently
+-- `Filter.Frequently p F` means `¬∀ᶠ (x : α) in f, ¬p x` i.e.
+-- `{x | ¬p x} ∉ F`. It is written `∃ᶠ x in F, p x`.
+-- This is actually equivalent to saying that, for every `A ∈ F`,
+-- there exists `x ∈ A` such that `p x`. Don't believe me?
+
+example (p : α → Prop) (F : Filter α) :
+    (∃ᶠ x in F, p x) ↔ ∀ A ∈ F, ∃ x ∈ A, p x := by sorry
+/-  constructor
+  · intro h A hA
+    by_contra habs
+    push_neg at habs
+    have hsub : A ⊆ {x | ¬p x} := by
+      intro x hx
+      simp only [mem_setOf_eq, habs x hx, not_false_eq_true]
+    have := F.mem_of_superset hA hsub
+    exact h this
+  · dsimp [Filter.Frequently]
+    intro h habs
+    obtain ⟨x, hx₁, hx₂⟩ := h _ habs
+    simp only [mem_setOf_eq] at hx₁
+    exact hx₁ hx₂ -/
