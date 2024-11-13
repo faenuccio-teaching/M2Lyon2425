@@ -358,7 +358,7 @@ example : ¬(P ↔ ¬P) := by
 /- END TODO -/
 
 /-
-  # Disjonction / Or
+  # Disjunction / Or
   Use `\or` to write `∨`
 -/
 
