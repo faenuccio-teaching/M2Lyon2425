@@ -131,7 +131,7 @@ instead of `nhds`.
 
 Similarly, if `u : ℕ → ℝ` is a sequence (here with real values,
 but it could have values in any topological space), we can
-express the fact that `u` conveges to `b : ℝ` with filters:
+express the fact that `u` converges to `b : ℝ` with filters:
 `∀ (A : nhds b), f ⁻¹' b ∈ Filter.atTop`.
 
 Note that all these definitions of convergence can be written
