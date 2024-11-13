@@ -8,7 +8,6 @@ def iteration (n : ℕ) : α → α → Prop :=
   | 0 => (· = ·)
   | m+1 => fun x y ↦ (∃ w, (iteration m) x w ∧ f w y)
 
-
 lemma equiv_defs :
   ∀ n, ∀ x y,
   iteration f n x y →
@@ -30,16 +29,41 @@ lemma equiv_defs :
       let w := this.choose
       have hw := this.choose_spec
       -- on construit ici une fonction `w'` qui étend `w`
-      let w' := fun i ↦ (match i with
-        | m+1 => y
-        | _ => w i
-        )
+      let w' := fun i ↦ (if i = m+1 then y else w i)
       use w'
       simp
       constructor
       · -- on sait que `w' 0 = w 0` car 0 n'est pas un successeur (cf def. de `w'`)
         -- mais comment le montrer ?
-        calc
-          w' 0 = w 0 := sorry
-          _ = x := hw.left.left
+        constructor
+        · have h0 : 0 ≠ m+1 := by omega
+          simp only [h0, w', reduceIte]
+          exact hw.left.left
+        · sorry
       · sorry -- le même problème apparait, à résoudre similairement
+
+def w : ℕ → ℕ := sorry
+def w₁ := fun i ↦ if i = 10 then 0 else w i
+#check w₁
+
+def NatHom (h : ℕ → ℕ) : Prop := ∀ x y, h x * h y = h (x*y)
+
+lemma existsNatHom : ∃ h : ℕ → ℕ, NatHom h := by
+  use (·)
+  intro x y
+  rfl
+
+lemma exemple (h : ℕ → ℕ) :
+  ∃ (g : ℕ → ℕ), ∀ i, ((i≠ 10 ∧ g i = h i) ∨ (i = 10 ∧ g i = 0)) := by
+    let g := fun i ↦ if i = 10 then 0 else h i
+    use g
+    intro i
+    by_cases hi : i = 10
+    · right
+      constructor
+      · exact hi
+      · simp only [hi, reduceIte, g]
+    · left
+      constructor
+      · exact hi
+      · simp only [hi, reduceIte, g]

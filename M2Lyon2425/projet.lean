@@ -949,36 +949,35 @@ lemma npow' {f : ARS α} :
       have ⟨hfmwn, hfwn⟩ := hypfn.choose_spec
       let w := (hm x wn hfmwn).choose
       have hw := (hm x wn hfmwn).choose_spec
-      let w' :=  fun (i: ℕ) ↦ by match i with
-        | m+1 => exact y'
-        | _ => exact w i
+      let w' :=  fun (i: ℕ) ↦ if i = m+1 then y' else w i
       use w'
-      simp
       constructor
-      · calc
-          w' 0 = w 0 := by rfl
-          _ = x := hw.left.left
+      · constructor
+        · simp only [w', reduceIte]
+          exact hw.left.left
+        · simp only [w', reduceIte]
       · intro i'
         by_cases him : m < i'
-        · left; exact him
-        · right
-          have him' := le_of_not_lt him
+        · left
+          simp only [add_lt_add_iff_right]
+          exact him
+        · have him' := le_of_not_lt him
           --apply Nat.succ_le_succ at him'
           --change i'+1 ≤ m+1 at him'
           have := (hw.right i')
           cases this with
           | inl relou =>
-            have this₁ : i' = m := by omega
-            rw [this₁]
-            have this₂ : m ≠ m + 1 := by omega
-            have whatiswm : w' i' = wn := by calc
-              w' i' = w' m := by rw [this₁]
-              _ = w m := by sorry
-              _ = wn := by sorry
+
             sorry
           | inr cool =>
-            have weqwi' : w i' = w' i' := by sorry
-            sorry
+            right
+            have h₀ : i' ≠ m + 1 := by omega
+            by_cases hᵢ : i' + 1 = m + 1
+            · simp only [w', hᵢ, h₀, reduceIte]
+
+              sorry
+            · simp only [w', hᵢ, h₀, reduceIte]
+              exact cool
 
 end ARS
 
