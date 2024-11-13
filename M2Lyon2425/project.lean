@@ -190,3 +190,60 @@ def exists_seq_A : ∃ (f : ordinals_lt Cardinal.continuum.ord → Set (ℝ × �
       obtain ⟨f, hf⟩ := hε
       sorry
     . sorry
+
+-- Filippo: some trials
+
+def ordinals_le (o : Ordinal) : Set Ordinal := setOf (· ≤ o)
+
+def fae_NoThreeColinearPoints (s : Set (ℝ × ℝ)) : Prop :=
+  ¬ (∃ a b c, a ∈ s ∧ b ∈ s ∧ c ∈ s ∧ IsColinear a b ∧ IsColinear b c)
+
+noncomputable
+abbrev c := Cardinal.continuum.ord
+
+def union_le_fae (A : ordinals_lt c → Set (ℝ × ℝ)) (o : ordinals_lt c) : Set (ℝ × ℝ) :=
+  (⋃ (b : ordinals_le o), A ⟨b, (lt_of_le_of_lt b.2 o.2.out)⟩)
+
+
+/- This is the condition that `(I)`, `(P)` and `(D)` on page 81 are satisfied up to a certain `ξ`.
+The function `A` is total, but the property only holds up to `ξ`-/
+def prop_fae (A : ordinals_lt c → Set (ℝ × ℝ)) (ξ : ordinals_lt c) : Prop :=
+  Nat.card (A ξ) ≤ 2 ∧
+  fae_NoThreeColinearPoints (union_le_fae A ξ) ∧
+  Nat.card ((union_le_fae A ξ) ∩ (Lines ξ) : Set (ℝ × ℝ)) = 2
+
+theorem fae (ξ : ordinals_lt c)
+  (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ ζ : ordinals_lt ξ, prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
+  ∃ A : ordinals_lt c → Set (ℝ × ℝ),
+    ∀ ζ : ordinals_le ξ, prop_fae A ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ := by
+  obtain ⟨A₀, hA₀⟩ := H
+  set B := ⋃ (ζ : ordinals_lt ξ), A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩ with hB
+  have hB_le : Cardinal.mk B < Cardinal.continuum := sorry
+  let 𝒢 := {S | 2 ≤ Cardinal.mk ↑(S ∩ B) ∧ ∃ a b c, S = Line a b c}
+  have h𝒢_le := Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2-- or directly `< Cardinal.continuum`
+  let n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ))
+  have byP : n ≤ 2 := sorry
+  let Aξ : Set (ℝ × ℝ) :=
+    if n = 2 then ∅
+    else
+      if n = 1 then sorry
+      else sorry
+  apply Exists.intro
+  swap
+  intro ζ
+  by_cases hζ : ζ < ξ
+  · use A₀ ζ
+  · by_cases hζ' : ζ = ξ
+    · use Aξ
+    · use Set.univ
+  rintro ⟨η, hη⟩
+  simp only [ordinals_le, Set.mem_setOf_eq] at hη
+  rw [le_iff_eq_or_lt] at hη
+  rcases hη with hη | hη
+  · simp only [dite_eq_ite, hη, Subtype.coe_eta, prop_fae, lt_self_iff_false, reduceIte,
+      Set.mem_setOf_eq]
+    sorry
+  · convert hA₀ ⟨η, hη⟩
+    simp only [dite_eq_ite, ite_eq_left_iff, not_lt]
+    intro h
+    sorry
