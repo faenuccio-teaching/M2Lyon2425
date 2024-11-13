@@ -166,8 +166,7 @@ exact Polynomial.cyclotomic.irreducible_rat hpp
 --Lemme : L'extension ℚ(w) est galoisienne
 theorem Qw_est_galois (p : ℕ+) : premierfermat p → IsGalois ℚ (CyclotomicField p ℚ) := by
   intro _
-  have h1 := IsCyclotomicExtension.isGalois p ℚ (CyclotomicField p ℚ)
-  exact h1
+  exact IsCyclotomicExtension.isGalois p ℚ (CyclotomicField p ℚ)
 
 --Lemme : ℤ/(2^m)ℤ est un groupe résoluble
 theorem Z2mZ_resoluble (m : Nat) : IsSolvable (ZMod (2^m))ˣ := by
@@ -341,18 +340,17 @@ intro h
 rw[IsCyclotomicExtension.iff_singleton]
 constructor
 · let ζ := (Complex.exp (2 * ↑Real.pi * Complex.I/ ↑(p^α)))
-  have hz : ζ ∈ (Algebra.adjoin ℚ {Complex.exp (2 * ↑Real.pi * Complex.I / ↑↑(p ^ α))}) := by
-    exact Algebra.self_mem_adjoin_singleton ℚ ζ
-  use ⟨ζ, hz⟩
+  use ⟨ζ, Algebra.self_mem_adjoin_singleton ℚ ζ⟩
   have h2 := adjoin_is_integral α p h
   have h3 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
   exact IsPrimitiveRoot.coe_submonoidClass_iff.mp h3
-have h1 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
 · intro x
   have h2 := adjoin_is_integral α p h
   have a :=  (Algebra.adjoin.powerBasis h2).gen.2
   have b := a.out
+  intro h1 h2
   sorry
+
 
 
 
@@ -373,8 +371,8 @@ cases h with
         have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois Gp_Galois_cycl
         let ζ := exist_gen.choose
         have hz := exist_gen.choose_spec
-        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) })
-
+        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) (sorry) (sorry) (sorry) (sorry) (sorry)
+        sorry
         sorry
         sorry
         sorry
