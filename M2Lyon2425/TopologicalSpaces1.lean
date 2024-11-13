@@ -170,11 +170,6 @@ def Tendsto₁ {X Y : Type*} (f : X → Y) (F : Filter X)
 example {X Y Z : Type*} (f : X → Y) (g : Y → Z) (F : Filter X)
     (G : Filter Y) (H : Filter Z) :
     Tendsto₁ f F G → Tendsto₁ g G H → Tendsto₁ (g ∘ f) F H := by sorry
-/-  intro h₁ h₂ V hV
-  rw [Set.preimage_comp]
-  apply h₁
-  exact h₂ V hV -/
-
 
 /- An intuitive way to think about filters, and a reformulation
 of convergence.
@@ -222,15 +217,6 @@ example (s t : Set α) : s ⊆ t ↔
 
 example (F : Filter α) (s : Set α) :
     Filter.principal s ≤ F ↔ ∀ A ∈ F, s ⊆ A := by sorry
-/-  constructor
-  · intro h A hA
-    rw [← Filter.mem_principal]
-    apply h
-    exact hA
-  · intro h A hA
-    rw [Filter.mem_principal]
-    exact h _ hA
--/
 
 example (F : Filter α) (s : Set α) :
     F ≤ Filter.principal s ↔ s ∈ F := sorry
@@ -290,18 +276,6 @@ form a Galois connection, i.e. an adjunction between poset categories.)
 
 example {f : α → β} {F : Filter α} {G : Filter β} :
     Filter.map f F ≤ G ↔ F ≤ Filter.comap f G := by sorry
-/-  constructor
-  · intro h A hA
-    rw [Filter.mem_comap] at hA
-    obtain ⟨B, hb⟩ := hA
-    have := h hb.1
-    rw [Filter.mem_map] at this
-    exact Filter.mem_of_superset this hb.2
-  · intro h B hB
-    rw [Filter.mem_map]
-    apply h
-    rw [Filter.mem_comap]
-    use B -/
 
 /- Using `Filter.comap`, we can give an equivalent definition
 of `Tendsto`.-/
@@ -599,17 +573,3 @@ would use it for example to express something like
 
 example (p : α → Prop) (F : Filter α) :
     (∃ᶠ x in F, p x) ↔ ∀ A ∈ F, ∃ x ∈ A, p x := by sorry
-/-  constructor
-  · intro h A hA
-    by_contra habs
-    push_neg at habs
-    have hsub : A ⊆ {x | ¬p x} := by
-      intro x hx
-      simp only [mem_setOf_eq, habs x hx, not_false_eq_true]
-    have := F.mem_of_superset hA hsub
-    exact h this
-  · dsimp [Filter.Frequently]
-    intro h habs
-    obtain ⟨x, hx₁, hx₂⟩ := h _ habs
-    simp only [mem_setOf_eq] at hx₁
-    exact hx₁ hx₂ -/
