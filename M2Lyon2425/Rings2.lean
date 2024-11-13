@@ -108,10 +108,10 @@ variable {R A : Type*} [CommRing R] [Ring A] [Algebra R A]
 example (r : R) (a : A) : r • a = algebraMap R A r * a := Algebra.smul_def r a
 
 example (r r' : R) (a : A) : (r + r') • a = r • a + r' • a := by
-  sorry
+  exact Module.add_smul r r' a
 
 example (r r' : R) (a : A) : (r * r') • a = r • r' • a := by
-  sorry
+  exact mul_smul r r' a
 
 -- The type of `A` and `B` are two `R`-algebras, the type of R-algebra morphism is `AlgHom R A B` with
 -- the notation `A →ₐ[R] B` and `A ≃ₐ[R] B` for `AlgEquiv R A B`.
@@ -123,10 +123,10 @@ variable (S T : Type*) [CommRing S] [CommRing T] [Algebra R S] [Algebra S T] [Al
 
 -- This fails
 example (r : R) (s : S) (t : T) : (r • s) • t = r • (s • t) := by
-  exact?
+  sorry
 
 example [IsScalarTower R S T] (r : R) (s : S) (t : T) : (r • s) • t = r • (s • t) := by
-  sorry
+  exact IsScalarTower.smul_assoc r s t
 
 -- The algebra of polynomials with coefficients in `R` is `Polynomial R` with the notation `R[X]` available
 -- in the namespace `Polynomial`. The indeterminate is denote `X` and we use the notation `C` to denote the
@@ -140,8 +140,8 @@ example : R[X] := X - C 1
 -- `C` is defined as a ring homorphism
 
 example (r : R) : (X + C r) * (X - C r) = X ^ 2 - C (r ^ 2) := by
-  ring -- this is not enough
-  sorry
+  ring_nf
+  rw [map_pow]
 
 -- The coefficients of a polynomial can be accessed using `Polynomial.coeff`
 
@@ -181,10 +181,8 @@ example (P : R[X]) (h : P ≠ 0) : P.degree = P.natDegree := degree_eq_natDegree
 
 -- Computing the degree of a polynomial can be a difficult task, but there is a tactic to help!
 
-example : ((X + 1 : R[X]) * (2 * X + 1)).natDegree = 2 := by
-  compute_degree
-  · sorry
-  · simp
+example (h : (2 : R) ≠ 0) : ((X + 1 : R[X]) * (2 * X + 1)).natDegree = 2 := by
+  compute_degree!
 
 -- Every polynomial gives rise to a polynomial function `Polynomial.eval`.
 
@@ -211,7 +209,7 @@ example (r : R) (P : R[X]) : IsRoot P r ↔ P.eval r = 0 := Iff.rfl
 -- For the `0` polynomial, it returns the empty (multi)set.
 
 example [IsDomain R] (r : R) : (X - C r).roots = {r} := by
-  sorry
+  exact roots_X_sub_C r
 
 example [IsDomain R] (r : R) (n : ℕ) : ((X - C r) ^ n).roots = n • {r} := by
   rw [roots_pow, roots_X_sub_C]
@@ -253,13 +251,13 @@ variable {K : Type*} (V : Type*) [Field K] [AddCommGroup V] [Module K V]
 -- we have the usual axioms
 
 example (k : K) (u v : V) : k • (u + v) = k • u + k • v := by
-  sorry
+  exact DistribSMul.smul_add k u v
 
 example (k l : K) (u : V) : (k + l) • u = k • u + l • u := by
-  sorry
+  exact Module.add_smul k l u
 
-example (k l : K) (u : V) : k • l • u = (k * l) • u := by
-  sorry
+lemma for_mul_by (k l : K) (u : V) : k • l • u = (k * l) • u := by
+  exact smul_smul k l u
 
 
 -- The type of linear maps is denoted `V →ₗ[K] W` with an `l` in subscript for linear. The type of
@@ -279,8 +277,13 @@ example (v w : V) : φ (v + w) = φ v + φ w := map_add φ v w
 
 def mul_by (x : K) : V →ₗ[K] V where
   toFun := fun v ↦ x • v
-  map_add' := sorry
-  map_smul' := sorry
+  map_add' := by
+    intros z₁ z₂
+    exact DistribSMul.smul_add x z₁ z₂
+  map_smul' := by
+    intros m z
+    dsimp
+    rw [for_mul_by, mul_comm, ← for_mul_by]
 
 -- Some API
 theorem mul_by_apply (x : K) (v : V) : mul_by V x v = x • v := rfl
@@ -292,28 +295,46 @@ theorem mul_by_add (x y : K) : mul_by V (x + y) = mul_by V x + mul_by V y := by
   simp_rw [mul_by_apply]
   rw [LinearMap.add_apply]
   simp_rw [mul_by_apply]
-  sorry
+  exact Module.add_smul x y _
 
 -- And look at the scalar multiplication
 
 theorem smul_mul_by (k x : K) : mul_by V (k * x) = k • mul_by V x := by
-  sorry
+  ext y
+  rw [mul_by_apply]
+  dsimp
+  rw [mul_by_apply, for_mul_by]
 
 -- Hum, can we use these properties to prove that the set `mul_by` is a subvector-space?
 
+#print Module
 variable (K) in -- See below for an explanation of this
 def ImageMulBy : Submodule K (V →ₗ[K] V) where
   carrier := Set.range (mul_by V)
   zero_mem' := by
     dsimp only
     use 0
-    sorry
+    ext y
+    rw [mul_by_apply]
+    exact Module.zero_smul _
   add_mem' := by
     intro φ ψ hφ hψ
     obtain ⟨x, rfl⟩ := hφ
     obtain ⟨y, rfl⟩ := hψ
-    sorry
-  smul_mem' := sorry
+    refine ⟨x + y, ?_⟩
+    ext z
+    rw [mul_by_apply]
+    dsimp
+    rw [mul_by_apply, mul_by_apply]
+    exact Module.add_smul x y z
+  smul_mem' := by
+    intros c F
+    dsimp
+    intro hF
+    obtain ⟨z, hz⟩ := hF
+    apply_fun (c • ·) at hz
+    rw [← smul_mul_by] at hz
+    exact ⟨c * z, hz⟩
 
 -- We need to tell Lean what `K` is here since `V` could be a vector space for several fields, think for
 -- example of `ℂ`-vector spaces, they are also `ℝ`-vector spaces.
@@ -333,16 +354,32 @@ def LinearMulBy' : K →ₗ[K] (V →ₗ[K] V) where
 
 def LinearMulBy : K →ₗ[K] ImageMulBy K V := by
   refine LinearMap.codRestrict (ImageMulBy K V) (LinearMulBy' V) ?_
-  sorry
+  intro x
+  refine ⟨x, ?_⟩
+  ext y
+  rw [LinearMulBy']
+  dsimp
 
 -- In fact, this map should be a linear equiv so let's construct it.
 
 #check LinearEquiv.ofBijective
 
-def EquivMulBy : K ≃ₗ[K] ImageMulBy K V := by
+def EquivMulBy [Nontrivial V] : K ≃ₗ[K] ImageMulBy K V := by
   refine .ofBijective (LinearMulBy V) ⟨?_, ?_⟩
-  · sorry
-  · sorry
+  · intro k l h
+    have : ∃ v : V, v ≠ 0 := exists_ne 0
+    obtain ⟨v, hv⟩ := this
+    have this₂ : k • v = l • v := by
+      have ⟨f, hf⟩ := (LinearMulBy V) k
+      change f ∈ Set.range (mul_by V) at hf
+      rw [Set.mem_def] at hf
+      obtain ⟨x, hx⟩ := hf
+      sorry
+    exact smul_left_injective K hv this₂
+  · unfold Function.Surjective
+    rintro ⟨b, ⟨k, rfl⟩⟩
+    use k
+    rfl
 
 -- Linear maps come also with their range and kernel, but also with the corresponding pushing and pulling
 -- on subspaces (and then range and kernel are just special cases).
