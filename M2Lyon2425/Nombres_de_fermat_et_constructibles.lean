@@ -341,17 +341,17 @@ intro h
 rw[IsCyclotomicExtension.iff_singleton]
 constructor
 · let ζ := (Complex.exp (2 * ↑Real.pi * Complex.I/ ↑(p^α)))
+  have hz : ζ ∈ (Algebra.adjoin ℚ {Complex.exp (2 * ↑Real.pi * Complex.I / ↑↑(p ^ α))}) := by
+    exact Algebra.self_mem_adjoin_singleton ℚ ζ
+  use ⟨ζ, hz⟩
   have h2 := adjoin_is_integral α p h
-  --have h1 := Algebra.adjoin.powerBasisAux h2
-  --have h3 := poly_min_w_sur_Q p α h.left h.right
-  --rw[h3,Polynomial.natDegree_cyclotomic,Nat.totient_prime_pow] at h1
-  have a :=  (Algebra.adjoin.powerBasis h2).gen.2
-  rw[Algebra.adjoin.powerBasis_gen h2] at a
-  sorry
-         --have h1 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
+  have h3 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
+  exact IsPrimitiveRoot.coe_submonoidClass_iff.mp h3
+have h1 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
 · intro x
   have h2 := adjoin_is_integral α p h
   have a :=  (Algebra.adjoin.powerBasis h2).gen.2
+  have b := a.out
   sorry
 
 
@@ -374,7 +374,7 @@ cases h with
         let ζ := exist_gen.choose
         have hz := exist_gen.choose_spec
         have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) })
-        sorry
+
         sorry
         sorry
         sorry
