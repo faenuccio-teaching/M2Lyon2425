@@ -26,7 +26,7 @@ open Ideal Quotient Function
 
 /-- The homomorphism from ``R ⧸ ⨅ i, I i`` to ``Π i, R ⧸ I i`` featured in the Chinese
   Remainder Theorem. -/
-def chineseMap (I : ι → Ideal R) : (R ⧸ ⨅ i, I i) →+* Π i, R ⧸ I i :=
+def chineseMap (I : ι → Ideal R) : (R ⧸ ⨅ i, I i) →+* Π i, R ⧸ I i := 
   sorry
 
 lemma chineseMap_mk (I : ι → Ideal R) (x : R) :
@@ -107,11 +107,9 @@ variable {R A : Type*} [CommRing R] [Ring A] [Algebra R A]
 -- gives the scalar multiplication of `A` by `R` denote `•` (use `\smul` to write `•`).
 example (r : R) (a : A) : r • a = algebraMap R A r * a := Algebra.smul_def r a
 
-example (r r' : R) (a : A) : (r + r') • a = r • a + r' • a := by
-  sorry
+example (r r' : R) (a : A) : (r + r') • a = r • a + r' • a := add_smul r r' a
 
-example (r r' : R) (a : A) : (r * r') • a = r • r' • a := by
-  sorry
+example (r r' : R) (a : A) : (r * r') • a = r • r' • a := mul_smul r r' a
 
 -- The type of `A` and `B` are two `R`-algebras, the type of R-algebra morphism is `AlgHom R A B` with
 -- the notation `A →ₐ[R] B` and `A ≃ₐ[R] B` for `AlgEquiv R A B`.
@@ -122,11 +120,11 @@ example (r r' : R) (a : A) : (r * r') • a = r • r' • a := by
 variable (S T : Type*) [CommRing S] [CommRing T] [Algebra R S] [Algebra S T] [Algebra R T]
 
 -- This fails
-example (r : R) (s : S) (t : T) : (r • s) • t = r • (s • t) := by
-  exact?
+-- example (r : R) (s : S) (t : T) : (r • s) • t = r • (s • t) := by exact?
+  
 
-example [IsScalarTower R S T] (r : R) (s : S) (t : T) : (r • s) • t = r • (s • t) := by
-  sorry
+example [IsScalarTower R S T] (r : R) (s : S) (t : T) : (r • s) • t = r • (s • t) := 
+  smul_assoc r s t
 
 -- The algebra of polynomials with coefficients in `R` is `Polynomial R` with the notation `R[X]` available
 -- in the namespace `Polynomial`. The indeterminate is denote `X` and we use the notation `C` to denote the
@@ -140,11 +138,9 @@ example : R[X] := X - C 1
 -- `C` is defined as a ring homomorphism
 
 example (r : R) : (X + C r) * (X - C r) = X ^ 2 - C (r ^ 2) := by
-  ring -- this is not enough
-  sorry
+  ring_nf; rw [C_pow]
 
 -- The coefficients of a polynomial can be accessed using `Polynomial.coeff`
-
 example : (X ^ 3 - 2 * X + C 1 : R[X]).coeff 1 = - 2 := by
   rw [coeff_add, coeff_sub, coeff_X_pow]
   rw [if_neg (by linarith), zero_sub]
@@ -153,7 +149,7 @@ example : (X ^ 3 - 2 * X + C 1 : R[X]).coeff 1 = - 2 := by
 
 -- It is trickier to define the degree of polynomials because of the `0` polynomial. Usually, the degree of
 -- the `0` polynomial is set to be `-∞` but that it is not a `Nat`. Thus, we use instead `WithBot ℕ` which
--- is the type of `ℕ` with an additional element -- the bottom --, denote `⊥` (use `\bot` to write `⊥`) which
+-- is the type of `ℕ` with an additional element -- the bottom --, denote `⊥` (use `\bot` to write `⊥`) which 
 -- is smaller than any other other element of `Nat`.
 
 example (a : ℕ) : ⊥ < (a : WithBot ℕ) := WithBot.bot_lt_coe a
@@ -181,9 +177,9 @@ example (P : R[X]) (h : P ≠ 0) : P.degree = P.natDegree := degree_eq_natDegree
 
 -- Computing the degree of a polynomial can be a difficult task, but there is a tactic to help!
 
-example : ((X + 1 : R[X]) * (2 * X + 1)).natDegree = 2 := by
+example (h : 2 ≠ 0) : ((X + 1 : R[X]) * (2 * X + 1)).natDegree = 2 := by
   compute_degree
-  · sorry
+  · assumption
   · simp
 
 -- Every polynomial gives rise to a polynomial function `Polynomial.eval`.
@@ -210,8 +206,7 @@ example (r : R) (P : R[X]) : IsRoot P r ↔ P.eval r = 0 := Iff.rfl
 -- `Polynomial.roots` is the set of roots in its coefficient ring `R` with multiplicities. It is a `multiset`.
 -- For the `0` polynomial, it returns the empty (multi)set.
 
-example [IsDomain R] (r : R) : (X - C r).roots = {r} := by
-  sorry
+example [IsDomain R] (r : R) : (X - C r).roots = {r} := by rw [roots_X_sub_C]
 
 example [IsDomain R] (r : R) (n : ℕ) : ((X - C r) ^ n).roots = n • {r} := by
   rw [roots_pow, roots_X_sub_C]
@@ -235,7 +230,7 @@ example : aroots (X ^ 2 + 1 : ℝ[X]) ℂ = {I, -I} := by
   -- The result then follows from `roots_mul`
   rw [factored, roots_mul, roots_X_sub_C, roots_X_sub_C]
   · simp
-  · by_contra! h
+  · intro h
     apply_fun eval 0 at h
     simp [eval] at h
 
@@ -253,14 +248,11 @@ variable {K : Type*} (V : Type*) [Field K] [AddCommGroup V] [Module K V]
 -- we have the usual axioms
 
 example (k : K) (u v : V) : k • (u + v) = k • u + k • v := by
-  sorry
+  exact DistribSMul.smul_add k u v
 
-example (k l : K) (u : V) : (k + l) • u = k • u + l • u := by
-  sorry
+example (k l : K) (u : V) : (k + l) • u = k • u + l • u := add_smul k l u
 
-example (k l : K) (u : V) : k • l • u = (k * l) • u := by
-  sorry
-
+example (k l : K) (u : V) : k • l • u = (k * l) • u := smul_smul k l u
 
 -- The type of linear maps is denoted `V →ₗ[K] W` with an `l` in subscript for linear. The type of
 -- linear isomorphism is `V ≃ₗ[K] W`.
@@ -279,8 +271,8 @@ example (v w : V) : φ (v + w) = φ v + φ w := map_add φ v w
 
 def mul_by (x : K) : V →ₗ[K] V where
   toFun := fun v ↦ x • v
-  map_add' := sorry
-  map_smul' := sorry
+  map_add' y z := by simp
+  map_smul' m y := by simp; exact smul_comm x m y
 
 -- Some API
 theorem mul_by_apply (x : K) (v : V) : mul_by V x v = x • v := rfl
@@ -292,12 +284,13 @@ theorem mul_by_add (x y : K) : mul_by V (x + y) = mul_by V x + mul_by V y := by
   simp_rw [mul_by_apply]
   rw [LinearMap.add_apply]
   simp_rw [mul_by_apply]
-  sorry
+  apply add_smul
 
 -- And look at the scalar multiplication
 
 theorem smul_mul_by (k x : K) : mul_by V (k * x) = k • mul_by V x := by
-  sorry
+  ext y; simp_rw [mul_by_apply]; rw [LinearMap.smul_apply]
+  simp_rw [mul_by_apply]; apply mul_smul
 
 -- Hum, can we use these properties to prove that the set `mul_by` is a subvector-space?
 
@@ -306,14 +299,13 @@ def ImageMulBy : Submodule K (V →ₗ[K] V) where
   carrier := Set.range (mul_by V)
   zero_mem' := by
     dsimp only
-    use 0
-    sorry
+    use 0; ext x; simp; simp_rw [mul_by_apply]; exact zero_smul K x
   add_mem' := by
     intro φ ψ hφ hψ
     obtain ⟨x, rfl⟩ := hφ
     obtain ⟨y, rfl⟩ := hψ
-    sorry
-  smul_mem' := sorry
+    use (x + y); exact mul_by_add x y
+  smul_mem' c x := by simp; intro y h; exists (c * y); rw [smul_mul_by, h]
 
 -- We need to tell Lean what `K` is here since `V` could be a vector space for several fields, think for
 -- example of `ℂ`-vector spaces, they are also `ℝ`-vector spaces.
@@ -333,16 +325,20 @@ def LinearMulBy' : K →ₗ[K] (V →ₗ[K] V) where
 
 def LinearMulBy : K →ₗ[K] ImageMulBy K V := by
   refine LinearMap.codRestrict (ImageMulBy K V) (LinearMulBy' V) ?_
-  sorry
+  intro c; use c; rfl
 
 -- In fact, this map should be a linear equiv so let's construct it.
 
 #check LinearEquiv.ofBijective
 
-def EquivMulBy : K ≃ₗ[K] ImageMulBy K V := by
+def EquivMulBy (hn : Nontrivial V) : K ≃ₗ[K] ImageMulBy K V := by
   refine .ofBijective (LinearMulBy V) ⟨?_, ?_⟩
-  · sorry
-  · sorry
+  · intro x y h
+    have : ∃ (k : V), k ≠ 0 := by exact exists_ne 0
+    cases this with
+    | intro v hv => have : mul_by V x = mul_by V y := by sorry
+                    sorry                    
+  · rintro ⟨ φ, ⟨ k, rfl ⟩ ⟩; use k; rfl
 
 -- Linear maps come also with their range and kernel, but also with the corresponding pushing and pulling
 -- on subspaces (and then range and kernel are just special cases).
@@ -355,17 +351,13 @@ variable (E : Submodule K V) in
 variable (F : Submodule K W) in
 #check (Submodule.comap φ F : Submodule K V)
 
-example : LinearMap.range φ = Submodule.map φ ⊤ := by
-  sorry
+example : LinearMap.range φ = Submodule.map φ ⊤ := by exact LinearMap.range_eq_map φ
 
-example : LinearMap.ker φ = Submodule.comap φ ⊥ := by
-  sorry
+example : LinearMap.ker φ = Submodule.comap φ ⊥ := rfl
 
-example : LinearMap.ker φ = ⊥ ↔ Function.Injective φ := by
-  sorry
+example : LinearMap.ker φ = ⊥ ↔ Function.Injective φ := by exact LinearMap.ker_eq_bot
 
-example : LinearMap.range φ = ⊤ ↔ Function.Surjective φ := by
-  sorry
+example : LinearMap.range φ = ⊤ ↔ Function.Surjective φ := by exact LinearMap.range_eq_top
 
 -- # Bases.
 -- In Mathlib, a basis on the `K`-vector space `V` is defined as an linear equiv between `V` and `K ^ ι`
@@ -435,7 +427,7 @@ example {W : Type*} [AddCommGroup W] [Module K W] (im : ι → W) :
 
 example {W : Type*} [AddCommGroup W] [Module K W] (im : ι → W) (i : ι) :
     Basis.constr B K im (B i) = im i := by
-  sorry
+  exact Basis.constr_basis B K im i
 
 -- In the same way, two linear maps from `V` to `W` are equal iff they are equal on the basis `B`.
 
@@ -447,9 +439,9 @@ example {W : Type*} [AddCommGroup W] [Module K W] (φ ψ : V →ₗ[K] W) (h : �
 example {W : Type*} [AddCommGroup W] [Module K W] (im : ι → W) :
     ∃! φ : V →ₗ[K] W, ∀ i, φ (B i) = im i := by
   refine ⟨?_, ?_, ?_⟩
-  · sorry -- Define φ
-  · sorry -- Proves that it satisfies the required property
-  · sorry -- Proves that it is unique
+  · exact Basis.constr B K im -- Define φ
+  · simp -- Proves that it satisfies the required property
+  · intro φ h; apply Basis.ext B; simp; exact h -- Proves that it is unique
 
 -- # Dimension
 -- We will only talk about dimension in the finite dimensional case. In this case, it is
@@ -475,13 +467,13 @@ example : finrank ℝ ℂ = 2 := Complex.finrank_real_complex
 -- `FiniteDimensional` typeclass.
 
 example [FiniteDimensional K V] : 0 < finrank K V ↔ Nontrivial V := by
-  sorry
+  exact finrank_pos_iff
 
 -- If `V` admits a basis indexed by a `Finite` type, then it is of course finite dimensional
 -- (Recall that `B : Basis ι K V`)
 
 example [Finite ι] : FiniteDimensional K V := by
-  sorry
+  exact Module.Finite.of_basis B
 
 -- and it is of course also true in the other direction!
 
@@ -521,7 +513,13 @@ example (M N : Submodule K V) : M ≤ N ↔ (M : Set V) ⊆ N := Iff.rfl
 
 example  (M N : Submodule K V) (h : finrank K V < finrank K M + finrank K N) :
     Nontrivial (M ⊓ N : Submodule K V) := by
-  sorry
+  rw [Submodule.nontrivial_iff_ne_bot]; simp; intro e
+  have : finrank K ↑(M ⊓ N) = 0 := by rw [e]; simp
+  rw [←Submodule.finrank_sup_add_finrank_inf_eq ↑M ↑N, this, Nat.add_zero] at h
+  have : finrank K ↑(M ⊔ N) ≤ finrank K V := by
+    exact Submodule.finrank_le (M ⊔ N)
+  have : ¬(finrank K ↑(M ⊔ N) > finrank K V) := by exact Nat.not_lt.mpr this
+  apply this; assumption
 
 end Vectorspaces
 

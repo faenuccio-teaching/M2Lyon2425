@@ -20,8 +20,8 @@ variable {α β : Type*}
 
 /-- If `F` is a filter on `α`, and `U` a subset of `α` then we can
 write `U ∈ F` as on paper, thanks to the following declaration: -/
-instance instMembership : Membership (Set α) (Filter α) :=
-  ⟨fun U F => U ∈ F.sets⟩
+-- instance instMembership : Membership (Set α) (Filter α) :=
+--   ⟨fun U F => U ∈ F.sets⟩
 -- NB: comment this, this is already declare in mathlib.
 
 -- Examples:
@@ -30,17 +30,17 @@ instance instMembership : Membership (Set α) (Filter α) :=
 -- (and even an ultrafilter).
 example (a : α) : Filter α where
   sets := {A | a ∈ A}
-  univ_sets := sorry
-  sets_of_superset := sorry
-  inter_sets := sorry
+  univ_sets := by trivial
+  sets_of_superset := by intro x y hin hsub; exact hsub hin
+  inter_sets := by intro x y hx hy; constructor <;> trivial
 
 -- More generally, if `s : Set α`, the set of sets containing `s`
 -- is a filter.
 example (s : Set α) : Filter α where
   sets := {A : Set α | s ⊆ A}
-  univ_sets := sorry
-  sets_of_superset := sorry
-  inter_sets := sorry
+  univ_sets := by simp
+  sets_of_superset := by intro x y hx hxy a hs; exact hxy (hx hs)
+  inter_sets := by intro x y hx hxy; simp; constructor <;> trivial
 
 -- This is called a principal filter, `Filter.principal` in mathlib:
 #print Filter.principal
@@ -49,9 +49,20 @@ example (s : Set α) : Filter α where
 -- rational numbers...) that are "big enough" is a filter.
 example : Filter ℕ where
   sets := {A | ∃ n, Set.Ici n ⊆ A}
-  univ_sets := sorry
-  sets_of_superset := sorry
-  inter_sets := sorry
+  univ_sets := by simp
+  sets_of_superset := by intro x y ⟨ n, hn ⟩ hxy; use n; intro m h; apply hxy; exact hn h
+  inter_sets := by intro x y ⟨ nx, hnx ⟩ ⟨ ny, hny ⟩; simp
+                   cases Nat.decLe nx ny 
+                   · use nx
+                     have : Ici nx ⊆ Ici ny := by intro m hnx; apply mem_Ici.mpr
+                                                  apply mem_Ici.mp at hnx; omega
+                     constructor <;> intro m h
+                     apply hnx; trivial; apply hny; apply this; trivial
+                   · use ny
+                     have : Ici ny ⊆ Ici nx := by intro m hny; apply mem_Ici.mpr
+                                                  apply mem_Ici.mp at hny; omega
+                     constructor <;> intro m h
+                     apply hnx; apply this; trivial; apply hny; trivial
 
 -- This filter is called `Filter.atTop`:
 #print Filter.atTop
@@ -60,20 +71,33 @@ example : Filter ℕ where
 -- There is also a filter for "small enough" elements, called
 -- `Filter.atBot`.
 
-
 -- The neighborhoods of a point in `ℝ` (or any metric or more
 -- generally topological space):
 example (a : ℝ) : Filter ℝ where
   sets := {A | ∃ ε > 0, Set.Ioo (a - ε) (a + ε) ⊆ A}
-  univ_sets := sorry
-  sets_of_superset := sorry
-  inter_sets := sorry
+  univ_sets := by simp; use 1; aesop
+  sets_of_superset := by intro x y ⟨ ε, ⟨ hε, hx ⟩ ⟩ hs; simp; use ε; constructor
+                         trivial; intro a h; apply hs; apply hx; exact h
+  inter_sets := by intro x y ⟨ εx, ⟨ hεx, hx ⟩ ⟩ ⟨ εy, ⟨ hεy, hy ⟩ ⟩; simp
+                   cases Real.decidableLE εx εy
+                   · use εy; constructor; trivial; constructor <;> intro b h
+                     · apply hx; rw [mem_Ioo]; rw [mem_Ioo] at h;
+                       constructor <;> linarith
+                     · apply hy; exact h
+                   · use εx; constructor; trivial; constructor <;> intro b h
+                     · apply hx; exact h
+                     · apply hy; rw [mem_Ioo]; rw [mem_Ioo] at h
+                       constructor <;> linarith
 
 example (a : ℝ) : Filter ℝ where
   sets := {A | ∃ (U : Set ℝ), IsOpen U ∧ a ∈ U ∧ U ⊆ A}
-  univ_sets := sorry
-  sets_of_superset := sorry
-  inter_sets := sorry
+  univ_sets := by simp; use univ; constructor; exact isOpen_univ; trivial
+  sets_of_superset := by intro x y ⟨ U, ⟨ hU, ⟨ ha, hx ⟩ ⟩ ⟩ hxy; use U; constructor
+                         trivial; constructor; trivial; intro z hz; apply hxy; exact hx hz
+  inter_sets := by intro x y ⟨ U, ⟨ hU, ⟨ ha, hx ⟩ ⟩ ⟩ ⟨ V, ⟨ hV, ⟨ ha', hy ⟩ ⟩ ⟩
+                   use (U ∩ V); constructor; exact IsOpen.inter hU hV; constructor
+                   constructor <;> assumption; intro a h; constructor; apply hx
+                   exact h.left; apply hy; exact h.right
 
 -- This filter is called `nhs` or `𝓝` (\ + nhds):
 #print nhds
@@ -83,9 +107,20 @@ example (a : ℝ) : Filter ℝ where
 -- still a filter.
 def nhds_left (a : ℝ) : Filter ℝ where
   sets := {A | ∃ ε > 0, Set.Ioc (a - ε) a ⊆ A}
-  univ_sets := sorry
-  sets_of_superset := sorry
-  inter_sets := sorry
+  univ_sets := by simp; use 1; linarith
+  sets_of_superset := by intro x y ⟨ ε, ⟨ hε, h ⟩ ⟩ hxy; use ε; constructor
+                         assumption; intro b hb; apply hxy; apply h; rw [mem_Ioc]
+                         rw [mem_Ioc] at hb; assumption
+  inter_sets := by intro x y ⟨ εx, ⟨ hεx, h ⟩ ⟩ ⟨ εy, ⟨ hεy, h' ⟩ ⟩
+                   cases Real.decidableLE εx εy
+                   · use εy; constructor; assumption; intro b hb; constructor
+                     · apply h; rw [mem_Ioc]; rw [mem_Ioc] at hb; constructor
+                       linarith; exact hb.right
+                     · apply h'; assumption                       
+                   · use εx; constructor; assumption; intro b hb; constructor
+                     · apply h; assumption
+                     · apply h'; rw [mem_Ioc]; rw [mem_Ioc] at hb; constructor
+                       linarith; exact hb.right
 
 /- If `α` has a measure `μ`, then we have a filter
 `MesureTheory.ae μ` whose elements are co-null sets (i.e.
@@ -169,7 +204,8 @@ def Tendsto₁ {X Y : Type*} (f : X → Y) (F : Filter X)
 -- Compatibility with composition.
 example {X Y Z : Type*} (f : X → Y) (g : Y → Z) (F : Filter X)
     (G : Filter Y) (H : Filter Z) :
-    Tendsto₁ f F G → Tendsto₁ g G H → Tendsto₁ (g ∘ f) F H := by sorry
+    Tendsto₁ f F G → Tendsto₁ g G H → Tendsto₁ (g ∘ f) F H := by
+  intro hf hg U hU; rw [preimage_comp]; apply hf; apply hg; assumption
 
 /- An intuitive way to think about filters, and a reformulation
 of convergence.
@@ -210,16 +246,27 @@ contains `s`:
 -/
 
 example (s t : Set α) : s ⊆ t ↔
-    (Filter.principal t).sets ⊆ (Filter.principal s).sets := sorry
+    (Filter.principal t).sets ⊆ (Filter.principal s).sets := by
+  constructor
+  · intro h X ht a hs; apply ht; apply h; assumption
+  · intro h x hs; apply h; simp; assumption
 
 -- So this is how we define order on filters:
 #print Filter.le_def  -- F ≤ G ↔ ∀ x ∈ G, x ∈ F
 
 example (F : Filter α) (s : Set α) :
-    Filter.principal s ≤ F ↔ ∀ A ∈ F, s ⊆ A := by sorry
+    Filter.principal s ≤ F ↔ ∀ A ∈ F, s ⊆ A := by
+  rw [Filter.le_def]; constructor
+  · intro h A hA x hs
+    have := (h A hA)
+    apply this; assumption
+  · intro h A hA x hs; apply h <;> assumption
 
 example (F : Filter α) (s : Set α) :
-    F ≤ Filter.principal s ↔ s ∈ F := sorry
+    F ≤ Filter.principal s ↔ s ∈ F := by
+  rw [Filter.le_def]; constructor
+  · intro h; apply h; simp
+  · intro h A hA; exact mem_of_superset h hA
 
 /- The second notion is the image of a filter by
 a function `f : α → β`. This operation is called
@@ -232,7 +279,10 @@ by definition.-/
 
 -- This is compatible to the definition for sets.
 example {s : Set α} (f : α → β) :
-    Filter.map f (Filter.principal s) = Filter.principal (f '' s) := sorry
+    Filter.map f (Filter.principal s) = Filter.principal (f '' s) := by
+  ext X; constructor
+  · intro h y ⟨ x, ⟨ hx, e ⟩ ⟩; simp at h; rw [←e]; apply h; assumption
+  · intro h x hx; apply h; use x
 
 /- We can now reformulate the notation of convergence
 using these notions. The idea is that, for example,
@@ -259,7 +309,10 @@ we use the properties of `Filter.map`.-/
 -- Compatibility with composition.
 example {X Y Z : Type*} (f : X → Y) (g : Y → Z) (F : Filter X)
     (G : Filter Y) (H : Filter Z) :
-    Tendsto₂ f F G → Tendsto₂ g G H → Tendsto₂ (g ∘ f) F H := by sorry
+    Tendsto₂ f F G → Tendsto₂ g G H → Tendsto₂ (g ∘ f) F H := by
+  intros hf hg; unfold Tendsto₂; rw [←map_map]
+  have : map g (map f F) ≤ map g G := by apply map_mono; assumption
+  apply le_trans; assumption; assumption
 
 /- Among the other "set" operations, we have preimages, which
 are called `Filter.comap` for filters.-/
@@ -275,7 +328,10 @@ form a Galois connection, i.e. an adjunction between poset categories.)
 #print Filter.map_le_iff_le_comap
 
 example {f : α → β} {F : Filter α} {G : Filter β} :
-    Filter.map f F ≤ G ↔ F ≤ Filter.comap f G := by sorry
+    Filter.map f F ≤ G ↔ F ≤ Filter.comap f G := by
+  constructor
+  · intro h x ⟨ y, ⟨ ht, hs ⟩ ⟩; apply mem_of_superset; exact (h ht); assumption
+  · intro h x hx; apply h; use x
 
 /- Using `Filter.comap`, we can give an equivalent definition
 of `Tendsto`.-/
@@ -285,7 +341,8 @@ def Tendsto₃ {X Y : Type*} (f : X → Y) (F : Filter X)
 -- But mathlib uses the definition with `Filter.map`.
 
 example {X Y : Type*} (f : X → Y) (F : Filter X) (G : Filter Y) :
-    Tendsto₂ f F G ↔ Tendsto₃ f F G := sorry
+    Tendsto₂ f F G ↔ Tendsto₃ f F G := by
+  unfold Tendsto₂; unfold Tendsto₃; exact map_le_iff_le_comap
 
 /- `Filter.comap` is also compatible with composition of
 functions, but just like for preimages, this reverses the
@@ -299,8 +356,24 @@ start is the intersection of `nhds a` and of `Set.Iic a`
 (well, almost... this intersection would be a filter on
 `Set.Iic a`).-/
 example (a : ℝ) : nhds_left a = Filter.map Subtype.val
-    (Filter.comap (Subtype.val : Set.Iic a → ℝ) (nhds a)) := sorry
-
+    (Filter.comap (Subtype.val : Set.Iic a → ℝ) (nhds a)) := by
+  ext X; constructor
+  · intro ⟨ ε, ⟨ hε, h ⟩ ⟩; simp; use (Icc (a - (ε/2)) (a + ε)); constructor
+    rw [Icc_mem_nhds_iff, mem_Ioo]; constructor <;> linarith
+    intro ⟨ x, hx ⟩ hin; rw [mem_Iic] at hx; simp at hin; simp; apply h
+    rw [mem_Ioc]; constructor <;> linarith
+  · intro ⟨ Y, ⟨ hY, hs ⟩ ⟩; rw [← exists_mem_subset_iff]
+    rw [mem_nhds_iff_exists_Ioo_subset] at hY
+    cases hY with
+    | intro x h => cases h with
+      | intro y h => use (Ioc x a); constructor; use (a - x); constructor
+                     simp at h; linarith; simp; intro z h'; rw [mem_Ioc] at h'
+                     simp at h; have := h.right
+                     rw [Subtype.preimage_val_subset_preimage_val_iff] at hs
+                     simp at hs; apply hs; constructor
+                     · rw [mem_Iic]; exact h'.right
+                     · apply this; rw [mem_Ioo]; constructor; exact h'.left; linarith
+    
 /-
 Other operations that we can expect to have on filters
 if they are "generalized sets" are `sup` and `inf`, even
@@ -330,31 +403,14 @@ operation corresponding to the complement on sets.)
 
 example (F : Filter α) :
     F = ⨅ (s : F.sets), Filter.principal s := by
-  ext s
-  rw [Filter.mem_iInf]
-  constructor
-  · intro hs
-    use {⟨s, hs⟩}
-    constructor
-    · simp only [Set.finite_singleton]
-    · use fun s ↦ s.1
-      simp
-/-      constructor
-      · intro ⟨t, ht⟩
-        simp only [Set.mem_singleton_iff] at ht
-        simp_rw [ht]
-        simp only [Filter.mem_principal, subset_refl]
-      · simp only [Set.iInter_coe_set, Set.mem_singleton_iff,
-          Set.iInter_iInter_eq_left]-/
-  · intro ⟨I, hI, ⟨f, hf₁, hf₂⟩⟩
-    rw [hf₂]
-    have : Finite ↑I := Set.finite_coe_iff.mpr hI
-    rw [Filter.iInter_mem]
-    intro i
-    suffices h : F ≤ Filter.principal ↑↑i by
-      apply h
-      exact hf₁ i
-    simp; exact i.1.2
+  apply le_antisymm
+  simp only [le_iInf_iff, le_principal_iff, Subtype.forall, Filter.mem_sets]
+  intro; tauto
+  intro s hs; rw [mem_iInf]; use {⟨s, hs⟩}; constructor
+  · simp only [finite_singleton]
+  · use (λ p ↦ p.1); constructor
+    · simp
+    · simp
 
 -- A finite intersection of members of a filter is in the
 -- the filter. These are both `simp` lemmas.
@@ -386,7 +442,7 @@ instance parameter.-/
 
 /- If `F : Filter α` and `G : Filter β`, we can define the
 product of `F` and `G`, which is a filter on `α × β`. We
-write this `Filter.prod F G` or `F ×ˢ G`.
+write this `Filter.prod F G` or `F × G`.
 For example, if `a,b : ℝ`, then `nhds a ×ˢ nhds b` will
 be `nhds ⟨a, b⟩`, the filter of neighborhoods of `⟨a, b⟩`
 in `ℝ × ℝ`.-/
@@ -397,11 +453,11 @@ in `ℝ × ℝ`.-/
 -- `α × β` such that `Filter.map Prod.fst H ≤ F` and
 -- `Filter.map Prod.snd H ≤ G`.
 
-#print Filter.mem_prod_iff
+#check Filter.mem_prod_iff
 -- s ∈ f ×ˢ g ↔ ∃ t₁ ∈ f, ∃ t₂ ∈ g, t₁ ×ˢ t₂ ⊆ s
 
 /- Actually, we also have arbitrary products of filters.-/
-#print Filter.pi -- same formula as for `Filter.prod`:
+#check Filter.pi -- same formula as for `Filter.prod`:
 -- ⨅ i, Filter.comap (Function.eval i) (f i)
 
 /- Filter bases:
@@ -447,13 +503,28 @@ example (u : ℕ → ℝ) (x₀ : ℝ) :
 
 example (f : ℝ → ℝ) (a b : ℝ) :
     Tendsto f (𝓝 a) (𝓝 b) ↔
-    ∀ ε > 0, ∃ δ > 0, ∀ x, x ∈ Ioo (a - δ) (a + δ) → f x ∈ Ioo (b - ε) (b + ε) := by sorry
+    ∀ ε > 0, ∃ δ > 0, ∀ x, x ∈ Ioo (a - δ) (a + δ) → f x ∈ Ioo (b - ε) (b + ε) := by
+  have ha := nhds_basis_Ioo_pos a
+  have hb := nhds_basis_Ioo_pos b
+  rw [HasBasis.tendsto_iff ha hb]
 
 #check nhds_basis_opens
 
 example (f : ℝ → ℝ) (a b : ℝ) :
     Tendsto f (𝓝 a) (𝓝 b) ↔ ∀ (U : Set ℝ), IsOpen U ∧ b ∈ U →
-    ∃ (V : Set ℝ), IsOpen V ∧ a ∈ V ∧ V ⊆ f ⁻¹' U := by sorry
+    ∃ (V : Set ℝ), IsOpen V ∧ a ∈ V ∧ V ⊆ f ⁻¹' U := by
+  have ha := nhds_basis_opens a
+  have hb := nhds_basis_opens b
+  rw [HasBasis.tendsto_iff ha hb]
+  simp; constructor
+  · intro h U hU hb
+    cases (h U hb hU) with
+    | intro V h => use V; constructor; exact h.left.right; constructor; exact h.left.left
+                   exact h.right
+  · intro h U hb hU
+    cases (h U hU hb) with
+    | intro V h => use V; constructor; constructor; exact h.right.left; exact h.left
+                   exact h.right.right
 
 -- If we know a basis of a filter, it is easy to describe
 -- its members.
@@ -476,9 +547,12 @@ The notation for this is:
 `∀ᶠ x in F, p x`. (\ + forall + \ + ^f)
 -/
 
-example : ∀ᶠ n in atTop (α := ℕ), 2 ≤ n := sorry
+example : ∀ᶠ n in atTop (α := ℕ), 2 ≤ n := by simp; use 2; intros; assumption
 
-example : ∀ᶠ x in nhds (0 : ℝ), |x| ≤ 1/2 := sorry
+example : ∀ᶠ x in nhds (0 : ℝ), |x| ≤ 1/2 := by 
+  rw [eventually_nhds_iff]; use (Ioo (-2⁻¹) (2⁻¹)); constructor
+  · intro y hy; simp at hy; rw [abs_le]; simp; constructor <;> linarith
+  · constructor; exact isOpen_Ioo; simp
 
 /- Now let's see what the properties of a filter say about `∀ᶠ`:
 
@@ -496,7 +570,8 @@ example : ∀ᶠ x in nhds (0 : ℝ), |x| ≤ 1/2 := sorry
 #check Filter.Eventually.and
 
 example (P Q : ℕ → Prop) (hP : ∀ᶠ n in atTop, P n) (hQ : ∀ᶠ n in atTop, Q n) :
-    ∀ᶠ n in atTop, P n ∧ Q n := sorry
+    ∀ᶠ n in atTop, P n ∧ Q n := by
+  apply Eventually.and <;> assumption
 
 /- There are two special cases of `Filter.Eventually` for equalities
 and inequalities:-/
@@ -551,8 +626,17 @@ example (P Q R : ℕ → Prop) (hP : ∀ᶠ n in atTop, P n) (hQ : ∀ᶠ n in a
 -- of `M`.
 
 example (u : ℕ → ℝ) (M : Set ℝ) (x : ℝ) (hux : Tendsto u atTop (𝓝 x))
-    (huM : ∀ᶠ n in atTop, u n ∈ M) : x ∈ closure M :=
-  sorry
+    (huM : ∀ᶠ n in atTop, u n ∈ M) : x ∈ closure M := by
+  rw [mem_closure_iff_clusterPt]
+  have : map u atTop ≤ (Filter.principal M) := by
+    rw [le_principal_iff]; simp; rw [eventually_atTop] at huM; assumption
+  have hle : map u atTop ≤ (nhds x ⊓ (Filter.principal M)) := 
+    Lattice.le_inf (map u atTop) (𝓝 x) (𝓟 M) hux this
+  have hmap : (map u atTop).NeBot := by
+    exact map_neBot
+  unfold ClusterPt
+  have := by exact neBot_of_le hle
+  assumption
 
 --Useful lemmas for the exercise:
 #check mem_closure_iff_clusterPt
@@ -572,4 +656,12 @@ would use it for example to express something like
 -- there exists `x ∈ A` such that `p x`. Don't believe me?
 
 example (p : α → Prop) (F : Filter α) :
-    (∃ᶠ x in F, p x) ↔ ∀ A ∈ F, ∃ x ∈ A, p x := by sorry
+    (∃ᶠ x in F, p x) ↔ ∀ A ∈ F, ∃ x ∈ A, p x := by
+  constructor
+  · intro h A hA; by_contra h'; apply h; filter_upwards [hA]; intro x hp hp'; apply h'; use x
+  · intro h h'; rw [eventually_iff] at h'; simp at h'
+    rw [← exists_mem_subset_iff] at h'; cases h' with
+    | intro A h' => cases (h A h'.left) with
+      | intro x hp => have : x ∈ {x | ¬ p x} := by apply h'.right; exact hp.left
+                      simp at this; apply this; exact hp.right
+                      
