@@ -216,7 +216,7 @@ def prop_fae (A : ordinals_lt c → Set (ℝ × ℝ)) (ξ : ordinals_lt c) : Pro
 -- To prove
 universe u v
 
-theorem Cardinal.mk_iUnion_Ordinal_lift_le_of_le {β : Type v} {o : Ordinal.{u}} {c : Cardinal.{v}}
+theorem Cardinal.mk_iUnion_Ordinal_lift_lt_of_lt {β : Type v} {o : Ordinal.{u}} {c : Cardinal.{v}}
     (ho : Cardinal.lift.{v, u} o.card ≤ Cardinal.lift.{u, v} c) (hc : Cardinal.aleph0 ≤ c)
     (A : Ordinal.{u} → Set β) (hA : ∀ j < o, Cardinal.mk ↑(A j) < Cardinal.aleph0) :
 Cardinal.mk ↑(⋃ (j : Ordinal.{u}), ⋃ (_ : j < o), A j) < c := sorry
