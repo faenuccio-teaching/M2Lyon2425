@@ -208,20 +208,56 @@ def union_le_fae (A : ordinals_lt c → Set (ℝ × ℝ)) (o : ordinals_lt c) : 
 /- This is the condition that `(I)`, `(P)` and `(D)` on page 81 are satisfied up to a certain `ξ`.
 The function `A` is total, but the property only holds up to `ξ`-/
 def prop_fae (A : ordinals_lt c → Set (ℝ × ℝ)) (ξ : ordinals_lt c) : Prop :=
-  Nat.card (A ξ) ≤ 2 ∧
+  Cardinal.mk (A ξ) ≤ 2 ∧
   fae_NoThreeColinearPoints (union_le_fae A ξ) ∧
   Nat.card ((union_le_fae A ξ) ∩ (Lines ξ) : Set (ℝ × ℝ)) = 2
+-- To think about: Nat.card or Cardinal.mk?
 
-theorem fae (ξ : ordinals_lt c)
-  (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ ζ : ordinals_lt ξ, prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
+-- To prove
+universe u v
+
+theorem Cardinal.mk_iUnion_Ordinal_lift_le_of_le {β : Type v} {o : Ordinal.{u}} {c : Cardinal.{v}}
+    (ho : Cardinal.lift.{v, u} o.card ≤ Cardinal.lift.{u, v} c) (hc : Cardinal.aleph0 ≤ c)
+    (A : Ordinal.{u} → Set β) (hA : ∀ j < o, Cardinal.mk ↑(A j) < Cardinal.aleph0) :
+Cardinal.mk ↑(⋃ (j : Ordinal.{u}), ⋃ (_ : j < o), A j) < c := sorry
+
+theorem fae (ξ : Ordinal) (hξ : ξ < c)
+  (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ ζ, (hζ : ζ < ξ) → prop_fae A₀ ⟨ζ, hζ.trans hξ⟩) :
   ∃ A : ordinals_lt c → Set (ℝ × ℝ),
-    ∀ ζ : ordinals_le ξ, prop_fae A ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ := by
+    ∀ ζ : ordinals_le ξ, prop_fae A ⟨ζ, lt_of_le_of_lt ζ.2.out hξ⟩ := by
   obtain ⟨A₀, hA₀⟩ := H
-  set B := ⋃ (ζ : ordinals_lt ξ), A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩ with hB
-  have hB_le : Cardinal.mk B < Cardinal.continuum := sorry
+  set B := ⋃ (ζ : Ordinal) (hζ : ζ < ξ), A₀ ⟨ζ, lt_trans hζ hξ⟩ with hB
+  have hB_le : Cardinal.mk B < Cardinal.continuum := by
+    have ho : Cardinal.lift.{0, u_1} ξ.card ≤ Cardinal.lift.{u_1, 0} Cardinal.continuum := by
+      simp only [Cardinal.lift_id', Cardinal.lift_continuum]
+      exact Cardinal.card_le_of_le_ord (le_of_lt hξ)
+    let A : Ordinal → Set (ℝ × ℝ) := fun α ↦ if h : α < c then A₀ ⟨α, h⟩ else Set.univ
+    have hA_def : A = fun α ↦ if h : α < c then A₀ ⟨α, h⟩ else Set.univ := rfl
+    have hA : ∀ (ζ : Ordinal) (hζ : ζ < ξ), Cardinal.mk (A ζ) < Cardinal.aleph0 := by
+      intros ζ hζ
+      have this₁ := lt_of_le_of_lt (hA₀ ζ hζ).1 (Cardinal.nat_lt_aleph0 2)
+      have this₂ : A ζ = A₀ ⟨ζ, lt_trans hζ hξ⟩ := by
+        by_cases h : ζ < c
+        rw [hA_def]
+        simp only [h]
+        rfl
+        exfalso
+        exact h (lt_trans hζ hξ)
+      rw [← this₂] at this₁
+      exact this₁
+    have this₂ := Cardinal.mk_iUnion_Ordinal_lift_le_of_le ho Cardinal.aleph0_le_continuum A hA
+    apply_fun Cardinal.mk at hB
+    have : ↑(⋃ j, ⋃ (_ : j < ξ), A j) = ↑(⋃ ζ, ⋃ (hζ : ζ < ξ), A₀ ⟨ζ, lt_trans hζ hξ⟩) := by
+      rw [hA_def]
+      apply Set.ext
+      intro S
+      refine ⟨?_, ?_⟩
+      sorry
+    rw [this, ← hB] at this₂
+    exact this₂
   let 𝒢 := {S | 2 ≤ Cardinal.mk ↑(S ∩ B) ∧ ∃ a b c, S = Line a b c}
   have h𝒢_le := Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2-- or directly `< Cardinal.continuum`
-  let n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ))
+  let n := Nat.card (B ∩ (Lines ⟨ξ, hξ⟩) : Set (ℝ × ℝ))
   have byP : n ≤ 2 := sorry
   let Aξ : Set (ℝ × ℝ) :=
     if n = 2 then ∅
@@ -243,7 +279,7 @@ theorem fae (ξ : ordinals_lt c)
   · simp only [dite_eq_ite, hη, Subtype.coe_eta, prop_fae, lt_self_iff_false, reduceIte,
       Set.mem_setOf_eq]
     sorry
-  · convert hA₀ ⟨η, hη⟩
+  · convert hA₀ η hη
     simp only [dite_eq_ite, ite_eq_left_iff, not_lt]
     intro h
     sorry
