@@ -245,7 +245,7 @@ theorem fae (ξ : Ordinal) (hξ : ξ < c)
         exact h (lt_trans hζ hξ)
       rw [← this₂] at this₁
       exact this₁
-    have this₂ := Cardinal.mk_iUnion_Ordinal_lift_le_of_le ho Cardinal.aleph0_le_continuum A hA
+    have this₂ := Cardinal.mk_iUnion_Ordinal_lift_lt_of_lt ho Cardinal.aleph0_le_continuum A hA
     apply_fun Cardinal.mk at hB
     have : ↑(⋃ j, ⋃ (_ : j < ξ), A j) = ↑(⋃ ζ, ⋃ (hζ : ζ < ξ), A₀ ⟨ζ, lt_trans hζ hξ⟩) := by
       rw [hA_def]
