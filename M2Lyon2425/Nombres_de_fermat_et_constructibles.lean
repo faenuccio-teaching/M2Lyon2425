@@ -140,6 +140,9 @@ def nombre_constructible (a : ℂ) : Prop :=
   ∃ (T : TowerOfFields) (n : ℕ), T.isFiniteDimensional ∧ T.rankLessTwo ∧ T.K 0 = ℚ ∧
     T.K n = Algebra.adjoin ℚ { a }
 
+--theorem multiplicativity_algebra (n m : ℕ) (R S T : Type*) [inst11 : Field R] [inst12 : Field S] [inst13 : Field T] [inst1 : Algebra R S] [inst2 : Algebra S T] [inst3 : Algebra R T] : FiniteDimensional.finrank R S = n ∧ FiniteDimensional.finrank (S) (T) = m → (FiniteDimensional.finrank (R) (T) = n * m):= by
+
+
 --Théorème (Wantzel) : si a est constructible, ℚ(a) est de degré 2^m sur ℚ pour un certains m.
 theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
  intro h
@@ -208,7 +211,6 @@ theorem degQw (α : ℕ) (p : Nat) : Nat.Prime p ∧ 0 < α → FiniteDimensiona
   have h1 := IntermediateField.adjoin.finrank ((adjoin_is_integral α p) h)
   have h2 := IntermediateField.adjoin_simple_toSubalgebra_of_integral ((adjoin_is_integral α p) h)
   let S := {z : ℂ | z = Complex.exp (2*↑Real.pi*Complex.I/(p^α)) }
-  let ζ := Complex.exp (2*↑Real.pi*Complex.I/(p^α))
   have h4 : ∀ z ∈ S, IsAlgebraic ℚ z :=by
     intro z
     intro hz
@@ -220,10 +222,12 @@ theorem degQw (α : ℕ) (p : Nat) : Nat.Prime p ∧ 0 < α → FiniteDimensiona
   | intro left right =>
     rw[poly_min_w_sur_Q p α left right, Polynomial.natDegree_cyclotomic,Nat.totient_prime_pow] at h1
     rw[h1.symm]
-    · sorry
+    · have := congr_arg Subalgebra.toSubmodule h2
+      let e := LinearEquiv.ofEq _ _ this
+      have := congr_arg Cardinal.toNat e.rank_eq
+      exact this.symm
     · exact left
     · exact right
-
 
 -- La valuation p-adique de p-1 est 0
 theorem valplone (p : Nat) : Nat.Prime p → padicValNat p (p-1) = 0 := by
@@ -245,7 +249,6 @@ theorem valplone (p : Nat) : Nat.Prime p → padicValNat p (p-1) = 0 := by
   cases h with
   | inl h => apply Nat.ne_of_lt at h3; have h:= h.symm; contradiction
   | inr h => apply le_of_lt at h; apply Nat.not_lt.mpr at h; contradiction
-
 
 -- Sens direct du théorème. Ajout du paramètre "Fact" pour utiliser les théorèmes sur les valutations.
 theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) → ((premierfermat p ∧ α =1) ∨ p=2) :=by
@@ -319,7 +322,6 @@ theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < �
              contradiction
            · exact h12
        · exact ha
-
 
 --Lemme : ℚ(w)/ℚ est l'extension cyclotomic p ℚ
 
