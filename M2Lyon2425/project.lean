@@ -223,97 +223,64 @@ theorem Cardinal.mk_iUnion_Ordinal_lift_le_of_le {β : Type v} {o : Ordinal.{u}}
     Cardinal.mk ↑(⋃ (j : Ordinal.{u}), ⋃ (_ : j < o), A j) ≤ c := sorry
 --
 
-theorem union_lt_Cardinal.continuum (ξ : ordinals_lt c)
-  (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
+def Equiv.iUnion_ordinals_lt (o : Ordinal) :
+    ⋃ j, ⋃ (_ : j < o), (fun α ↦ setOf (· = α)) j ≃ ordinals_lt o := by
+  refine ⟨fun a ↦ ⟨a.1, ?_⟩, fun a ↦ ⟨a.1,
+    Set.mem_iUnion.2 ⟨a, Set.mem_iUnion.2 ⟨a.2, rfl⟩⟩⟩, fun _ ↦ rfl, fun _ ↦ rfl⟩
+  obtain ⟨a, ha⟩ := a
+  simp only [Set.mem_iUnion, exists_prop] at ha
+  obtain ⟨i, ⟨hi, hi₂⟩⟩ := ha
+  rwa [← hi₂] at hi
+
+theorem Cardinal.mk_ordinals_lt_lt_continuum (ξ : ordinals_lt c) :
+    Cardinal.mk (ordinals_lt ξ) < Cardinal.continuum := by
+  set A := fun (α : Ordinal) ↦ setOf (· = α) with hA
+  have heq : Cardinal.mk (⋃ j, ⋃ (_ : j < ξ.1), A j) = Cardinal.mk (ordinals_lt ξ) :=
+    Cardinal.mk_congr (Equiv.iUnion_ordinals_lt ξ)
+  rw [← heq]
+  have this₃ : Cardinal.aleph0 + Cardinal.lift.{u_1 + 1, u_1} ξ.1.card < Cardinal.continuum :=
+    Cardinal.add_lt_of_lt Cardinal.aleph0_le_continuum Cardinal.aleph0_lt_continuum
+    (Cardinal.lift_lt_continuum.mpr (Cardinal.lt_ord.1 ξ.2))
+  refine lt_of_le_of_lt (Cardinal.mk_iUnion_Ordinal_lift_le_of_le ?_ ?_ A (fun j _ ↦ ?_)) this₃
+  · simp only [Ordinal.lift_card, Cardinal.lift_add, Cardinal.lift_aleph0, Ordinal.lift_lift,
+    self_le_add_left]
+  · simp only [Ordinal.lift_card, self_le_add_right]
+  · simp only [hA, Set.setOf_eq_eq_singleton, Cardinal.mk_fintype, Fintype.card_ofSubsingleton,
+    Nat.cast_one, Ordinal.lift_card]
+    exact le_trans Cardinal.one_le_aleph0 (self_le_add_right _ _)
+
+theorem Cardinal.mk_sUnion_lt_continuum (ξ : ordinals_lt c)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
     Cardinal.mk (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)) < Cardinal.continuum := by
-  have this₁ := Cardinal.mk_sUnion_le (Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩))
-  have this₂ : Cardinal.mk ↑(Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)) < Cardinal.continuum := by
-    have h : Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) ⊆ (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) '' Set.univ := by
-      simp only [Set.image_univ, subset_refl]
-    have h₁ := Cardinal.mk_subset_ge_of_subset_image_lift (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) h
+  set fB := fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩
+  let pre_B := Set.range fB
+  let card_pre_B := (fun (i : pre_B) ↦ Cardinal.mk i)
+  have this₁ : Cardinal.mk pre_B < Cardinal.continuum := by
+    have := Cardinal.mk_subset_ge_of_subset_image_lift fB (subset_of_eq Set.image_univ.symm)
     simp only [Set.mem_univ, Set.mem_range, exists_apply_eq_apply, and_self, Set.setOf_true,
-      Cardinal.mk_univ, Cardinal.lift_id'] at h₁
-    have h₂ : Cardinal.mk (ordinals_lt ξ) < Cardinal.continuum := by
-      have ho : Cardinal.lift.{u_1 + 1, u_1} ξ.1.card ≤ Cardinal.lift.{u_1, u_1 + 1} (Cardinal.aleph0 + Cardinal.lift.{u_1 + 1, u_1} ξ.1.card) := by
-        simp only [Ordinal.lift_card, Cardinal.lift_add, Cardinal.lift_aleph0, Ordinal.lift_lift,
-          self_le_add_left]
-      have hc : Cardinal.aleph0 ≤ Cardinal.aleph0 + Cardinal.lift.{u_1 + 1, u_1} ξ.1.card := by
-        simp only [Ordinal.lift_card, self_le_add_right]
-      set A : Ordinal → Set Ordinal := fun α ↦ setOf (· = α) with hA
-      have hA : ∀ j < ξ.1, Cardinal.mk (A j) ≤ Cardinal.aleph0 + Cardinal.lift.{u_1 + 1, u_1} ξ.1.card := by
-        intros j _
-        rw [hA]
-        simp only [Set.setOf_eq_eq_singleton, Cardinal.mk_fintype, Fintype.card_ofSubsingleton,
-          Nat.cast_one, Ordinal.lift_card]
-        have h₃ : Cardinal.aleph0 ≤ Cardinal.aleph0 + (Ordinal.lift.{u_1 + 1, u_1} ξ.1).card := by
-          simp only [self_le_add_right]
-        exact le_trans Cardinal.one_le_aleph0 h₃
-      have this₁ := Cardinal.mk_iUnion_Ordinal_lift_le_of_le ho hc A hA
-      have this₂ : Cardinal.mk ↑(⋃ j, ⋃ (_ : j < ↑ξ), A j) = Cardinal.mk (ordinals_lt ξ) := by
-        refine Cardinal.mk_congr ⟨?_, ?_, ?_, ?_⟩
-        · intro a
-          refine ⟨a.1, ?_⟩
-          have := a.2
-          rw [Set.mem_iUnion] at this
-          simp only [Set.mem_iUnion, exists_prop] at this
-          obtain ⟨i, ⟨hi, hi₂⟩⟩ := this
-          rw [hi₂]
-          exact hi
-        · intro a
-          refine ⟨a.1, ?_⟩
-          rw [Set.mem_iUnion]
-          use a.1
-          simp only [Set.mem_iUnion, exists_prop]
-          exact ⟨a.2, rfl⟩
-        · rw [Function.LeftInverse]
-          intro x
-          rfl
-        · rw [Function.RightInverse]
-          intro x
-          rfl
-      rw [this₂] at this₁
-      have this₃ : Cardinal.aleph0 + Cardinal.lift.{u_1 + 1, u_1} ξ.1.card < Cardinal.continuum := by
-        refine Cardinal.add_lt_of_lt Cardinal.aleph0_le_continuum Cardinal.aleph0_lt_continuum ?h2
-        refine Cardinal.lift_lt_continuum.mpr ?h2.a
-        have hξ := ξ.2.out
-        rw [Cardinal.lt_ord] at hξ
-        exact hξ
-      exact lt_of_le_of_lt this₁ this₃
-    exact Cardinal.lift_lt_continuum.mp (lt_of_le_of_lt h₁ h₂)
-  have this₃ := Cardinal.iSup_le_sum (fun (i : Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)) ↦ Cardinal.mk i)
-  have this₄ : Cardinal.sum (fun (i : Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)) ↦ Cardinal.mk i) ≤
-    Cardinal.sum (fun (_ : Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)) ↦ 2) := by
-    apply Cardinal.sum_le_sum
-    intro i
-    obtain ⟨y, hy⟩ := i.2.out
-    rw [← hy]
-    exact (H y).1
-  rw [Cardinal.sum_const'] at this₄
-  have this₅ : Cardinal.mk ↑(Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)) * 2 < Cardinal.continuum * 2 := by
-    refine Cardinal.mul_lt_of_lt ?_ ?_ ?_
-    simp only [Cardinal.continuum_mul_ofNat]
-    exact Cardinal.aleph0_le_continuum
-    simp only [Cardinal.continuum_mul_ofNat]
-    exact this₂
-    simp only [Cardinal.continuum_mul_ofNat]
-    exact Cardinal.nat_lt_continuum 2
-  simp only [Cardinal.continuum_mul_ofNat] at this₅
-  have this₆ : Cardinal.mk ↑(Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)) *
-    ⨆  (i : Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)), Cardinal.mk i <
-    Cardinal.continuum := Cardinal.mul_lt_of_lt Cardinal.aleph0_le_continuum this₂ (lt_of_le_of_lt (le_trans this₃ this₄) this₅)
-  exact lt_of_le_of_lt this₁ this₆
+      Cardinal.mk_univ, Cardinal.lift_id'] at this
+    exact Cardinal.lift_lt_continuum.mp (lt_of_le_of_lt this (Cardinal.mk_ordinals_lt_lt_continuum ξ))
+  refine lt_of_le_of_lt (Cardinal.mk_sUnion_le pre_B)
+    (Cardinal.mul_lt_of_lt Cardinal.aleph0_le_continuum this₁ (lt_of_le_of_lt (le_trans
+    (Cardinal.iSup_le_sum card_pre_B) ?_) (Cardinal.mul_lt_of_lt Cardinal.aleph0_le_continuum this₁
+    (Cardinal.nat_lt_continuum 2))))
+  rw [← Cardinal.sum_const']
+  refine Cardinal.sum_le_sum _ _ (fun i ↦ ?_)
+  obtain ⟨y, hy⟩ := i.2
+  have := (H y).1
+  apply_fun Cardinal.mk at hy
+  rwa [hy] at this
 
 theorem fae (ξ : ordinals_lt c)
   (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
     ∃ A : ordinals_lt c → Set (ℝ × ℝ),
     ∀ ζ : ordinals_le ξ, prop_fae A ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ := by
   obtain ⟨A₀, hA₀⟩ := H
-  set pre_B := Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) with hpre_B
-  set B := ⋃₀ pre_B with hB
-  have hB_le : Cardinal.mk B < Cardinal.continuum := union_lt_Cardinal.continuum ξ A₀ hA₀
+  set B := ⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) with hB
+  have hB_le : Cardinal.mk B < Cardinal.continuum := Cardinal.mk_sUnion_lt_continuum ξ A₀ hA₀
   let 𝒢 := {S | 2 ≤ Cardinal.mk ↑(S ∩ B) ∧ ∃ a b c, S = Line a b c}
-  have h𝒢_le := Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2-- or directly `< Cardinal.continuum`
-  let n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ))
+  have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := sorry-- or directly `< Cardinal.continuum`
+  set n := Cardinal.mk (B ∩ (Lines ξ) : Set (ℝ × ℝ)) with hn-- Nat.card or Cardinal.mk?
   have byP : n ≤ 2 := sorry
   let Aξ : Set (ℝ × ℝ) :=
     if n = 2 then ∅
