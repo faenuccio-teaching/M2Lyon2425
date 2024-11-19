@@ -5,6 +5,8 @@ import Mathlib.MeasureTheory.Measure.MeasureSpaceDef
 
 open Filter Set Topology Metric
 
+section MetricSpaces
+
 /- Metric spaces: a matric space is a type `X` with a distance
 function `dist : X × X → ℝ` that takes nonnegative values, sends
 `⟨x,y⟩` if and only `x = y`, is symmetric and satisfies the
@@ -308,3 +310,367 @@ example {s : Set X} (hs : IsCompact s) (hs' : s.Nonempty) {f : X → ℝ}
 -- we use a type class called `CompactSpace`:
 example [CompactSpace X] : IsCompact (univ : Set X) :=
   isCompact_univ
+
+/- Metric notions: uniform continuity and Cauchy
+sequences.
+
+The notions we saw so far are purely topological,
+that is, they can be expressed using only the notion
+of open sets. Now we will discuss some notions that
+require more: a way to express that "the points `x` and
+`y` are as close to each other as the points `a` and `b`".
+We can do this in a metric space using the distance, and
+also in something like a topological vector space (using
+the translations to compare degrees of closeness). The
+most general structure where this makes sense is a
+uniform space; we won't discuss them today, but you will
+run into them in mathlib and in the names of lemmas (like
+`UniformSpace.isCompact_iff_isSeqCompact` above).
+
+All the notions that we discuss now make sense in a
+general uniform space.
+-/
+
+/- We start with uniformly continuous functions.-/
+
+example {f : X → Y} : UniformContinuous f ↔
+      ∀ ε > 0, ∃ δ > 0, ∀ {a b : X}, dist a b < δ → dist (f a) (f b) < ε :=
+  Metric.uniformContinuous_iff
+
+#print UniformContinuous -- uh oh
+
+/- Exercise: every continuous function from a compact metric
+space `X` to a metric space `Y` is uniformly continuous.-/
+
+example [CompactSpace X] {f : X → Y} (hf : Continuous f) :
+    UniformContinuous f :=
+  sorry
+
+/-
+Sketch of proof: we need to check that
+`∀ ε > 0, ∃ δ > 0, ∀ {a b : X}, dist a b < δ → dist (f a) (f b) < ε`.
+
+So we fix `ε > 0` and let `K := { p : X × X | ε ≤ dist (f p.1) (f p.2)}`.
+
+(1) We prove that `K` is compact. Indeed, it suffices to prove
+that `K` is closed. For this, use `isClosed_le` and the fact that
+`K` is of the form `{p : X × X | ε ≤ φ p}` where `φ` is a continuous
+function (hint: we already met the function `φ` today).
+
+(2) By `eq_empty_or_nonempty`, we know that `K` is either empty or
+nonempty. If `K` is empty, we are done; take `δ = 1` for example.
+
+(3) Assume that `K` is nonempty. As it is compact, and as `dist`
+is a continuous, the minimum of `dist` on `K` is attained
+(`IsCompact.exists_isMinOn`), say at `⟨x₀, x₁⟩`. Then we can
+take `δ = dist x₀ x₁`.
+-/
+
+/- We now discuss Cauchy sequences. There are two equivalent
+ways to define them in metric spaces.-/
+
+example (u : ℕ → X) :
+    CauchySeq u ↔ ∀ ε > 0, ∃ N : ℕ, ∀ m ≥ N, ∀ n ≥ N,
+    dist (u m) (u n) < ε :=
+  Metric.cauchySeq_iff
+
+example (u : ℕ → X) :
+    CauchySeq u ↔ ∀ ε > 0, ∃ N : ℕ, ∀ n ≥ N,
+    dist (u n) (u N) < ε :=
+  Metric.cauchySeq_iff'
+
+-- Again, let's have a look at the general definition:
+#print CauchySeq -- of course it uses filters...
+#print Cauchy
+
+/- A metric space is called complete if every Cauchy
+sequence converges.-/
+
+example [CompleteSpace X] (u : ℕ → X) (hu : CauchySeq u) :
+    ∃ x, Tendsto u atTop (𝓝 x) :=
+  cauchySeq_tendsto_of_complete hu
+
+/- A criterion for a sequence to be Cauchy:-/
+open Finset in
+theorem cauchySeq_of_le_geometric_two' {u : ℕ → X}
+    (hu : ∀ n : ℕ, dist (u n) (u (n + 1)) ≤ (1 / 2) ^ n) : CauchySeq u := by
+  rw [Metric.cauchySeq_iff']
+  intro ε ε_pos
+  obtain ⟨N, hN⟩ : ∃ N : ℕ, 1 / 2 ^ N * 2 < ε := by sorry
+  use N
+  intro n hn
+  obtain ⟨k, rfl : n = N + k⟩ := le_iff_exists_add.mp hn
+  calc
+    dist (u (N + k)) (u N) = dist (u (N + 0)) (u (N + k)) := sorry
+    _ ≤ ∑ i in range k, dist (u (N + i)) (u (N + (i + 1))) := sorry
+    _ ≤ ∑ i in range k, (1 / 2 : ℝ) ^ (N + i) := sorry
+    _ = 1 / 2 ^ N * ∑ i in range k, (1 / 2 : ℝ) ^ i := sorry
+    _ ≤ 1 / 2 ^ N * 2 := sorry
+    _ < ε := sorry
+-- Note that `range` stands for `Finset.range`:
+#check Finset.range -- `Finset.range n` of natural numbers `< n`.
+
+-- Helper lemmas:
+#check tendsto_pow_atTop_nhds_zero_of_lt_one
+-- if `r < 1`, then the geometric sequence `(r^n)` tends to `0`
+#check Tendsto.mul -- limit of a product of functions
+#check dist_le_range_sum_dist --generalized triangle inequality
+
+/- Let's prove Baire's theorem! ("In a complete metric, a
+countable intersection of open dense subsets is dense.")-/
+
+-- Note the use of `Nat.recOn` to construct a function
+-- using recursion in the middle of a proof.
+#check Nat.recOn
+/-
+  Nat.recOn.{u} {motive : ℕ → Sort u} (t : ℕ)
+  (zero : motive Nat.zero)
+  (succ : (n : ℕ) → motive n → motive n.succ) :
+  motive t
+  -/
+
+open Metric
+
+example [CompleteSpace X] (f : ℕ → Set X) (ho : ∀ n, IsOpen (f n))
+    (hd : ∀ n, Dense (f n)) : Dense (⋂ n, f n) := by
+  let B : ℕ → ℝ := fun n ↦ (1 / 2) ^ n
+  have Bpos : ∀ n, 0 < B n := by sorry
+  /- Translate the density assumption into two functions `center` and
+     `radius` associating to any `n, x, δ, δpos` a center and a positive
+     radius such that `closedBall center radius` is included both in
+     `f n` and in `closedBall x δ`.
+     We can also require `radius ≤ (1/2)^(n+1)`, to ensure we get a
+     Cauchy sequence later. -/
+  have : ∀ (n : ℕ) (x : X),
+      ∀ δ > 0, ∃ y : X, ∃ r > 0, r ≤ B (n + 1) ∧
+      closedBall y r ⊆ closedBall x δ ∩ f n :=
+    by sorry
+  choose! center radius Hpos HB Hball using this
+  /- The tactic `choose` creates a function from statements of the
+     form `∀ x, ∃ y, P x y`. More precisely, `choose a b h h' using hyp`
+     takes a hypothesis `hyp` of the form
+     `∀ (x : X) (y : Y), ∃ (a : A) (b : B), P x y a b ∧ Q x y a b`
+     for some `P Q : X → Y → A → B → Prop` and outputs into
+     context functions  `a : X → Y → A`, `b : X → Y → B`
+     and two assumptions:
+     `h : ∀ (x : X) (y : Y), P x y (a x y) (b x y)` and
+     `h' : ∀ (x : X) (y : Y), Q x y (a x y) (b x y)`.
+    The tactic `choose!` does the same, except that it tries to
+    make the functions not depend on the propositional arguments.
+
+    Check out what happens if we use `choose` instead in the line
+    above.
+  -/
+  intro x
+  rw [mem_closure_iff_nhds_basis nhds_basis_closedBall]
+  intro ε εpos
+  /- `ε` is positive. We have to find a point in the ball of
+      radius `ε` around `x` belonging to all `f n`. For this,
+      we construct inductively a sequence `F n = (c n, r n)` such
+      that the closed ball `closedBall (c n) (r n)` is included
+      in the previous ball and in `f n`, and such that `r n` is
+      small enough to ensure that `c n` is a Cauchy sequence.
+      Then `c n` converges to a limit which belongs to all
+      the `f n`. -/
+  let F : ℕ → X × ℝ := fun n ↦
+    Nat.recOn n (Prod.mk x (min ε (B 0)))
+      fun n p ↦ Prod.mk (center n p.1 p.2) (radius n p.1 p.2)
+  let c : ℕ → X := fun n ↦ (F n).1
+  let r : ℕ → ℝ := fun n ↦ (F n).2
+  have rpos : ∀ n, 0 < r n := by sorry
+  have rB : ∀ n, r n ≤ B n := by sorry
+  have incl : ∀ n, closedBall (c (n + 1)) (r (n + 1)) ⊆
+      closedBall (c n) (r n) ∩ f n := by
+    sorry
+  have cdist : ∀ n, dist (c n) (c (n + 1)) ≤ B n := by sorry
+  have : CauchySeq c := cauchySeq_of_le_geometric_two' cdist
+  -- as the sequence `c n` is Cauchy in a complete space,
+  -- it converges to a limit `y`.
+  rcases cauchySeq_tendsto_of_complete this with ⟨y, ylim⟩
+  -- this point `y` will be the desired point. We will check
+  -- that it belongs to all `f n` and to `ball x ε`.
+  use y
+  have I : ∀ n, ∀ m ≥ n, closedBall (c m) (r m) ⊆
+      closedBall (c n) (r n) := by sorry
+  have yball : ∀ n, y ∈ closedBall (c n) (r n) := by sorry
+  sorry
+
+end MetricSpaces
+
+section TopologicalSpaces
+
+variable {X : Type*} [TopologicalSpace X]
+
+/- Topological spaces: this is what you get when you
+take a metric space and forget everything except the
+notion of open subsets.
+
+There are two ways to think of topological spaces:
+(1) As a type equipped with a family of open sets,
+such that:
+- `⊥` and `⊤` are open;
+- an arbitrary union of open sets is open;
+- the intersection of two open sets is open.
+
+(2) As a type `X` equipped, for every `x : X`, with
+a neighborhood filter `𝓝 x`, such that:
+- for every `x`, the principal filter generated by `{x}`
+is `≤ 𝓝 x`;
+- if `P : X → Prop` and `x : X`, if `P y` holds for `y`
+close to `x`, then, for `y` close to `x` and `z` close
+to `y`, `P x` also holds. In symbols:
+-/
+example {P : X → Prop} {x : X} (h : ∀ᶠ y in 𝓝 x, P y) :
+    ∀ᶠ y in 𝓝 x, ∀ᶠ z in 𝓝 y, P z :=
+  eventually_eventually_nhds.mpr h
+
+/- In practice, we use whichever point of view is most
+convenient for our particular goal.-/
+
+/- So why topological spaces? One reason is that a lot
+of definitions and results (about continuity, convergence etc)
+are true in that setting, and we like to write in the most
+general setting possible. But another reason is that
+topological spaces are more flexible than metric spaces.
+
+For example, we can put a distance on a product of two
+metric spaces, and even on a countable product (in a less
+canonical way), but there is no reasonable way to do so
+on an arbitrary product. There is also no canonical way
+to put a distance on the quotient of a metric space by
+an equivalence relation.
+
+For topological spaces, all these and more are available.
+-/
+
+/- The first basic notion is the order on `TopologicalSpace`
+structures on a type `A`.
+
+The idea is this: if `t₁` and `t₂` are two topological space
+structures on `A`, we say that `t₁` is finer than `t₂`, and
+write `t₁ ≤ t₂`, if the identity map from `A` equipped with `t₁`
+to `A` equipped with `t₂` is continuous. This means that every
+set that is open for `t₂` is also open for `t₁`.
+-/
+
+variable {A : Type*}
+
+example {t₁ t₂ : TopologicalSpace A} :
+    t₁ ≤ t₂ ↔ ∀ s, IsOpen[t₂] s → IsOpen[t₁] s := Iff.rfl
+
+/- Note that, for every `a : A`, the function
+`fun (t : TopologicalSpace A) ↦ @nhds A t a` sending
+a topological space structure to its filters of neighborhoods
+of `a` is order-preserving.
+-/
+
+example {a : A} :
+    Monotone (fun (t : TopologicalSpace A) ↦ @nhds A t a) := by sorry
+
+#check TopologicalSpace.le_def
+#check le_nhds_iff
+#check mem_nhds_iff
+#check IsOpen.mem_nhds
+
+/- Next we have that `TopologicalSpace A` is a complete lattice,
+which means that an arbitrary family of topological space
+structures on `A` has both an `inf` and a `sup`. (The construction
+is somewhat similar to that of the `inf` and `sup` for filters.)
+
+In particular, there is a smallest (= fines) topological
+space structure on `A`, called the discrete topology;
+there is also a biggest (= coarsest) topological space structure,
+sometimes called the discrete topology.
+-/
+#check TopologicalSpace.isOpen_top_iff
+#check DiscreteTopology
+
+
+/- The next important construction is that of the
+induced and coinduced topology.-/
+
+variable {B : Type*}
+
+-- Coinduction:
+example (f : A → B) : TopologicalSpace A → TopologicalSpace B :=
+  TopologicalSpace.coinduced f
+
+#print TopologicalSpace.coinduced
+-- If `t` is a topology on `A` and `f : A → B`, then
+-- `t.coinduced f` is the coarsest topology on `B` that
+-- makes `f` continuous. So a set of `B` is open if and
+-- only its preimage by `f` is an open set of `A`.
+
+-- For example, this gives the quotient topology.
+
+-- Induction:
+example (f : A → B) : TopologicalSpace B → TopologicalSpace A :=
+  TopologicalSpace.induced f
+
+#print TopologicalSpace.induced
+-- If `t` is a topology on `B` and `f : A → B`, then
+-- `t.induced f` is the coarsest topology on `A` that
+-- makes `f` continuous. So a set of `A` is open if and
+-- only if it is the preimage by `f` of an open set of `B`.
+
+-- This gives the induced topology on a subtype, for example.
+
+-- These two operations form a Galois connection:
+example (f : A → B) (T_A : TopologicalSpace A) (T_B : TopologicalSpace B) :
+    TopologicalSpace.coinduced f T_A ≤ T_B ↔
+    T_A ≤ TopologicalSpace.induced f T_B :=
+  coinduced_le_iff_le_induced
+
+/- Induction and coinduction are compatible with the composition
+of maps (but induction reverses order):-/
+#check induced_compose
+#check coinduced_compose
+
+/- They are also monotone:-/
+#check induced_mono
+#check coinduced_mono
+
+-- Exercise: expressing continuity using order and coinduction
+-- (we could also use induction (how?)):
+example (T_A : TopologicalSpace A) (T_B : TopologicalSpace B)
+    (f : A → B) :
+    Continuous f ↔ TopologicalSpace.coinduced f T_A ≤ T_B := by sorry
+
+#check Continuous.isOpen_preimage -- the definition of continuity
+
+#check continuous_iff_coinduced_le -- this is the answer, don't use it!
+
+
+/- Now we will see how to define product topologies using
+these notions. Even if you didn't study general topology,
+you might have met some product topologies: for example,
+we can see the space of functions `[0,1] → ℝ` as the product
+of copies of `ℝ` indexed by elements of `[0,1]`. The product
+topology on this is also called "the topology of pointwise
+convergence" ("convergence simple" in French).
+-/
+
+/- Coming back to the general case, we fix a type `ι` and
+a function `A : ι → Type*`. Suppose that we have
+`T i : TopologicalSpace (A i)` for every `i : ι`.
+
+We want the topology on `Π i, A i` to make all the
+projection maps `fun x ↦ xi` continuous, i.e. to be
+`≤ TopologicalSpace.induced (fun x ↦ x i)`.
+
+In fact, we want  a function `f : B → Π i, A i` to be
+continuous if and  only if all the
+`(fun x ↦ x i) ∘ f : B → A i` are continuous.
+This means that the product topology on `Π i, A i` is
+the coarsest that makes all the projections continuous,
+i.e. the sup of all the
+`TopologicalSpace.induced (fun x ↦ x i)`.
+-/
+
+example (ι : Type*) (A : ι → Type*) (T : ∀ i, TopologicalSpace (A i)) :
+    (Pi.topologicalSpace : TopologicalSpace (∀ i, A i)) =
+      ⨅ i, TopologicalSpace.induced (fun x ↦ x i) (T i) :=
+  rfl
+
+
+end TopologicalSpaces
