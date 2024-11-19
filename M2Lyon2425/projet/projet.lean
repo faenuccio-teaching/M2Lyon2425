@@ -16,6 +16,9 @@ Ceci étant fait, il est beaucoup plus simple de vérifier certaines propriété
 d'opérations sur `ARS α` (de même qu'il est plus facile de les énoncer).
 
 On pourra voir le cours en pdf de P. Malbos, trouvable dans le dossier "projet_docs".
+De ce document, on va voir les preuves de la partie 2.3 (Normalisation & Termination),
+notamment 2.3.8, 2.3.9 ainsi que l'implémentation de quelques définitions (formes normales,
+terminaison, normalisation (faible et forte), …)
 
 La structure du fichier est la suivante :
 1. on prouve d'abord des résultats portants sur les algèbres de Kleene,
