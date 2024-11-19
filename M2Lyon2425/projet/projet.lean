@@ -1063,11 +1063,6 @@ lemma plus' (f : ARS α) :
       use hyp.choose + 1
       exact ⟨hf, by omega⟩
 
-lemma tempo (f : ARS α) :
-  ∀ i, (fun i _ ↦ f^(i+1)) i f = (fun i g ↦ g^(i+1)) i f := by
-    intro i
-    simp only
-
 lemma le_plus (f : ARS α) : f ≤ f⁺ := by
   rw [ARS.le_iff_imp]
   intro _ _ fxy
@@ -1103,29 +1098,6 @@ lemma plus_mul_kstar {f : ARS α} : f⁺ = f * f∗  := by
     ARS.big_sum_distrib_left,
     _fonction_puissance_succ
     ]
-
--- lemma plus_mul_pown {f : ARS α} {n : ℕ} : f⁺^(n+1) = f^n * f⁺ := by
---   induction n with
---   | zero =>
---     simp only [zero_add, pow_one, pow_zero, one_mul]
---   | succ m hm  =>
---     rw [
---       add_assoc,
---       one_add_one_eq_two,
---       add_comm,
---       pow_add,
---       add_comm,
---       pow_add,
---       pow_one,
---       mul_assoc,
---       ← hm,
---       add_comm,
---       pow_add,
---       pow_one,
---       ← mul_assoc,
---       self_mul_plus
---     ]
-
 
 lemma plus_is_transitive (f : ARS α) : Transitive f⁺ := by
   intro x y z hxy hyz
@@ -1235,7 +1207,8 @@ lemma inv_pow_eq_pow_inv (f : ARS α) (n : ℕ): f⇐^n = (f^n)⇐ := by
       · rw [inv_pow_eq_pow_inv]
         exact hwm
 
-lemma inv_trans_eq_trans_inv (f : ARS α) : f⇐∗ = f∗⇐ := by
+@[simp]
+lemma inv_trans_eq_trans_inv (f : ARS α) : f∗⇐ = f⇐∗ := by
   ext x y
   constructor
   · intro hyp
@@ -1292,9 +1265,64 @@ lemma lubEquiv_is_equiv (f : ARS α) : Equivalence f≡ where
   symm := @lubEquiv_is_symm α f
   trans := @lubEquiv_is_trans α f
 
+/- Les lemmes suivants permettent de faire des calculs simples sur la clôture ≡ -/
+
+@[simp]
+lemma lubEquiv_contains_self {f : ARS α} : f ≤ f≡ := by
+  rw [ARS.le_iff_imp]
+  intro _ _ h
+  use 1
+  rw [pow_one]
+  left
+  exact h
+
+@[simp]
+lemma lubEquiv_contains_add {f g₁ g₂ : ARS α} : g₁ ≤ f≡ → g₂ ≤ f≡ → g₁ + g₂ ≤ f≡ := by
+  intro hyp₁ hyp₂
+  have := add_respects_le hyp₁ hyp₂
+  rw [add_idem] at this
+  exact this
+
+@[simp]
+lemma lubEquiv_contains_mul {f g₁ g₂ : ARS α} : g₁ ≤ f≡ → g₂ ≤ f≡ → g₁ * g₂ ≤ f≡ := by
+  intro hyp₁ hyp₂
+  rw [lubEquiv, ← kstar_mul_kstar, ← lubEquiv]
+  exact mul_respects_le hyp₁ hyp₂
+
+@[simp]
+lemma lubEquiv_contains_pown {f g : ARS α} {n : ℕ} : g ≤ f≡ → g^n ≤ f≡ := by
+  induction n with
+  | zero =>
+    intro _
+    simp only [pow_zero, one_le_kstar]
+  | succ n ih =>
+    intro hyp
+    rw [pow_add, pow_one]
+    exact lubEquiv_contains_mul (ih hyp) (hyp)
+
+@[simp]
+lemma lubEquiv_contains_inverse {f g : ARS α} : g ≤ f≡ → g⇐ ≤ f≡ := by
+  intro hyp
+  rw [ARS.le_iff_imp] at hyp ⊢
+  intro x y hyprev
+  exact Equivalence.symm (lubEquiv_is_equiv f) (hyp y x hyprev)
+
+@[simp]
+lemma lubEquiv_contains_symm_closure {f g : ARS α} : g ≤ f≡ → g⇔ ≤ f≡ := by
+  intro hyp
+  refine lubEquiv_contains_add hyp (lubEquiv_contains_inverse hyp)
+
+@[simp]
+lemma lubEquiv_contains_kstar {f g : ARS α} : g ≤ f≡ → g∗ ≤ f≡ := by
+  intro hyp
+  rw [lubEquiv, ← kstar_idem f⇔, ← lubEquiv]
+  exact kstar_mono hyp
+
 end QuelquesPreuves
 
 section QuelquesProprietesARS
+
+/- Sections 2.2 et 2.3 du pdf -/
 
 def isWeaklyCommuting (f₁ f₂ : ARS α) : Prop := f₁⇐ * f₂ ≤ f₂∗ * f₁⇐∗
 
@@ -1304,13 +1332,35 @@ def isDiamond (f : ARS α) : Prop := isCommuting f f
 
 def isChurchRosser (f : ARS α) : Prop := f≡ ≤ f∗ * f⇐∗
 
-def isConfluent (f : ARS α) : Prop := f⇐∗ * f∗ ≤ f∗ * f⇐∗
+def isConfluent (f : ARS α) : Prop := isDiamond f∗
 
 def isWeaklyConfluent (f : ARS α) : Prop := f⇐ * f ≤ f∗ * f⇐∗
 
+/- Pas le théorème 2.2.5 du pdf -/
 theorem ChurchRosser (f : ARS α) : isConfluent f ↔ isChurchRosser f := by
-  rw [isConfluent, isChurchRosser]
+  rw [isConfluent, isDiamond, isCommuting, isChurchRosser]
+  simp only [inv_trans_eq_trans_inv]
   exact KleeneChurchRosser
+
+/- Le théorème 2.2.5 du pdf -/
+theorem ChurchRosser' (f : ARS α) :  isConfluent f ↔ isChurchRosser f := by
+  rw [isConfluent, isDiamond, isCommuting, isChurchRosser]
+  simp only [inv_trans_eq_trans_inv]
+  constructor
+  · intro hyp
+    rw [ARS.le_iff_imp]
+    intro x y hEquiv
+    sorry -- ici, la preuve est pénible, car il faut faire une induction
+  · intro hyp
+    rw [ARS.le_iff_imp]
+    intro x y hBranching
+    rw [ARS.le_iff_imp] at hyp
+    have coeur : (f⇐∗ * f∗) ≤ f≡ := by
+      refine lubEquiv_contains_mul ?_ ?_
+      · simp only [lubEquiv_contains_self, lubEquiv_contains_inverse, lubEquiv_contains_kstar]
+      · simp only [lubEquiv_contains_self, lubEquiv_contains_kstar]
+    rw [ARS.le_iff_imp] at coeur
+    exact hyp x y (coeur x y hBranching)
 
 def isNormalForm (f : ARS α) (a : α) : Prop := ∀ b, ¬(f a b)
 
