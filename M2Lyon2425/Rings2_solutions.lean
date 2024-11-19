@@ -155,9 +155,9 @@ example (r r' : R) (a : A) : (r * r') • a = r • r' • a := by
 -- `IsScalarTower`.
 variable (S T : Type*) [CommRing S] [CommRing T] [Algebra R S] [Algebra S T] [Algebra R T]
 
--- This fails
+-- This is false
 example (r : R) (s : S) (t : T) : (r • s) • t = r • (s • t) := by
-  exact?
+  sorry
 
 example [IsScalarTower R S T] (r : R) (s : S) (t : T) : (r • s) • t = r • (s • t) := by
   exact IsScalarTower.smul_assoc r s t
