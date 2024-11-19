@@ -280,8 +280,49 @@ theorem fae (ξ : ordinals_lt c)
   have hB_le : Cardinal.mk B < Cardinal.continuum := Cardinal.mk_sUnion_lt_continuum ξ A₀ hA₀
   let 𝒢 := {S | 2 ≤ Cardinal.mk ↑(S ∩ B) ∧ ∃ a b c, S = Line a b c}
   have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := sorry-- or directly `< Cardinal.continuum`
-  set n := Cardinal.mk (B ∩ (Lines ξ) : Set (ℝ × ℝ)) with hn-- Nat.card or Cardinal.mk?
-  have byP : n ≤ 2 := sorry
+  let n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ))-- Nat.card or Cardinal.mk?
+  have byP : n ≤ 2 ∧ Set.Finite (B ∩ (Lines ξ)) := by
+    refine ⟨?_, ?_⟩
+    · by_contra h
+      push_neg at h
+      have h₂ : ∃ (a b c : ℝ × ℝ), a ≠ b ∧ b ≠ c ∧ a ≠ c ∧ a ∈ B ∩ (Lines ξ)
+        ∧ b ∈ B ∩ (Lines ξ) ∧ c ∈ B ∩ (Lines ξ) := by
+        have hn : n ≠ 0 := by
+          intro hn
+          rw [hn] at h
+          contradiction
+        have := Nat.equivFinOfCardPos hn
+        have this₂ := Equiv.injective this.symm
+        obtain ⟨f, g, hf, hg⟩ := this
+        rw [Function.Injective] at this₂
+        refine ⟨g ⟨0, lt_trans two_pos h⟩, g ⟨1, lt_trans Nat.one_lt_two h⟩, g ⟨2, h⟩,
+          ⟨fun hg ↦ ?_, fun hg ↦ ?_, fun hg ↦ ?_, ⟨⟨(g ⟨0, lt_trans two_pos h⟩).2.1,
+          (g ⟨0, lt_trans two_pos h⟩).2.2⟩, ⟨(g ⟨1, lt_trans Nat.one_lt_two h⟩).2.1,
+          (g ⟨1, lt_trans Nat.one_lt_two h⟩).2.2⟩, ⟨(g ⟨2, h⟩).2.1, (g ⟨2, h⟩).2.2⟩⟩⟩⟩
+        have := @this₂ ⟨0, lt_trans two_pos h⟩ ⟨1, lt_trans Nat.one_lt_two h⟩ (Subtype.eq hg)
+        simp only [Set.mem_setOf_eq, Fin.mk.injEq, zero_ne_one] at this
+        have := @this₂ ⟨1, lt_trans Nat.one_lt_two h⟩ ⟨2, h⟩ (Subtype.eq hg)
+        simp only [Set.mem_setOf_eq, Fin.mk.injEq, OfNat.one_ne_ofNat] at this
+        have := @this₂ ⟨0, lt_trans two_pos h⟩ ⟨2, h⟩ (Subtype.eq hg)
+        simp only [Set.mem_setOf_eq, Fin.mk.injEq, OfNat.zero_ne_ofNat] at this
+      obtain ⟨a, b, c, ⟨hab, hbc, hac, ⟨ha₁, ha₂⟩, ⟨hb₁, hb₂⟩, ⟨hc₁, hc₂⟩⟩⟩ := h₂
+      have h₃ : IsColinear a b ∧ IsColinear b c := by
+        obtain ⟨a', b', c', h'⟩ := (Lines ξ).2.out
+        refine ⟨?_, ?_⟩
+        rw [IsColinear]
+        rw [h'] at ha₂ hb₂
+        refine ⟨a', b', c', ha₂, hb₂⟩
+        rw [h'] at hb₂ hc₂
+        refine ⟨a', b', c', hb₂, hc₂⟩
+      have h₄ : ∃ (ζ : Ordinal) (hζ : ζ < ξ), a ∈ union_le_fae A₀ ⟨ζ, lt_trans hζ ξ.2⟩
+        ∧ b ∈ union_le_fae A₀ ⟨ζ, lt_trans hζ ξ.2⟩
+        ∧ c ∈ union_le_fae A₀ ⟨ζ, lt_trans hζ ξ.2⟩ := sorry
+      obtain ⟨ζ, hζ, h₄⟩ := h₄
+      have h₅ := (hA₀ ⟨ζ, hζ⟩).2.1
+      rw [fae_NoThreeColinearPoints] at h₅
+      apply h₅
+      exact ⟨a, b, c, h₄.1, h₄.2.1, h₄.2.2, h₃.1, h₃.2⟩
+    · sorry
   let Aξ : Set (ℝ × ℝ) :=
     if n = 2 then ∅
     else
