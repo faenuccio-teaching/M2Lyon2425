@@ -31,6 +31,9 @@ notation:1024 elm "∗" => KStar.kstar elm
 
 section QuelquesProprietesKleeneAlgebra
 
+/- Dans cette section, on établit quelques propriétés de élémentaires
+des algèbres de Kleene. Beaucoup sont déjà prouvées dans Mathlib/Algebra/Order/Kleene. -/
+
 variable {K : Type*} [KleeneAlgebra K]
 
 lemma add_respects_le {a₁ b₁ a₂ b₂ : K}
@@ -64,7 +67,7 @@ lemma mul_respects_le {a₁ b₁ a₂ b₂ : K}
 lemma topown_mono (n : ℕ) {f g : K} : f ≤ g → f^n ≤ g^n := by
   intro lefg
   induction n with
-  | zero => simp
+  | zero => simp only [pow_zero, le_refl]
   | succ m hm =>
     rw [pow_succ, pow_succ]
     exact mul_respects_le hm lefg
@@ -109,7 +112,7 @@ lemma add_kstar {a b : K} : (a + b)∗ = a∗ * (b * a∗)∗ := by
           refine add_le_iff.mpr ?_
           · constructor
             · rw [← mul_assoc]
-              exact mul_respects_le (mul_kstar_le_kstar) (by simp)
+              exact mul_respects_le (mul_kstar_le_kstar) (by simp only [le_refl])
             · rw [← mul_assoc]
               nth_rw 1 [← one_mul b]
               rw [mul_assoc, mul_assoc, ← mul_assoc b]
@@ -240,7 +243,7 @@ lemma add_assoc (f g h : ARS α ) :
   (f + g) + h = f + (g + h) := by
     ext x y
     change (fun u v ↦ (f u v ∨ g u v) ∨ h u v) x y ↔ (fun u v ↦ f u v ∨ (g u v ∨ h u v)) x y
-    simp
+    simp only
     rw [or_assoc]
 
 instance instAddSemigroupARS : AddSemigroup (ARS α) where
@@ -250,13 +253,13 @@ lemma zero_add (f : ARS α) :
   0 + f = f := by
     ext x y
     change False ∨ f x y ↔ f x y
-    simp
+    simp only [false_or]
 
 lemma add_zero (f : ARS α) :
   f + 0 = f := by
     ext x y
     change f x y ∨ False ↔ f x y
-    simp
+    simp only [or_false]
 
 def nsmul (n : ℕ) (f : ARS α) : ARS α := by -- nécessaire
   match n with
@@ -334,7 +337,7 @@ lemma left_distrib (f g h : ARS α) :
     change
       (fun u v ↦ ∃ w, f u w ∧ (g w v ∨ h w v)) x y
       ↔ (fun u v ↦ (∃ w, f u w ∧ g w v) ∨ (∃ w, f u w ∧ h w v)) x y
-    simp
+    simp only
     constructor
     · intro hyp
       let we := hyp.choose
@@ -371,7 +374,7 @@ lemma right_distrib (f g h : ARS α) :
     change
       (fun u v ↦ ∃ w, (f u w ∨ g u w) ∧ h w v) x y
       ↔ (fun u v ↦ (∃ w, f u w ∧ h w v) ∨ (∃ w, g u w ∧ h w v)) x y
-    simp
+    simp only
     constructor
     · intro hyp
       let we := hyp.choose
@@ -406,7 +409,7 @@ lemma zero_mul (f : ARS α) : 0 * f = 0 := by
   ext x y
   constructor
   · intro hyp
-    simp at hyp
+    simp only at hyp
     have hw := hyp.choose_spec
     exact hw.left
   · intro absu
@@ -417,7 +420,7 @@ lemma mul_zero (f : ARS α) : f * 0 = 0 := by
   ext x y
   constructor
   · intro hyp
-    simp at hyp
+    simp only at hyp
     have hw := hyp.choose_spec
     exact hw.right
   · intro absu
@@ -438,7 +441,7 @@ lemma mul_assoc (f g h : ARS α) :
     ext x y
     constructor
     · intro hyp
-      simp at hyp
+      simp only at hyp
       let w1 := hyp.choose
       have ⟨hw1l, hw1r⟩ := hyp.choose_spec
       let w2 := hw1r.choose
@@ -516,9 +519,9 @@ lemma one_mul  (f : ARS α) :
 lemma natCast_succ (n : ℕ) : @natCast α (n + 1) = natCast n + 1 := by
   cases n with
   | zero =>
-    simp
+    simp only [natCast, _root_.zero_add]
   | succ m =>
-    simp
+    simp only [natCast, addIdem]
 
 def npow (n : ℕ) (f : ARS α) :
   ARS α := by
@@ -754,7 +757,7 @@ lemma ban_le_b {f g : ARS α} :
     intro hyp n
     cases n with
     | zero =>
-      simp
+      simp only [pow_zero, _root_.mul_one, _root_.le_refl]
     | succ m =>
       exact le_trans (hyp m) (ban_le_b hyp m)
 
@@ -804,7 +807,7 @@ lemma anb_le_b {f g : ARS α} :
     intro hyp n
     cases n with
     | zero =>
-      simp
+      simp only [pow_zero, _root_.one_mul, _root_.le_refl]
     | succ m =>
       exact le_trans (hyp m) (anb_le_b hyp m)
 
@@ -875,58 +878,91 @@ lemma le_iff_imp {f g : ARS α} : f ≤ g ↔ ∀ x y, f x y → g x y := by
       exact hgxy
 
 @[reducible]
-def indexed_op (ι β : Type*) := ι → ARS β → ARS β
+def indexed_op (ι β : Type*) := ι → ARS β
 
 @[reducible]
-def big_sum {ι : Type*} (t : indexed_op ι α) (f : ARS α) : ARS α :=
-  fun x y ↦ ∃ i, t i f x y
+def big_sum {ι : Type*} (t : indexed_op ι α) : ARS α :=
+  fun x y ↦ ∃ i, t i x y
 
 def big_sum_respects_le {ι : Type*} {g : ARS α} (t : indexed_op ι α) :
-  ∀ f, (∀ i, t i f ≤ g) → big_sum t f ≤ g := by
-    intro f htflef
+  (∀ i, t i ≤ g) → big_sum t ≤ g := by
+    intro htflef
     rw [le_iff_imp]
     intro x y hbigsum
     exact le_iff_imp.mp (htflef hbigsum.choose) x y hbigsum.choose_spec
 
-def big_sum_comm_from_comm {ι : Type*} {f g : ARS α} (t : indexed_op ι α) :
-  (∀ i, t i f * g = g * t i f) → big_sum t f * g = g * big_sum t f := by
+def big_sum_comm_from_comm {ι : Type*} {f : ARS α} (t : indexed_op ι α) :
+  (∀ i, t i * f = f * t i) → big_sum t * f = f * big_sum t := by
     intro hypcomm
     ext x y
     constructor
     · intro hyp
       let z1 := hyp.choose
-      let ⟨hz1bs, hz1g⟩ := hyp.choose_spec
+      let ⟨hz1bs, hz1f⟩ := hyp.choose_spec
       let i := hz1bs.choose
       have hi := hz1bs.choose_spec
       have hypcommi := (hypcomm i)
-      have h₀ : ((t i f * g) x y ↔ (g * t i f) x y) :=  by rw [hypcommi]
-      have h₁ : (t i f * g) x y := by use z1
+      have h₀ : ((t i * f) x y ↔ (f * t i) x y) :=  by rw [hypcommi]
+      have h₁ : (t i * f) x y := by use z1
       have h₃ := h₀.mp h₁
       let z2 := h₃.choose
-      have ⟨hz2g, hz2bs⟩ := h₃.choose_spec
+      have ⟨hz2f, hz2bs⟩ := h₃.choose_spec
       use z2
       constructor
-      · exact hz2g
+      · exact hz2f
       · use i
     · intro hyp
       let z1 := hyp.choose
-      let ⟨hz1g, hz1bs⟩ := hyp.choose_spec
+      let ⟨hz1f, hz1bs⟩ := hyp.choose_spec
       let i := hz1bs.choose
       have hi := hz1bs.choose_spec
       have hypcommi := (hypcomm i)
-      have h₀ : ((t i f * g) x y ↔ (g * t i f) x y) :=  by rw [hypcommi]
-      have h₁ : (g * t i f) x y := by use z1
+      have h₀ : ((t i * f) x y ↔ (f * t i) x y) :=  by rw [hypcommi]
+      have h₁ : (f * t i) x y := by use z1
       have h₃ := h₀.mpr h₁
       let z2 := h₃.choose
-      have ⟨hz2bs, hz2g⟩ := h₃.choose_spec
+      have ⟨hz2bs, hz2f⟩ := h₃.choose_spec
       use z2
       constructor
       · use i
-      · exact hz2g
+      · exact hz2f
 
+/-- Le fait que `∃ i, ∃ w, ⋯` est la même chose que `∃ w, ∃ i, ⋯`
+On pourrait aller plus loin et faire une distributivité d'une
+big sum sur une autre, mais c'est plus que le nécessaire.
+-/
+def big_sum_distrib_left {ι : Type*} {f: ARS α} {t : indexed_op ι α} :
+  f * big_sum t = big_sum (fun i ↦ f * t i)
+    := by
+      ext x y
+      constructor
+      · intro hyp
+        let w := hyp.choose
+        have ⟨hwf, hwbs⟩ := hyp.choose_spec
+        let i := hwbs.choose
+        have hi := hwbs.choose_spec
+        use i
+        simp only
+        use w
+      · intro hyp
+        let i := hyp.choose
+        have hi := hyp.choose_spec
+        simp only at hi
+        let w := hi.choose
+        have ⟨hwf, hwbs⟩ := hi.choose_spec
+        use w
+        constructor
+        · exact hwf
+        · use i
+
+/-- Le choix d'avoir des fonctions dans ℕ plutôt que Fin (n+1) est arbitraire.-/
 def existsChaine (f :ARS α) (n : ℕ) (x y : α) :=
   ∃ w : ℕ → α, (w 0 = x ∧ w n = y) ∧ (∀ i, n < i+1 ∨ f (w i) (w (i+1)))
 
+/-- Une description alternative de f^n
+On remarque que l'ordre de quantification est important,
+si on commence par `∀ x y, ∀ n, ⋯`, il n'est pas possible
+de faire une induction sur `n` en gardant `x` et `y` généraux.-/
 lemma npow' {f : ARS α} :
   ∀ n : ℕ, ∀ x y : α,
   (f^n) x y →
@@ -936,7 +972,7 @@ lemma npow' {f : ARS α} :
     | zero =>
       intro x y hypf0
       use (fun _ ↦ x)
-      simp at hypf0
+      simp only [pow_zero] at hypf0
       constructor
       · constructor <;> rw [hypf0]
       · intro i
@@ -948,36 +984,28 @@ lemma npow' {f : ARS α} :
       let wn := hypfn.choose
       have ⟨hfmwn, hfwn⟩ := hypfn.choose_spec
       let w := (hm x wn hfmwn).choose
-      have hw := (hm x wn hfmwn).choose_spec
+      have ⟨⟨hw0, hwm⟩, hwf⟩ := (hm x wn hfmwn).choose_spec
       let w' :=  fun (i: ℕ) ↦ if i = m+1 then y' else w i
       use w'
       constructor
       · constructor
         · simp only [w', reduceIte]
-          exact hw.left.left
+          exact hw0
         · simp only [w', reduceIte]
-      · intro i'
-        by_cases him : m < i'
-        · left
-          simp only [add_lt_add_iff_right]
-          exact him
-        · have him' := le_of_not_lt him
-          --apply Nat.succ_le_succ at him'
-          --change i'+1 ≤ m+1 at him'
-          have := (hw.right i')
-          cases this with
-          | inl relou =>
-
-            sorry
-          | inr cool =>
-            right
-            have h₀ : i' ≠ m + 1 := by omega
-            by_cases hᵢ : i' + 1 = m + 1
-            · simp only [w', hᵢ, h₀, reduceIte]
-
-              sorry
-            · simp only [w', hᵢ, h₀, reduceIte]
-              exact cool
+      · intro i' -- on va faire une *trichotomie* sur i'>m, i'=m, i'< m
+        by_cases hi₁ : m+1 < i'+1
+        · left; exact hi₁
+        · right
+          simp only [add_lt_add_iff_right, not_lt] at hi₁
+          by_cases hi₂ : i' = m
+          · have hi₃ : m ≠ m+1 := by omega
+            simp only [w', hi₂, hi₃, reduceIte, w, hwm, hfwn]
+          · have hi₃ : i' ≠ m +1 := by omega
+            have hi₄ : i'+1 ≠ m+1 := by omega
+            simp only [w', hi₃, hi₄, reduceIte]
+            cases hwf i' with
+            | inl hi => exfalso; omega
+            | inr hw' => exact hw'
 
 end ARS
 
@@ -991,7 +1019,7 @@ On montre quelques lemmes basiques spécifique aux ARS :
 
 /-- Une définition alternative de `∗`.-/
 lemma kstar' (f : ARS α) :
-  f∗ = ARS.big_sum (Semiring.npow) f := by
+  f∗ = ARS.big_sum (fun n ↦ f^n) := by
     rfl
 
 /- `∗` n'est pas la clôture transitive, mais bien la clôture transitive *et* réflexive.-/
@@ -1014,23 +1042,28 @@ def trans_closure (f : ARS α) : ARS α := fun x y ↦ ∃ n, (f^n) x y ∧ 0 < 
 notation:1024 elm "⁺" => trans_closure elm
 
 /-- Une définition alternative de `⁺`.-/
-lemma trans_closure' (f : ARS α) :
-  f⁺ = ARS.big_sum (fun i g ↦ g^(i+1)) f := by
+lemma plus' (f : ARS α) :
+  f⁺ = ARS.big_sum (fun i ↦ f^(i+1)) := by
     ext x y
     constructor
     · intro hyp
       let n := hyp.choose
       have ⟨hf, _⟩ := hyp.choose_spec
       use hyp.choose - 1
-      simp
+      simp only
       have : n - 1 + 1 = n := by omega
       rw [this]
       exact hf
     · intro hyp
       have hf := hyp.choose_spec
-      simp at hf
+      simp only at hf
       use hyp.choose + 1
       exact ⟨hf, by omega⟩
+
+lemma tempo (f : ARS α) :
+  ∀ i, (fun i _ ↦ f^(i+1)) i f = (fun i g ↦ g^(i+1)) i f := by
+    intro i
+    simp only
 
 lemma le_plus (f : ARS α) : f ≤ f⁺ := by
   rw [ARS.le_iff_imp]
@@ -1048,51 +1081,48 @@ lemma plus_mono {f g : ARS α} : f ≤ g → f⁺ ≤ g⁺  := by
   use n
   exact ⟨ARS.le_iff_imp.mp (topown_mono n lefg) x y hfnxy, hn⟩
 
-lemma plus_comm_pown {f : ARS α} {n : ℕ} : f⁺ * f^n = f^n * f⁺ := by
-  rw [trans_closure']
-  refine ARS.big_sum_comm_from_comm (fun i g ↦ g^(i+1)) ?_
-  intro i
-  simp
-  rw [← pow_add, ← pow_add, add_comm]
+-- lemma plus_comm_pown {f : ARS α} {n : ℕ} : f⁺ * f^n = f^n * f⁺ := by
+--   rw [plus']
+--   refine ARS.big_sum_comm_from_comm (fun i g ↦ g^(i+1)) ?_
+--   intro i
+--   simp only
+--   rw [← pow_add, ← pow_add, add_comm]
 
-lemma self_mul_plus {f : ARS α} : f * f⁺ = f⁺^2 := by
-  rw [← one_add_one_eq_two, pow_add, pow_one]
-  refine le_antisymm ?_ ?_
-  · exact mul_respects_le (le_plus f) (le_refl f⁺)
-  · rw [ARS.le_iff_imp]
-    intro x y hyp
-    sorry
+lemma _fonction_puissance_succ [Monoid α] (f : α) : (fun i ↦ f * f^i) = fun i ↦ f^(i+1) := by
+  ext i
+  nth_rw 1 [← pow_one f]
+  rw [← pow_add, add_comm]
 
-lemma plus_mul_pown {f : ARS α} {n : ℕ} : f⁺^(n+1) = f^n * f⁺ := by
-  induction n with
-  | zero =>
-    simp
-  | succ m hm  =>
-    rw [
-      add_assoc,
-      one_add_one_eq_two,
-      add_comm,
-      pow_add,
-      add_comm,
-      pow_add,
-      pow_one,
-      mul_assoc,
-      ← hm,
-      add_comm,
-      pow_add,
-      pow_one,
-      ← mul_assoc,
-      self_mul_plus
+lemma plus_mul_kstar {f : ARS α} : f⁺ = f * f∗  := by
+  rw [
+    kstar',
+    plus',
+    ARS.big_sum_distrib_left,
+    _fonction_puissance_succ
     ]
 
-lemma plus_is_idem {f : ARS α} : f⁺⁺ = f⁺ := by
-  rw [le_antisymm_iff]
-  constructor
-  · nth_rw 1 [trans_closure' f, ARS.le_iff_imp]
-    intro x y hbs
-    use hbs.choose
-    sorry
-  · exact plus_mono (le_plus f)
+-- lemma plus_mul_pown {f : ARS α} {n : ℕ} : f⁺^(n+1) = f^n * f⁺ := by
+--   induction n with
+--   | zero =>
+--     simp only [zero_add, pow_one, pow_zero, one_mul]
+--   | succ m hm  =>
+--     rw [
+--       add_assoc,
+--       one_add_one_eq_two,
+--       add_comm,
+--       pow_add,
+--       add_comm,
+--       pow_add,
+--       pow_one,
+--       mul_assoc,
+--       ← hm,
+--       add_comm,
+--       pow_add,
+--       pow_one,
+--       ← mul_assoc,
+--       self_mul_plus
+--     ]
+
 
 lemma plus_is_transitive (f : ARS α) : Transitive f⁺ := by
   intro x y z hxy hyz
@@ -1136,7 +1166,7 @@ notation:1024 elm "⇐" => inverse elm
 
 @[simp] lemma inverse_involution (f : ARS α) : f⇐⇐ = f := by
   ext x y
-  simp
+  simp only
 
 @[simp] lemma inverse_one : (1 : ARS α)⇐ = 1 := by
   ext x y
@@ -1159,7 +1189,7 @@ notation:1024 elm "⇔" => symm_closure elm
 
 lemma symm_is_idem (f : ARS α) : f⇔⇔ = f⇔ := by
   change (f + f⇐) + (f + f⇐)⇐ = f + f⇐
-  simp
+  simp only [inverse_over_add, inverse_involution]
   rw [add_assoc]
   nth_rw 2 [← add_assoc]
   rw [add_idem]
@@ -1180,7 +1210,7 @@ lemma symm_closure_is_symm (f : ARS α) : Symmetric f⇔ := by
 lemma inv_pow_eq_pow_inv (f : ARS α) (n : ℕ): f⇐^n = (f^n)⇐ := by
   match n with
   | 0 =>
-    simp
+    simp only [pow_zero, inverse_one]
   | m + 1 =>
     rw [pow_succ, pow_succ, ← ARS.npow_mul_eq_mul_npow]
     ext x y
@@ -1211,7 +1241,7 @@ lemma inv_trans_eq_trans_inv (f : ARS α) : f⇐∗ = f∗⇐ := by
     rw [inv_pow_eq_pow_inv] at hn
     exact hn
   · intro hyp
-    simp at hyp
+    simp only at hyp
     use hyp.choose
     have hn := hyp.choose_spec
     rw [inv_pow_eq_pow_inv]
@@ -1232,7 +1262,7 @@ lemma symm_n_is_symm (f : ARS α) : ∀ n, Symmetric (f⇔^n) := by
     intro n
     cases n with
     | zero =>
-      simp -- pour la lisibilité ?
+      simp only [pow_zero]
       intro x y hxy
       rw [hxy]
       rfl
@@ -1260,9 +1290,6 @@ lemma lubEquiv_is_equiv (f : ARS α) : Equivalence f≡ where
   trans := @lubEquiv_is_trans α f
 
 end QuelquesPreuves
-
-/- Dans la section suivante, on établit quelques propriétés de élémentaires
-des algèbres de Kleene. Beaucoup sont déjà prouvées dans Mathlib/Algebra/Order/Kleene. -/
 
 section QuelquesProprietesARS
 
