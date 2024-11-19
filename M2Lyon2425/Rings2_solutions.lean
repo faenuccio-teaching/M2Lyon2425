@@ -4,10 +4,7 @@
   * Formalising Mathematics 2022 - 2024, K. Buzzard
   * Mathematics in Lean, J. Avigad, P. Massot
 -/
-import Mathlib.Tactic.Basic
-import Mathlib.Analysis.Complex.Polynomial.Basic
-import Mathlib.RingTheory.Ideal.QuotientOperations
-import Mathlib.LinearAlgebra.Dimension.Finrank
+import Mathlib
 
 /-
   # Chinese Remainder Theorem
