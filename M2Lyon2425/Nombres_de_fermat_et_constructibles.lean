@@ -377,6 +377,7 @@ cases h with
 --theorem groupe_galois_Qw_ZpZ (p : ℕ+): premierfermat p → ∃ m, (Polynomial.Gal (Polynomial.cyclotomic p ℚ)) ≃* (ZMod (2^m)) := by
 -- IntermediateField.finSepDegree_adjoin_simple_eq_natSepDegree
 
+
 theorem cyclic_iso (G H : Type*) [inst1 : Group G] [inst2 : Group H] : (G ≃* H) → (IsCyclic H) → (IsCyclic G) := by
 intro h h1
 obtain ⟨ φ, phi1⟩ := h
@@ -388,10 +389,64 @@ apply IsCyclic.mk
 use (hphi Hgen)
 intro g
 dsimp
-use (orderOf (ϕ g))
 have h_rec : ∀ (x y : H), hphi (x * y) = (hphi x) * (hphi y) := by
   intro x y
-  refine mul_inv_eq_iff_eq_mul.mp ?_
-  sorry
-
-sorry
+  have h111 : (hphi x) * (hphi y) = (hphi ∘ ϕ) ((hphi x) * (hphi y)):= by
+    have h1111 : (hphi ∘ ϕ) ((hphi x) * (hphi y))= id ((hphi x) * (hphi y)) := by
+      apply left_inv
+    rw[h1111]
+    trivial
+  rw[Function.comp_apply, phi1,] at h111
+  change (hphi x * hphi y = hphi ( ((ϕ ∘ hphi) x) * ((ϕ ∘ hphi) y))) at h111
+  have hinutile : ∀ (x : H), (ϕ ∘ hphi) x = x:= by
+    apply right_inv
+  rw[hinutile, hinutile] at h111
+  exact h111.symm
+have hh : ∀ n, hphi  Hgen ^ n = hphi (Hgen ^ n) :=by
+  intro n
+  induction n with
+  | zero => simp
+            have hhh := h_rec 1 1
+            simp at hhh
+            exact hhh.symm
+  | succ n ih => have hh1 := npow_add n 1 Hgen
+                 apply (congr_arg hphi) at hh1
+                 rw[h_rec] at hh1
+                 simp at hh1
+                 rw[<-ih] at hh1
+                 have hh2 : hphi Hgen ^ n * hphi Hgen = hphi Hgen ^ (n+1):= by
+                  group
+                 rw[hh2] at hh1
+                 exact hh1.symm
+have hhmieux : ∀ (n : ℤ), hphi  Hgen ^ n = hphi (Hgen ^ n) :=by
+  intro n
+  cases Int.nonneg_or_nonneg_neg n with
+  | inl h => apply (Int.nonneg_def).mp at h
+             obtain ⟨ npos, hnpos ⟩ := h
+             have hbis := hh ↑npos
+             rw[hnpos]
+             simp
+             exact hbis
+  | inr h => apply (Int.nonneg_def).mp at h
+             obtain ⟨ npos, hnpos ⟩ := h
+             have hbis := hh npos
+             rw[<-@Int.neg_neg n, hnpos]
+             simp
+             rw[hbis]
+             refine Eq.symm (eq_inv_of_mul_eq_one_left ?inr.intro.h)
+             rw[<-h_rec]
+             simp
+             have hhh := h_rec 1 1
+             simp at hhh
+             exact hhh
+let phig := ϕ g
+have hphig : ϕ g = phig := by rfl
+specialize hypHgen phig
+let o := hypHgen.choose
+have ho := hypHgen.choose_spec
+dsimp at ho
+use o
+have hg : (hphi ∘ ϕ) g = g := by
+  apply left_inv
+rw [Function.comp_apply,hphig,<-ho,<-hhmieux] at hg
+exact hg
