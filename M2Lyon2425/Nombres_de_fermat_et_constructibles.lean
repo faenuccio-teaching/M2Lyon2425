@@ -140,19 +140,12 @@ def nombre_constructible (a : ℂ) : Prop :=
   ∃ (T : TowerOfFields) (n : ℕ), T.isFiniteDimensional ∧ T.rankLessTwo ∧ T.K 0 = ℚ ∧
     T.K n = Algebra.adjoin ℚ { a }
 
---theorem multiplicativity_algebra (n m : ℕ) (R S T : Type*) [inst11 : Field R] [inst12 : Field S] [inst13 : Field T] [inst1 : Algebra R S] [inst2 : Algebra S T] [inst3 : Algebra R T] : FiniteDimensional.finrank R S = n ∧ FiniteDimensional.finrank (S) (T) = m → (FiniteDimensional.finrank (R) (T) = n * m):= by
-
+theorem multiplicativity_algebra (n m : ℕ+) (R S T : Type*) [inst11 : Field R] [inst12 : Field S] [inst13 : Field T] [inst1 : Algebra R S] [inst2 : Algebra S T] [inst3 : Algebra R T] : FiniteDimensional.finrank R S = n ∧ FiniteDimensional.finrank (S) (T) = m → (FiniteDimensional.finrank (R) (T) = n * m):= by
+  sorry
 
 --Théorème (Wantzel) : si a est constructible, ℚ(a) est de degré 2^m sur ℚ pour un certains m.
 theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
- intro h
- cases h with
- | intro TF h =>
-   let n := h.choose
-   let hn := h.choose_spec
-   cases hn with
-   | intro left right =>
-      sorry
+sorry
 
       --rw[<-Module.finrank_mul_finrank] at left
 
@@ -350,10 +343,8 @@ constructor
   have h2 := adjoin_is_integral α p h
   have a :=  (Algebra.adjoin.powerBasis h2).gen.2
   have b := a.out
-  intro h1 h2
+  intro h1 h3
   sorry
-
-
 
 
 theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
@@ -385,3 +376,22 @@ cases h with
 --theorem groupe_galois_Qw_ZpZ (p : ℕ+) (h : Irreducible (Polynomial.cyclotomic ↑p ℚ)) : premierfermat ↑p → galXPowEquivUnitsZMod h :=by
 --theorem groupe_galois_Qw_ZpZ (p : ℕ+): premierfermat p → ∃ m, (Polynomial.Gal (Polynomial.cyclotomic p ℚ)) ≃* (ZMod (2^m)) := by
 -- IntermediateField.finSepDegree_adjoin_simple_eq_natSepDegree
+
+theorem cyclic_iso (G H : Type*) [inst1 : Group G] [inst2 : Group H] : (G ≃* H) → (IsCyclic H) → (IsCyclic G) := by
+intro h h1
+obtain ⟨ φ, phi1⟩ := h
+obtain ⟨ ϕ, hphi, left_inv, right_inv⟩ := φ
+dsimp at phi1
+apply IsCyclic.exists_generator at h1
+obtain ⟨ Hgen, hypHgen ⟩ := h1
+apply IsCyclic.mk
+use (hphi Hgen)
+intro g
+dsimp
+use (orderOf (ϕ g))
+have h_rec : ∀ (x y : H), hphi (x * y) = (hphi x) * (hphi y) := by
+  intro x y
+  refine mul_inv_eq_iff_eq_mul.mp ?_
+  sorry
+
+sorry
