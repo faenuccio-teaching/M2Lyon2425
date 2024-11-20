@@ -83,7 +83,8 @@ example {f : X → Y} : Continuous f ↔
 #check Prod.metricSpaceMax -- the product distance is the sup distance
 
 example {f : X → Y} (hf : Continuous f) :
-    Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := sorry
+  Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := by
+  continuity
 
 /- The first solution is to use the `continuity` tactic.
 It knows about the continuity of some basic functions,
@@ -93,7 +94,13 @@ projections etc.
 
 example {f : X → Y} (hf : Continuous f) :
     Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := by
-  continuity
+  apply Continuous.dist
+  · apply Continuous.comp'
+    · simp_all only
+    · apply continuous_fst
+  · apply Continuous.comp'
+    · simp_all only
+    · apply continuous_snd
 
 -- Remember that `E` is a normed vector space over `ℝ`.
 example : Continuous fun p : ℝ × E ↦ p.1 • p.2 := by
@@ -102,8 +109,10 @@ example : Continuous fun p : ℝ × E ↦ p.1 • p.2 := by
 example : Continuous fun p : E × E ↦ p.1 - p.2 := by
   continuity
 
-example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by sorry
---  continuity -- `continuity` has limits...
+example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by
+  -- continuity -- `continuity` has limits...
+  sorry
+
 
 /- However, `continuity` cannot do everything, and it is
 rather slow. So it's good to know the basic lemmas and to
@@ -122,8 +131,8 @@ able to do proofs by hand.
 #check Continuous.prod_mk -- a product of continuous functions is continuous
 
 example {f : X → Y} (hf : Continuous f) :
-    Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := by
---  apply Continuous.comp -- this does not work :-(
+  Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := by
+  --apply Continuous.comp -- this does not work :-(
   change Continuous
     ((fun q ↦ dist q.1 q.2) ∘ (fun (p : X × X) ↦ (⟨f p.1, f p.2⟩ : Y × Y)))
   apply Continuous.comp
@@ -143,7 +152,13 @@ example {f : X → Y} (hf : Continuous f) :
 -- This works, but we had to guess the whole proof term.
 
 -- Remember that `E` is a normed vector space over `ℝ`.
-example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by sorry
+example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by
+  change Continuous ((fun (q : ℝ × E) ↦ q.1 • q.2) ∘ (fun (p : ℝ × E × E) ↦ (p.1, p.2.1 - p.2.2)))
+  apply Continuous.comp
+  · exact continuous_smul
+  · refine Continuous.prod_mk ?_ ?_
+    · exact continuous_fst
+    · sorry
 
 -- Try to solve the exercises using only the lemmas above.
 -- Then try again using these more powerful lemmas:
@@ -153,7 +168,8 @@ example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by sor
 #check Continuous.prod_map
 
 example {f : X → Y} (hf : Continuous f) :
-    Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := by sorry
+  Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := by
+    refine Continuous.comp continuous_dist (Continuous.prod_map hf hf)
 
 -- Remember that `E` is a normed vector space over `ℝ`.
 example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by sorry
@@ -232,8 +248,8 @@ example {s : Set X} (hs : IsClosed s) {u : ℕ → X}
 
 -- Now try to prove this:
 example {s : Set X} (hs : IsClosed s) {f : Y → X} {b : Y}
-    (hu : Tendsto f (𝓝 b) (𝓝 a)) (hus : ∀ y, f y ∈ s) : a ∈ s :=
-  sorry
+  (hu : Tendsto f (𝓝 b) (𝓝 a)) (hus : ∀ y, f y ∈ s) : a ∈ s := by
+    exact hs.mem_of_tendsto hu (Eventually.of_forall hus)
 
 example {s : Set X} : a ∈ closure s ↔
     ∀ ε > 0, ∃ b ∈ s, a ∈ Metric.ball b ε :=
@@ -342,8 +358,25 @@ example {f : X → Y} : UniformContinuous f ↔
 space `X` to a metric space `Y` is uniformly continuous.-/
 
 example [CompactSpace X] {f : X → Y} (hf : Continuous f) :
-    UniformContinuous f :=
-  sorry
+  UniformContinuous f := by
+  rw [Metric.uniformContinuous_iff]
+  intro eps heps
+  set φ := fun (p : X × X) ↦ dist (f p.1) (f p.2)
+  let K := { p : X × X | eps ≤ dist (f p.1) (f p.2)}
+  have hCompK : IsCompact K := by sorry
+  cases eq_empty_or_nonempty K with
+  | inl hKempt =>
+    use 1
+    simp only [gt_iff_lt, zero_lt_one, true_and]
+    intro a b _
+    have habnotinK : (a,b) ∉ K := by
+      sorry
+    rw [Set.mem_setOf, not_le] at habnotinK
+    simp only at habnotinK
+    exact habnotinK
+  | inr hKnonempt =>
+    --obtain ⟨p, hp₁, hp₂⟩ := IsCompact.exists_isMinOn hCompK hKnonempt
+    sorry
 
 /-
 Sketch of proof: we need to check that
@@ -400,10 +433,15 @@ theorem cauchySeq_of_le_geometric_two' {u : ℕ → X}
   intro n hn
   obtain ⟨k, rfl : n = N + k⟩ := le_iff_exists_add.mp hn
   calc
-    dist (u (N + k)) (u N) = dist (u (N + 0)) (u (N + k)) := sorry
-    _ ≤ ∑ i in range k, dist (u (N + i)) (u (N + (i + 1))) := sorry
-    _ ≤ ∑ i in range k, (1 / 2 : ℝ) ^ (N + i) := sorry
-    _ = 1 / 2 ^ N * ∑ i in range k, (1 / 2 : ℝ) ^ i := sorry
+    dist (u (N + k)) (u N) = dist (u (N + 0)) (u (N + k)) := by rw [dist_comm, add_zero]
+    _ ≤ ∑ i in range k, dist (u (N + i)) (u (N + (i + 1))) := by
+      apply dist_le_range_sum_dist (fun i ↦ u (N + i))
+    _ ≤ ∑ i in range k, (1 / 2 : ℝ) ^ (N + i) := by
+      apply Finset.sum_le_sum
+      intro i _
+      exact hu (N+i)
+    _ = 1 / 2 ^ N * ∑ i in range k, (1 / 2 : ℝ) ^ i := by
+      sorry
     _ ≤ 1 / 2 ^ N * 2 := sorry
     _ < ε := sorry
 -- Note that `range` stands for `Finset.range`:
@@ -414,6 +452,7 @@ theorem cauchySeq_of_le_geometric_two' {u : ℕ → X}
 -- if `r < 1`, then the geometric sequence `(r^n)` tends to `0`
 #check Tendsto.mul -- limit of a product of functions
 #check dist_le_range_sum_dist --generalized triangle inequality
+#check Finset.sum_le_sum
 
 /- Let's prove Baire's theorem! ("In a complete metric, a
 countable intersection of open dense subsets is dense.")-/
@@ -433,7 +472,9 @@ open Metric
 example [CompleteSpace X] (f : ℕ → Set X) (ho : ∀ n, IsOpen (f n))
     (hd : ∀ n, Dense (f n)) : Dense (⋂ n, f n) := by
   let B : ℕ → ℝ := fun n ↦ (1 / 2) ^ n
-  have Bpos : ∀ n, 0 < B n := by sorry
+  have Bpos : ∀ n, 0 < B n := by
+    intro _
+    simp only [one_div, inv_pow, inv_pos, Nat.ofNat_pos, pow_pos, B]
   /- Translate the density assumption into two functions `center` and
      `radius` associating to any `n, x, δ, δpos` a center and a positive
      radius such that `closedBall center radius` is included both in
@@ -517,7 +558,7 @@ a neighborhood filter `𝓝 x`, such that:
 is `≤ 𝓝 x`;
 - if `P : X → Prop` and `x : X`, if `P y` holds for `y`
 close to `x`, then, for `y` close to `x` and `z` close
-to `y`, `P x` also holds. In symbols:
+to `y`, `P z` also holds. In symbols:
 -/
 example {P : X → Prop} {x : X} (h : ∀ᶠ y in 𝓝 x, P y) :
     ∀ᶠ y in 𝓝 x, ∀ᶠ z in 𝓝 y, P z :=
@@ -579,7 +620,7 @@ is somewhat similar to that of the `inf` and `sup` for filters.)
 In particular, there is a smallest (= fines) topological
 space structure on `A`, called the discrete topology;
 there is also a biggest (= coarsest) topological space structure,
-sometimes called the discrete topology.
+sometimes called the indiscrete topology.
 -/
 #check TopologicalSpace.isOpen_top_iff
 #check DiscreteTopology
