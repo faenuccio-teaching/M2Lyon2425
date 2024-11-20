@@ -11,7 +11,7 @@ import Mathlib.LinearAlgebra.Dimension.Finrank
 
 /-
   # Chinese Remainder Theorem
-  We prove a general version of the CRT to pratice working with ideals
+  We prove a general version of the CRT to practice working with ideals
 -/
 
 section CRT
@@ -137,7 +137,7 @@ open Polynomial
 -- We need to give the type so that Lean knows which ring to use
 example : R[X] := X - C 1
 
--- `C` is defined as a ring homorphism
+-- `C` is defined as a ring homomorphism
 
 example (r : R) : (X + C r) * (X - C r) = X ^ 2 - C (r ^ 2) := by
   ring -- this is not enough
