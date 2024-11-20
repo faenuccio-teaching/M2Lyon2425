@@ -244,17 +244,16 @@ example {u : ℕ → X} (hu : Tendsto u atTop (𝓝 a)) {s : Set X}
   sorry
 -- (Don't use `mem_closure_iff_seq_limit`, it would make it too easy.)
 
-/- "Remember" that a topological space `X` is called compact if:
-
-(1) X is Hausdorff (aka T₂): for any `a,b` in `X` such that `a ≠ b,
-there exist a neighborhood `U` of `a` and a neighborhood `V` of `b`
-such that `U ∩ V = ∅`.
-
-(2) Any covering of `X` by open subsets has a finite subcovering,
+/- "Remember" that a topological space `X` is called compact if
+any covering of `X` by open subsets has a finite subcovering,
 i.e. if `X = ⋃ i in I, Uᵢ` with the `Uᵢ` open, there these
 exists a finite set `J` in `I` such that `X = ⋃ i in J, Uᵢ`.
 
-The first condition is automatic if `X` is a metric space.
+Note that some authors (not mathlib) also require X to be
+Hausdorff (aka T₂): for any `a,b` in `X` such that `a ≠ b,
+there exist a neighborhood `U` of `a` and a neighborhood `V` of `b`
+such that `U ∩ V = ∅`.
+(This condition is automatic if `X` is a metric space.)
 -/
 
 -- Every sequence with values in a compact set
@@ -671,6 +670,58 @@ example (ι : Type*) (A : ι → Type*) (T : ∀ i, TopologicalSpace (A i)) :
     (Pi.topologicalSpace : TopologicalSpace (∀ i, A i)) =
       ⨅ i, TopologicalSpace.induced (fun x ↦ x i) (T i) :=
   rfl
+
+/- Compactness: the definition of a compact space only uses
+open sets, so it makes sense for a tgeneral topological space.
+
+We can, of course, reformulate it using filters. We need the
+notion of cluster point of a filter: `x` is a cluster point of
+`F` is the generalized sets `F` and `𝓝 x` have a nontrivial
+intersection.
+-/
+
+example {F : Filter X} {x : X} : ClusterPt x F ↔ NeBot (𝓝 x ⊓ F) :=
+  Iff.rfl
+
+/- For example, if we have a sequence `u : ℕ → X` and `F` is the
+filter `map u atTop` (i.e. the filter with basis the sets `u '' [n, + ∞)`,
+for n` in `ℕ`), then 'x' is a cluster point of `F` if and only, for every
+neighborhood `U` of `x` and every `n` in `ℕ`, there exists `m ≥ n` such
+that `u m ∈ U`.
+If `𝓝 x` has a countable basis, we can use this property to construct
+a subsequence of `u` converging to `x` (but this is not possible in general):
+-/
+example [FirstCountableTopology X] {u : ℕ → X} {x : X} (h : ClusterPt x (map u atTop)) :
+    ∃ φ : ℕ → ℕ, StrictMono φ ∧ Tendsto (u ∘ φ) atTop (𝓝 x) :=
+  TopologicalSpace.FirstCountableTopology.tendsto_subseq h
+
+/- Compactness of `s` then is equivalent to saying that every "contained in `s`"
+has a cluster point on `s`.-/
+example {s : Set X} :
+    IsCompact s ↔ ∀ (F : Filter X) [NeBot F], F ≤ 𝓟 s → ∃ a ∈ s, ClusterPt a F :=
+  Iff.rfl
+
+/- If every neighborhood filter of `X` has a countable basis (= if `X` is first
+countable), then we recover the property that every sequence in a compact set of
+`X` has a converging subsequence.-/
+example [FirstCountableTopology X] {s : Set X} {u : ℕ → X} (hs : IsCompact s)
+    (hu : ∀ n, u n ∈ s) : ∃ a ∈ s, ∃ φ : ℕ → ℕ,
+    StrictMono φ ∧ Tendsto (u ∘ φ) atTop (𝓝 a) :=
+  hs.tendsto_subseq hu
+-- Note that this property is false in general, for example for the
+-- product space `[0,1] → [0,1]` (which is compact by Tychonoff's theorem).
+
+
+/- We have that the `FirstCountable` property is a property that we can impose
+on a topological space to make it behave more like a metric space.
+-/
+-- Metric spaces are first countable:
+example [MetricSpace A] : FirstCountableTopology A := sorry
+
+/- Other such properties are the separation properties, for example:-/
+#print T2Space -- If `x` and `y` are distinct points, there exist disjoint
+-- open sets `U` and `V` such that `x ∈ U` and `y ∈ V`.
+#print T3Space -- every point has a basis of closed neighborhoods
 
 
 end TopologicalSpaces
