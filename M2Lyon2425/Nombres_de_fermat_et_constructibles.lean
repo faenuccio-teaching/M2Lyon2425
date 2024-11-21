@@ -190,7 +190,6 @@ theorem wa_algebrique_sur_Q (p α : ℕ) : Nat.Prime p → 0 < α →  IsAlgebra
     · rw[h1.symm]
       simp
 
-
 theorem adjoin_is_integral (α : ℕ) (p : ℕ) : Nat.Prime p ∧ 0 < α → IsIntegral ℚ (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) := by
   intro h
   apply IsAlgebraic.isIntegral
@@ -340,43 +339,24 @@ constructor
   have h3 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
   exact IsPrimitiveRoot.coe_submonoidClass_iff.mp h3
 · intro x
-  have h2 := adjoin_is_integral α p h
-  have a :=  (Algebra.adjoin.powerBasis h2).gen.2
-  have b := a.out
-  intro h1 h3
+  have hh : {Complex.exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))} ⊆ {b | b ^ ↑↑(p ^ α) = 1} := by
+    intro xx hx
+    simp at hx
+    have hxx := Complex.isPrimitiveRoot_exp (p^α) (Nat.pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
+    dsimp
+    rw[IsPrimitiveRoot.iff_def] at hxx
+    have hxx := hxx.left
+    rw[hx]
+    simp at hxx
+    exact hxx
+  apply @Algebra.adjoin_mono ℚ at hh
+  simp at hh
+  obtain ⟨x, bx⟩ := x
+  have cx : x ∈ Algebra.adjoin ℚ {b | b ^ ↑↑(p ^ α) = 1} := by
+    apply hh
+    simp at bx
+    exact bx
   sorry
-
-
-theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
-intro h
-cases h with
-| intro hp ha =>
-    constructor
-    · exact hp.left
-    · constructor
-      · rw[ha]; exact Nat.one_pos
-      · have Gp_Galois := Polynomial.Gal.instGroup (Polynomial.cyclotomic (↑p) ℚ)
-        have Gp_Galois_iso := (Polynomial.cyclotomic.irreducible_rat (Nat.Prime.pos hp.left))
-        apply galCyclotomicEquivUnitsZMod at Gp_Galois_iso
-        have zmodcycl := ZModx_cyclic p hp.left
-        have Gp_Galois_cycl : IsCyclic (Polynomial.cyclotomic ↑p ℚ).Gal :=by
-          sorry
-        have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois Gp_Galois_cycl
-        let ζ := exist_gen.choose
-        have hz := exist_gen.choose_spec
-        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) (sorry) (sorry) (sorry) (sorry) (sorry)
-        sorry
-        sorry
-        sorry
-        sorry
-        sorry
---Lemme : bijection corps intermédiaires/sous-groupes IsGalois.intermediateFieldEquivSubgroup
---theorem groupe_galois_Qw_ZpZ {p : ℕ} (hp : 0 < (p : Nat)) : premierfermat p → galCyclotomicEquivUnitsZMod (Polynomial.cyclotomic.irreducible_rat hp):= by
--- Lemme : si p est de Fermat, alors Gal(ℚ(w)/ℚ)≅(ℤ/pℤ)*
---theorem groupe_galois_Qw_ZpZ (p : ℕ+) (h : Irreducible (Polynomial.cyclotomic ↑p ℚ)) : premierfermat ↑p → galXPowEquivUnitsZMod h :=by
---theorem groupe_galois_Qw_ZpZ (p : ℕ+): premierfermat p → ∃ m, (Polynomial.Gal (Polynomial.cyclotomic p ℚ)) ≃* (ZMod (2^m)) := by
--- IntermediateField.finSepDegree_adjoin_simple_eq_natSepDegree
-
 
 theorem cyclic_iso (G H : Type*) [inst1 : Group G] [inst2 : Group H] : (G ≃* H) → (IsCyclic H) → (IsCyclic G) := by
 intro h h1
@@ -450,3 +430,78 @@ have hg : (hphi ∘ ϕ) g = g := by
   apply left_inv
 rw [Function.comp_apply,hphig,<-ho,<-hhmieux] at hg
 exact hg
+
+
+theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
+intro h
+cases h with
+| intro hp ha =>
+    constructor
+    · exact hp.left
+    · constructor
+      · rw[ha]; exact Nat.one_pos
+      · have Gp_Galois := Polynomial.Gal.instGroup (Polynomial.cyclotomic (↑p) ℚ)
+        have Gp_Galois_iso := (Polynomial.cyclotomic.irreducible_rat (Nat.Prime.pos hp.left))
+        apply galCyclotomicEquivUnitsZMod at Gp_Galois_iso
+        have zmodcycl := ZModx_cyclic p hp.left
+        have Gp_Galois_cycl : IsCyclic (Polynomial.cyclotomic ↑p ℚ).Gal :=by
+          have hh := cyclic_iso ((Polynomial.cyclotomic ↑p ℚ).Gal) ((ZMod ↑p)ˣ) (Gp_Galois_iso) zmodcycl
+          exact hh
+        have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois Gp_Galois_cycl
+        let ζ := exist_gen.choose
+        have hz := exist_gen.choose_spec
+        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) (sorry) (sorry) (sorry) (sorry) (sorry)
+        sorry
+        sorry
+        sorry
+        sorry
+        sorry
+--Lemme : bijection corps intermédiaires/sous-groupes IsGalois.intermediateFieldEquivSubgroup
+--theorem groupe_galois_Qw_ZpZ {p : ℕ} (hp : 0 < (p : Nat)) : premierfermat p → galCyclotomicEquivUnitsZMod (Polynomial.cyclotomic.irreducible_rat hp):= by
+-- Lemme : si p est de Fermat, alors Gal(ℚ(w)/ℚ)≅(ℤ/pℤ)*
+--theorem groupe_galois_Qw_ZpZ (p : ℕ+) (h : Irreducible (Polynomial.cyclotomic ↑p ℚ)) : premierfermat ↑p → galXPowEquivUnitsZMod h :=by
+--theorem groupe_galois_Qw_ZpZ (p : ℕ+): premierfermat p → ∃ m, (Polynomial.Gal (Polynomial.cyclotomic p ℚ)) ≃* (ZMod (2^m)) := by
+-- IntermediateField.finSepDegree_adjoin_simple_eq_natSepDegree
+
+structure TowerOfGroup where
+  G : ℕ → Type
+  instSet : ∀ i, Set (G i)
+  instSubSet : ∀ i, G (i+1) : Set (G i)
+  instGroup: ∀ i, Group (G i)
+  instNormalSubGroup : ∀ i, @IsNormalSubgroup (G i) (instGroup i) (instSubSet i)
+
+
+  --instNormalSubgroup: ∀ i, IsNormalSubgroup (G i)
+
+--Definition d'être une tour de corps
+def TNSG : TowerOfGroup := by
+  sorry
+
+--Definition d'être une tour de corps de dimension finie
+def TowerOfGroupIndice2 (G : TowerOfGroup) : Prop :=
+  ∀ i,  letI := T.instField i
+        letI := T.instField (i + 1)
+        letI := T.instAlgebra i
+        FiniteDimensional (T.K i) (T.K (i + 1))
+
+example : TQ.isFiniteDimensional := by
+  intro _
+  exact Module.Finite.self ℚ
+
+--Definiton d'une tour de corps (Kᵢ)ᵢ telle que [Ki+1:Ki]≤ 2
+def TowerOfFields.rankLessTwo (T : TowerOfFields) : Prop :=
+  ∀ i,  letI := T.instField i
+        letI := T.instField (i + 1)
+        letI := T.instAlgebra i
+        FiniteDimensional.finrank (T.K i) (T.K (i + 1)) ≤ 2
+
+example : TQ.rankLessTwo := by
+  intro _
+  rw [TQ, FiniteDimensional.finrank_self]
+  exact one_le_two
+
+--Définition : un nombre a est constructible s'il existe une tour quadratique de ℚ vers ℚ(a).
+
+def nombre_constructible (a : ℂ) : Prop :=
+  ∃ (T : TowerOfFields) (n : ℕ), T.isFiniteDimensional ∧ T.rankLessTwo ∧ T.K 0 = ℚ ∧
+    T.K n = Algebra.adjoin ℚ { a }
