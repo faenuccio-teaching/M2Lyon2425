@@ -143,7 +143,13 @@ example {f : X → Y} (hf : Continuous f) :
 -- This works, but we had to guess the whole proof term.
 
 -- Remember that `E` is a normed vector space over `ℝ`.
-example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by sorry
+example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by
+  change Continuous ((fun p : ℝ × E ↦ p.1 • p.2) ∘ (fun t : ℝ × E × E ↦ (t.1, t.2.1 - t.2.2)))
+  apply Continuous.comp
+  continuity
+  sorry
+
+
 
 -- Try to solve the exercises using only the lemmas above.
 -- Then try again using these more powerful lemmas:
@@ -159,8 +165,13 @@ example {f : X → Y} (hf : Continuous f) :
 example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by sorry
 
 -- One more exercise...
-example {f : ℝ → X} (hf : Continuous f) : Continuous fun x : ℝ ↦ f (x ^ 2 + x) :=
-  sorry
+example {f : ℝ → X} (hf : Continuous f) : Continuous fun x : ℝ ↦ f (x ^ 2 + x) := by
+  change Continuous ((fun x : ℝ ↦ f x) ∘ (fun x : ℝ ↦ x^2 + x))
+  apply Continuous.comp
+  · exact hf
+  · apply Continuous.add
+    apply continuous_pow
+    exact continuous_id
 
 -- Useful lemmas:
 #check Continuous.add
@@ -177,6 +188,7 @@ using either the distance, or open/closed balls in metric spaces.
 -- First, we need balls.
 variable (r : ℝ) (a : X)
 
+#print Metric.ball
 example : Metric.ball a r = { b | dist b a < r } := rfl
 
 example : Metric.closedBall a r = { b | dist b a ≤ r } := rfl
@@ -233,7 +245,7 @@ example {s : Set X} (hs : IsClosed s) {u : ℕ → X}
 -- Now try to prove this:
 example {s : Set X} (hs : IsClosed s) {f : Y → X} {b : Y}
     (hu : Tendsto f (𝓝 b) (𝓝 a)) (hus : ∀ y, f y ∈ s) : a ∈ s :=
-  sorry
+  hs.mem_of_tendsto hu (Eventually.of_forall hus)
 
 example {s : Set X} : a ∈ closure s ↔
     ∀ ε > 0, ∃ b ∈ s, a ∈ Metric.ball b ε :=
@@ -332,7 +344,7 @@ general uniform space.
 
 /- We start with uniformly continuous functions.-/
 
-example {f : X → Y} : UniformContinuous f ↔
+theorem uniform_continuity {f : X → Y} : UniformContinuous f ↔
       ∀ ε > 0, ∃ δ > 0, ∀ {a b : X}, dist a b < δ → dist (f a) (f b) < ε :=
   Metric.uniformContinuous_iff
 
@@ -342,8 +354,26 @@ example {f : X → Y} : UniformContinuous f ↔
 space `X` to a metric space `Y` is uniformly continuous.-/
 
 example [CompactSpace X] {f : X → Y} (hf : Continuous f) :
-    UniformContinuous f :=
-  sorry
+    UniformContinuous f := by
+  rw [uniform_continuity]
+  intro ε
+  let K := { p : X × X | ε ≤ dist (f p.1) (f p.2)}
+  have : IsClosed K := by
+    apply isClosed_le
+    continuity
+    continuity
+  have : IsCompact K := by
+    apply Metric.isCompact_of_isClosed_isBounded this
+    sorry
+  have := eq_empty_or_nonempty K
+  cases this with
+  | inl h =>
+      intro hε
+      use 1
+      simp only [gt_iff_lt, zero_lt_one, true_and]
+      intros a b hdist
+      sorry
+  | inr h => sorry
 
 /-
 Sketch of proof: we need to check that
@@ -400,12 +430,18 @@ theorem cauchySeq_of_le_geometric_two' {u : ℕ → X}
   intro n hn
   obtain ⟨k, rfl : n = N + k⟩ := le_iff_exists_add.mp hn
   calc
-    dist (u (N + k)) (u N) = dist (u (N + 0)) (u (N + k)) := sorry
-    _ ≤ ∑ i in range k, dist (u (N + i)) (u (N + (i + 1))) := sorry
-    _ ≤ ∑ i in range k, (1 / 2 : ℝ) ^ (N + i) := sorry
+    dist (u (N + k)) (u N) = dist (u (N + 0)) (u (N + k)) := by
+      simp only [add_zero]
+      rw [dist_comm]
+    _ ≤ ∑ i in range k, dist (u (N + i)) (u (N + (i + 1))) := by
+      simp only [add_zero]
+      sorry
+    _ ≤ ∑ i in range k, (1 / 2 : ℝ) ^ (N + i) := by
+      exact sum_le_sum fun i a ↦ hu (N + i)
     _ = 1 / 2 ^ N * ∑ i in range k, (1 / 2 : ℝ) ^ i := sorry
     _ ≤ 1 / 2 ^ N * 2 := sorry
-    _ < ε := sorry
+    _ < ε := by
+      exact hN
 -- Note that `range` stands for `Finset.range`:
 #check Finset.range -- `Finset.range n` of natural numbers `< n`.
 
@@ -433,7 +469,10 @@ open Metric
 example [CompleteSpace X] (f : ℕ → Set X) (ho : ∀ n, IsOpen (f n))
     (hd : ∀ n, Dense (f n)) : Dense (⋂ n, f n) := by
   let B : ℕ → ℝ := fun n ↦ (1 / 2) ^ n
-  have Bpos : ∀ n, 0 < B n := by sorry
+  have Bpos : ∀ n, 0 < B n := by
+    intro n
+    apply pow_pos
+    simp only [one_div, inv_pos, Nat.ofNat_pos]
   /- Translate the density assumption into two functions `center` and
      `radius` associating to any `n, x, δ, δpos` a center and a positive
      radius such that `closedBall center radius` is included both in
@@ -442,8 +481,7 @@ example [CompleteSpace X] (f : ℕ → Set X) (ho : ∀ n, IsOpen (f n))
      Cauchy sequence later. -/
   have : ∀ (n : ℕ) (x : X),
       ∀ δ > 0, ∃ y : X, ∃ r > 0, r ≤ B (n + 1) ∧
-      closedBall y r ⊆ closedBall x δ ∩ f n :=
-    by sorry
+      closedBall y r ⊆ closedBall x δ ∩ f n := sorry
   choose! center radius Hpos HB Hball using this
   /- The tactic `choose` creates a function from statements of the
      form `∀ x, ∃ y, P x y`. More precisely, `choose a b h h' using hyp`
@@ -517,7 +555,7 @@ a neighborhood filter `𝓝 x`, such that:
 is `≤ 𝓝 x`;
 - if `P : X → Prop` and `x : X`, if `P y` holds for `y`
 close to `x`, then, for `y` close to `x` and `z` close
-to `y`, `P x` also holds. In symbols:
+to `y`, `P z` also holds. In symbols:
 -/
 example {P : X → Prop} {x : X} (h : ∀ᶠ y in 𝓝 x, P y) :
     ∀ᶠ y in 𝓝 x, ∀ᶠ z in 𝓝 y, P z :=
@@ -579,7 +617,7 @@ is somewhat similar to that of the `inf` and `sup` for filters.)
 In particular, there is a smallest (= fines) topological
 space structure on `A`, called the discrete topology;
 there is also a biggest (= coarsest) topological space structure,
-sometimes called the discrete topology.
+sometimes called the indiscrete topology.
 -/
 #check TopologicalSpace.isOpen_top_iff
 #check DiscreteTopology

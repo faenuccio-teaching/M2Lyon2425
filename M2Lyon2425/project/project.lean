@@ -32,7 +32,7 @@ lemma F1_disjoint_F2 : F1 ∩ F2 = ∅ := by
   | inr h => exact h.2
 
 lemma F1_closed : IsClosed F1 :=
-  isClosed_eq (Continuous.mul continuous_fst continuous_snd) continuous_one
+  isClosed_eq (by continuity) continuous_one
 
 lemma F2_closed : IsClosed F2 :=
   isClosed_eq continuous_snd continuous_zero
