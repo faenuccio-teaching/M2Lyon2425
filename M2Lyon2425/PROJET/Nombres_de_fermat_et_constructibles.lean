@@ -356,6 +356,7 @@ constructor
     apply hh
     simp at bx
     exact bx
+
   sorry
 
 theorem cyclic_iso (G H : Type*) [inst1 : Group G] [inst2 : Group H] : (G ≃* H) → (IsCyclic H) → (IsCyclic G) := by
