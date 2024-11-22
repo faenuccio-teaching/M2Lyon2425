@@ -1,5 +1,4 @@
 /.lake
-*.pdf 
 *.aux 
 *.log 
 *.pdfsync 
@@ -9,3 +8,4 @@
 *.toc 
 *.nav
 plan.txt
+.DS_Store

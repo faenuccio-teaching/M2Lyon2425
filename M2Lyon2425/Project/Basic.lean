@@ -7,7 +7,7 @@ import Mathlib.Algebra.FreeMonoid.Basic
 /-!
 # Formalising braid groups and the word problem
 
-The point of this project is to formalise the braid group Bₙ as the Ore localisation of the monoid of positive braids. I will try follow the proofs given by P.Dehornoy in the book "Le calcul des tresses".
+The point of this project is to formalise the braid group Bₙ as the Ore localisation of the monoid of positive braids. I will try follow the proofs given by P.Dehornoy in the book "Le calcul des tresses" (Similar reasonning to the attached pdf, part II).
 
 * In the first part we define the monoid of positive braids pBₙ.
 
