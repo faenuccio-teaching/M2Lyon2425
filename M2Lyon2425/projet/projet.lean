@@ -1,4 +1,5 @@
 import Mathlib
+import M2Lyon2425.projet.ARS
 
 /-
 On s'intéresse ici, pour `α` un type quelconque, aux relations binaires sur `α`,
@@ -29,10 +30,10 @@ La structure du fichier est la suivante :
 
 variable {α : Type*}
 
+section Tempo
+
 notation:1024 elm "∗" => KStar.kstar elm
 -- pour une raison que j'ignore, cette notation n'est pas déjà définie
-
-section QuelquesProprietesKleeneAlgebra
 
 /- Dans cette section, on établit quelques propriétés de élémentaires
 des algèbres de Kleene. Beaucoup sont déjà prouvées dans Mathlib/Algebra/Order/Kleene. -/
@@ -198,7 +199,10 @@ theorem KleeneChurchRosser {a b : K} :
             (le_refl a)
             (one_le_kstar)))
 
-end QuelquesProprietesKleeneAlgebra
+
+end Tempo
+
+#check add_respects_le
 
 /-- Un alias pour le type des relations binaires sur un type  `α`. -/
 @[reducible]
@@ -1025,7 +1029,8 @@ lemma kstar' (f : ARS α) :
   f∗ = ARS.big_sum (fun n ↦ f^n) := by
     rfl
 
-/- `∗` n'est pas la clôture transitive, mais bien la clôture transitive *et* réflexive.-/
+/- `∗` n'est pas la clôture transitive,
+mais bien la clôture transitive *et* réflexive.-/
 lemma kstar_is_refl (f : ARS α) : Reflexive f∗ := by
   intro x
   use 0
@@ -1086,7 +1091,8 @@ lemma plus_mono {f g : ARS α} : f ≤ g → f⁺ ≤ g⁺  := by
 --   simp only
 --   rw [← pow_add, ← pow_add, add_comm]
 
-lemma _fonction_puissance_succ [Monoid α] (f : α) : (fun i ↦ f * f^i) = fun i ↦ f^(i+1) := by
+lemma _fonction_puissance_succ [Monoid α] (f : α) :
+  (fun i ↦ f * f^i) = fun i ↦ f^(i+1) := by
   ext i
   nth_rw 1 [← pow_one f]
   rw [← pow_add, add_comm]
@@ -1323,6 +1329,8 @@ end QuelquesPreuves
 section QuelquesProprietesARS
 
 /- Sections 2.2 et 2.3 du pdf -/
+-- on peut désormais facilement et de façon unifiée définir différentes propriétés
+-- et propositions dont les preuves sont aisées.
 
 def isWeaklyCommuting (f₁ f₂ : ARS α) : Prop := f₁⇐ * f₂ ≤ f₂∗ * f₁⇐∗
 
