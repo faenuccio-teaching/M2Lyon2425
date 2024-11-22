@@ -355,7 +355,7 @@ constructor
     apply hh
     simp at bx
     exact bx
-
+  by_contra hf
   sorry
 
 theorem cyclic_iso (G H : Type*) [inst1 : Group G] [inst2 : Group H] : (G ≃* H) → (IsCyclic H) → (IsCyclic G) := by
@@ -431,6 +431,13 @@ have hg : (hphi ∘ ϕ) g = g := by
 rw [Function.comp_apply,hphig,<-ho,<-hhmieux] at hg
 exact hg
 
+theorem finite_iso (G H : Type*) [inst1 : Group G] [inst2 : Group H] : (G ≃* H) → (Finite H) → (Finite G):= by
+intro phi cardh
+obtain ⟨phii, hphii⟩ := phi
+have h := Equiv.finite_iff phii
+apply h.mpr
+exact cardh
+
 
 theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
 intro h
@@ -450,6 +457,7 @@ cases h with
         have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois Gp_Galois_cycl
         let ζ := exist_gen.choose
         have hz := exist_gen.choose_spec
+
         --have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) (sorry) (sorry) (sorry) (sorry) (sorry)
         sorry
         sorry
@@ -464,42 +472,11 @@ cases h with
 -- IntermediateField.finSepDegree_adjoin_simple_eq_natSepDegree
 
 structure CollectOfGroup where
-  G : ℕ → Type
+  G : ℕ → (Type)
   instSet : ∀ i, Set (G i)
   instGroup: ∀ i, Group (G i)
-
-def TowerNormalGroup (G : CollectOfGroup) : Prop :=
-  ∀ i,
-
 
   --instNormalSubgroup: ∀ i, IsNormalSubgroup (G i)
 
 
---Definition d'être une tour de corps de dimension finie
-def TowerOfGroupIndice2 (G : TowerOfGroup) : Prop :=
-  ∀ i,  letI := T.instField i
-        letI := T.instField (i + 1)
-        letI := T.instAlgebra i
-        FiniteDimensional (T.K i) (T.K (i + 1))
-
-example : TQ.isFiniteDimensional := by
-  intro _
-  exact Module.Finite.self ℚ
-
---Definiton d'une tour de corps (Kᵢ)ᵢ telle que [Ki+1:Ki]≤ 2
-def TowerOfFields.rankLessTwo (T : TowerOfFields) : Prop :=
-  ∀ i,  letI := T.instField i
-        letI := T.instField (i + 1)
-        letI := T.instAlgebra i
-        FiniteDimensional.finrank (T.K i) (T.K (i + 1)) ≤ 2
-
-example : TQ.rankLessTwo := by
-  intro _
-  rw [TQ, FiniteDimensional.finrank_self]
-  exact one_le_two
-
---Définition : un nombre a est constructible s'il existe une tour quadratique de ℚ vers ℚ(a).
-
-def nombre_constructible (a : ℂ) : Prop :=
-  ∃ (T : TowerOfFields) (n : ℕ), T.isFiniteDimensional ∧ T.rankLessTwo ∧ T.K 0 = ℚ ∧
-    T.K n = Algebra.adjoin ℚ { a }
+--Definition d'être une tour de corps de dimension fin
