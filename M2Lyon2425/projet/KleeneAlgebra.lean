@@ -1,10 +1,11 @@
 import Mathlib
 
-notation:1024 elm "∗" => KStar.kstar elm
--- pour une raison que j'ignore, cette notation n'est pas déjà définie
+open Computability
 
 /- Dans cette section, on établit quelques propriétés de élémentaires
-des algèbres de Kleene. Beaucoup sont déjà prouvées dans Mathlib/Algebra/Order/Kleene. -/
+des algèbres de Kleene. Beaucoup sont déjà prouvées dans Mathlib/Algebra/Order/Kleene.
+
+Le résultat le plus important est `KleeneChurchRosser`, le dernier de ce fichier. -/
 
 variable {K : Type*} [KleeneAlgebra K]
 
