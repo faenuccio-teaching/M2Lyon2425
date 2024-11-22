@@ -143,7 +143,13 @@ example {f : X → Y} (hf : Continuous f) :
 -- This works, but we had to guess the whole proof term.
 
 -- Remember that `E` is a normed vector space over `ℝ`.
-example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by sorry
+example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by
+  have h21 : Continuous fun p :  ℝ × E × E ↦ p.2.1 := by
+    apply Continuous.comp (continuous_fst) (continuous_snd)
+  have h12 : Continuous fun p :  ℝ × E × E ↦ p.2.1 := by
+     apply Continuous.comp (continuous_fst) (continuous_snd)
+  sorry
+
 
 -- Try to solve the exercises using only the lemmas above.
 -- Then try again using these more powerful lemmas:
@@ -232,8 +238,9 @@ example {s : Set X} (hs : IsClosed s) {u : ℕ → X}
 
 -- Now try to prove this:
 example {s : Set X} (hs : IsClosed s) {f : Y → X} {b : Y}
-    (hu : Tendsto f (𝓝 b) (𝓝 a)) (hus : ∀ y, f y ∈ s) : a ∈ s :=
-  sorry
+    (hu : Tendsto f (𝓝 b) (𝓝 a)) (hus : ∀ y, f y ∈ s) : a ∈ s := by
+    apply hs.mem_of_tendsto hu
+    exact Eventually.of_forall hus
 
 example {s : Set X} : a ∈ closure s ↔
     ∀ ε > 0, ∃ b ∈ s, a ∈ Metric.ball b ε :=
@@ -342,8 +349,17 @@ example {f : X → Y} : UniformContinuous f ↔
 space `X` to a metric space `Y` is uniformly continuous.-/
 
 example [CompactSpace X] {f : X → Y} (hf : Continuous f) :
-    UniformContinuous f :=
-  sorry
+    UniformContinuous f := by
+    rw [Metric.uniformContinuous_iff]
+    intro ε hp
+    set φ := fun (p : X × X) ↦ dist (f p.1) (f p.2)
+    let K := { p : X × X | ε ≤ φ p}
+    have : IsCompact K := by
+      apply Metric.isCompact_of_isClosed_isBounded
+      · sorry
+      · sorry
+
+    sorry
 
 /-
 Sketch of proof: we need to check that
@@ -400,12 +416,12 @@ theorem cauchySeq_of_le_geometric_two' {u : ℕ → X}
   intro n hn
   obtain ⟨k, rfl : n = N + k⟩ := le_iff_exists_add.mp hn
   calc
-    dist (u (N + k)) (u N) = dist (u (N + 0)) (u (N + k)) := sorry
-    _ ≤ ∑ i in range k, dist (u (N + i)) (u (N + (i + 1))) := sorry
-    _ ≤ ∑ i in range k, (1 / 2 : ℝ) ^ (N + i) := sorry
-    _ = 1 / 2 ^ N * ∑ i in range k, (1 / 2 : ℝ) ^ i := sorry
-    _ ≤ 1 / 2 ^ N * 2 := sorry
-    _ < ε := sorry
+    dist (u (N + k)) (u N) = dist (u (N + 0)) (u (N + k))   := by rw[dist_comm]; simp
+    _ ≤ ∑ i in range k, dist (u (N + i)) (u (N + (i + 1)))  := by apply dist_le_range_sum_dist (fun i ↦ u (N + i))
+    _ ≤ ∑ i in range k, (1 / 2 : ℝ) ^ (N + i)               := by sorry
+    _ = 1 / 2 ^ N * ∑ i in range k, (1 / 2 : ℝ) ^ i         := sorry
+    _ ≤ 1 / 2 ^ N * 2                                       := sorry
+    _ < ε                                                   := sorry
 -- Note that `range` stands for `Finset.range`:
 #check Finset.range -- `Finset.range n` of natural numbers `< n`.
 

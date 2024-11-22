@@ -19,9 +19,10 @@ open Filter Set Topology
 variable {α β : Type*}
 
 /-- If `F` is a filter on `α`, and `U` a subset of `α` then we can
-write `U ∈ F` as on paper, thanks to the following declaration: -/
+write `U ∈ F` as on paper, thanks to the following declaration:
 instance instMembership : Membership (Set α) (Filter α) :=
   ⟨fun U F => U ∈ F.sets⟩
+-/
 -- NB: comment this, this is already declare in mathlib.
 
 -- Examples:
@@ -53,6 +54,8 @@ example : Filter ℕ where
   sets_of_superset := sorry
   inter_sets := sorry
 
+-- Set.Ixx where x is o (open), c (closed) or i (infinity) + 0, 1 or 2 params.
+
 -- This filter is called `Filter.atTop`:
 #print Filter.atTop
 #print Filter.mem_atTop
@@ -75,7 +78,7 @@ example (a : ℝ) : Filter ℝ where
   sets_of_superset := sorry
   inter_sets := sorry
 
--- This filter is called `nhs` or `𝓝` (\ + nhds):
+-- This filter is called `nhds` or `𝓝` (\ + nhds):
 #print nhds
 
 -- If `a : ℝ`, we can also look at the set of subsets of `ℝ`
@@ -169,7 +172,12 @@ def Tendsto₁ {X Y : Type*} (f : X → Y) (F : Filter X)
 -- Compatibility with composition.
 example {X Y Z : Type*} (f : X → Y) (g : Y → Z) (F : Filter X)
     (G : Filter Y) (H : Filter Z) :
-    Tendsto₁ f F G → Tendsto₁ g G H → Tendsto₁ (g ∘ f) F H := by sorry
+    Tendsto₁ f F G → Tendsto₁ g G H → Tendsto₁ (g ∘ f) F H := by
+      intro h1 h2 V VH
+      rw [Set.preimage_comp]
+      apply h1
+      apply h2
+      apply VH
 
 /- An intuitive way to think about filters, and a reformulation
 of convergence.
@@ -216,7 +224,12 @@ example (s t : Set α) : s ⊆ t ↔
 #print Filter.le_def  -- F ≤ G ↔ ∀ x ∈ G, x ∈ F
 
 example (F : Filter α) (s : Set α) :
-    Filter.principal s ≤ F ↔ ∀ A ∈ F, s ⊆ A := by sorry
+    Filter.principal s ≤ F ↔ ∀ A ∈ F, s ⊆ A := by
+    constructor
+    · intro h A AF
+      exact h AF
+    · intro h x xF
+      exact h x xF
 
 example (F : Filter α) (s : Set α) :
     F ≤ Filter.principal s ↔ s ∈ F := sorry
@@ -232,7 +245,11 @@ by definition.-/
 
 -- This is compatible to the definition for sets.
 example {s : Set α} (f : α → β) :
-    Filter.map f (Filter.principal s) = Filter.principal (f '' s) := sorry
+    Filter.map f (Filter.principal s) = Filter.principal (f '' s) := by
+      ext A
+      change f⁻¹' A ∈ 𝓟 s ↔ A ∈ 𝓟 (f '' s)
+      rw [mem_principal, mem_principal]
+      exact Set.image_subset_iff.symm
 
 /- We can now reformulate the notation of convergence
 using these notions. The idea is that, for example,
@@ -259,7 +276,13 @@ we use the properties of `Filter.map`.-/
 -- Compatibility with composition.
 example {X Y Z : Type*} (f : X → Y) (g : Y → Z) (F : Filter X)
     (G : Filter Y) (H : Filter Z) :
-    Tendsto₂ f F G → Tendsto₂ g G H → Tendsto₂ (g ∘ f) F H := by sorry
+    Tendsto₂ f F G → Tendsto₂ g G H → Tendsto₂ (g ∘ f) F H := by
+    intro hg hf
+    change map (g ∘ f) F ≤ H
+    rw [<- Filter.map_map]
+    refine le_trans ?_ hf
+    apply map_mono
+    exact hg
 
 /- Among the other "set" operations, we have preimages, which
 are called `Filter.comap` for filters.-/
@@ -327,6 +350,8 @@ operation corresponding to the complement on sets.)
 -- ∃ V, (∀ (i : ↑I), V i ∈ s ↑i) ∧ U = ⋂ i, V i
 
 -- What happens if we allow infinite intersections?
+
+-- F ≤ 𝓟 s ↔ s ∈ F
 
 example (F : Filter α) :
     F = ⨅ (s : F.sets), Filter.principal s := by
@@ -447,13 +472,16 @@ example (u : ℕ → ℝ) (x₀ : ℝ) :
 
 example (f : ℝ → ℝ) (a b : ℝ) :
     Tendsto f (𝓝 a) (𝓝 b) ↔
-    ∀ ε > 0, ∃ δ > 0, ∀ x, x ∈ Ioo (a - δ) (a + δ) → f x ∈ Ioo (b - ε) (b + ε) := by sorry
+    ∀ ε > 0, ∃ δ > 0, ∀ x, x ∈ Ioo (a - δ) (a + δ) → f x ∈ Ioo (b - ε) (b + ε) := by
+    rw [Filter.HasBasis.tendsto_iff (nhds_basis_Ioo_pos a) (nhds_basis_Ioo_pos b)]
 
 #check nhds_basis_opens
 
 example (f : ℝ → ℝ) (a b : ℝ) :
     Tendsto f (𝓝 a) (𝓝 b) ↔ ∀ (U : Set ℝ), IsOpen U ∧ b ∈ U →
-    ∃ (V : Set ℝ), IsOpen V ∧ a ∈ V ∧ V ⊆ f ⁻¹' U := by sorry
+    ∃ (V : Set ℝ), IsOpen V ∧ a ∈ V ∧ V ⊆ f ⁻¹' U := by
+    rw [Filter.HasBasis.tendsto_iff (nhds_basis_opens a) (nhds_basis_opens b)]
+    sorry -- exercise
 
 -- If we know a basis of a filter, it is easy to describe
 -- its members.
