@@ -335,7 +335,6 @@ rw[IsCyclotomicExtension.iff_singleton]
 constructor
 · let ζ := (Complex.exp (2 * ↑Real.pi * Complex.I/ ↑(p^α)))
   use ⟨ζ, Algebra.self_mem_adjoin_singleton ℚ ζ⟩
-  have h2 := adjoin_is_integral α p h
   have h3 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
   exact IsPrimitiveRoot.coe_submonoidClass_iff.mp h3
 · intro x
@@ -451,7 +450,7 @@ cases h with
         have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois Gp_Galois_cycl
         let ζ := exist_gen.choose
         have hz := exist_gen.choose_spec
-        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) (sorry) (sorry) (sorry) (sorry) (sorry)
+        --have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) (sorry) (sorry) (sorry) (sorry) (sorry)
         sorry
         sorry
         sorry
@@ -464,19 +463,17 @@ cases h with
 --theorem groupe_galois_Qw_ZpZ (p : ℕ+): premierfermat p → ∃ m, (Polynomial.Gal (Polynomial.cyclotomic p ℚ)) ≃* (ZMod (2^m)) := by
 -- IntermediateField.finSepDegree_adjoin_simple_eq_natSepDegree
 
-structure TowerOfGroup where
+structure CollectOfGroup where
   G : ℕ → Type
   instSet : ∀ i, Set (G i)
-  instSubSet : ∀ i, G (i+1) : Set (G i)
   instGroup: ∀ i, Group (G i)
-  instNormalSubGroup : ∀ i, @IsNormalSubgroup (G i) (instGroup i) (instSubSet i)
+
+def TowerNormalGroup (G : CollectOfGroup) : Prop :=
+  ∀ i,
 
 
   --instNormalSubgroup: ∀ i, IsNormalSubgroup (G i)
 
---Definition d'être une tour de corps
-def TNSG : TowerOfGroup := by
-  sorry
 
 --Definition d'être une tour de corps de dimension finie
 def TowerOfGroupIndice2 (G : TowerOfGroup) : Prop :=
