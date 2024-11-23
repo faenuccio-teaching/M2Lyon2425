@@ -1,7 +1,7 @@
-#+TITLE: Project Proposition
+#+TITLE: Project Proposal
 #+AUTHOR: Johann Rosain
 
-* Introduction to Lean: Project Proposition
+* Introduction to Lean: Project Proposal
 
 ** Proposition
 
@@ -33,7 +33,18 @@ The goal of this project is to formalize these properties in Lean. The work woul
 
 Implementing all these tasks might be too ambitious for the given timetable. Consequently, the proposition is as follows: points 1 to 3 shall be implemented. Point 4 is a small bonus. Point 5 is a nice bonus. Points 6 and 7 are a big bonus.
 
-All the PDFs of the references can be found in the [[file:docs/][docs/]] folder.
+All the PDFs of the references can be found in the [[file:references/][references/]] folder.
+
+** Status of the project
+
+There are [2/7] tasks realized:
+- [X] Definition of the λ-calculus with De Bruijn's indices
+- [X] Basic definitions and proofs on abstract rewritin systems + different closures of β-reduction.
+- [ ] Confluency of the β-reduction.
+- [ ] Non-triviality of the β-reduction.
+- [ ] Standardization theorem.
+- [ ] Definition of simple types and a typing system.
+- [ ] Subject reduction, strong normalization.
 
 ** References
 
