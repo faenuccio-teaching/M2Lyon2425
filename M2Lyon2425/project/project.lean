@@ -6,6 +6,7 @@ import Mathlib.Topology.Instances.EReal
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.SetTheory.Cardinal.Continuum
 import Mathlib.Data.Real.Cardinality
+import Mathlib.Data.Set.Card
 
 /-- Goal of the project: formalize the counterexamples of the chapter 10
 of the book "Counterexamples in Analysis" by Bernard R. Gelbaum and
@@ -285,15 +286,14 @@ theorem exists_of_two_le_card {α : Type*} {S : Set α} (h : 2 < Nat.card S) : �
     fun he ↦ two_ne_zero (Fin.mk.inj_iff.1 (e_inj (Subtype.eq he))).symm,
     (e.2 ⟨0, _⟩).2, (e.2 ⟨1, _⟩).2, (e.2 ⟨2, h⟩).2⟩
 
-theorem inter_line_card_le_two (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+theorem contradiction_of_exists (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
     (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
-    Nat.card (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)
-    ∩ (Lines ξ) : Set (ℝ × ℝ)) ≤ 2 := by
-  set B := ⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)
-  set n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ))
-  by_contra h
-  push_neg at h
-  obtain ⟨a, b, c, _, _, _, ⟨ha₁, ha₂⟩, ⟨hb₁, hb₂⟩, ⟨hc₁, hc₂⟩⟩ := exists_of_two_le_card h
+    ¬(∃ a b c, a ≠ b ∧ b ≠ c ∧ a ≠ c
+    ∧ a ∈ (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) ∩ Lines ξ)
+    ∧ b ∈ (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) ∩ Lines ξ)
+    ∧ c ∈ (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) ∩ Lines ξ)) := by
+  intro H
+  obtain ⟨a, b, c, _, _, _, ⟨ha₁, ha₂⟩, ⟨hb₁, hb₂⟩, ⟨hc₁, hc₂⟩⟩ := H
   have h₃ : ∃ (ζ : Ordinal) (hζ : ζ < ξ), a ∈ union_le_fae A₀ ⟨ζ, lt_trans hζ ξ.2⟩
     ∧ b ∈ union_le_fae A₀ ⟨ζ, lt_trans hζ ξ.2⟩
     ∧ c ∈ union_le_fae A₀ ⟨ζ, lt_trans hζ ξ.2⟩ := by
@@ -333,6 +333,34 @@ theorem inter_line_card_le_two (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Se
   exact ⟨⟨a', b', c', by rwa [h'] at ha₂, by rwa [h'] at hb₂⟩, ⟨a', b', c',
     by rwa [h'] at hb₂, by rwa [h'] at hc₂⟩⟩
 
+theorem inter_line_card_le_two (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
+    Nat.card (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)
+    ∩ (Lines ξ) : Set (ℝ × ℝ)) ≤ 2 := by
+  set B := ⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)
+  set n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ))
+  by_contra h
+  push_neg at h
+  exact contradiction_of_exists ξ A₀ H (exists_of_two_le_card h)
+
+theorem exists_of_infinite {α : Type*} {S : Set α} (hS : S.Infinite) :
+    ∃ a b c, a ≠ b ∧ b ≠ c ∧ a ≠ c ∧ a ∈ S ∧ b ∈ S ∧ c ∈ S := by
+    obtain ⟨t, hsub, hcard⟩ := Set.Infinite.exists_subset_card_eq hS 3
+    rw [← Set.ncard_coe_Finset, Set.ncard_eq_three] at hcard
+    obtain ⟨x, y, z, hxy, hxz, hyz, ht⟩ := hcard
+    exact ⟨x, y, z, hxy, hyz, hxz, hsub (by simp only [ht, Set.mem_insert_iff,
+      Set.mem_singleton_iff, true_or]), hsub (by simp only [ht, Set.mem_insert_iff,
+      Set.mem_singleton_iff, true_or, or_true]), hsub (by simp only [ht, Set.mem_insert_iff,
+      Set.mem_singleton_iff, or_true])⟩
+
+theorem inter_finite (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
+    Set.Finite (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) ∩ Lines ξ) := by
+  set B := ⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)
+  by_contra h
+  rw [← Set.Infinite] at h
+  exact contradiction_of_exists ξ A₀ H (exists_of_infinite h)
+
 theorem fae (ξ : ordinals_lt c)
   (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
     ∃ A : ordinals_lt c → Set (ℝ × ℝ),
@@ -343,9 +371,8 @@ theorem fae (ξ : ordinals_lt c)
   let 𝒢 := {S | 2 ≤ Cardinal.mk ↑(S ∩ B) ∧ ∃ a b c, S = Line a b c}
   have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := sorry-- or directly `< Cardinal.continuum`
   let n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ))-- Nat.card or Cardinal.mk?
-  have byP : n ≤ 2 ∧ Set.Finite (B ∩ (Lines ξ)) := by
-    refine ⟨inter_line_card_le_two ξ A₀ hA₀, ?_⟩
-    sorry
+  have byP : n ≤ 2 ∧ Set.Finite (B ∩ (Lines ξ)) := ⟨inter_line_card_le_two ξ A₀ hA₀,
+    inter_finite ξ A₀ hA₀⟩
   let Aξ : Set (ℝ × ℝ) :=
     if n = 2 then ∅
     else
