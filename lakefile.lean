@@ -15,6 +15,7 @@ meta if get_config? env = some "dev" then -- dev is so not everyone has to build
 require «doc-gen4» from git
   "https://github.com/leanprover/doc-gen4" @ "d684d596bcf8fbb114320776b80a1dbfce0a0786"
 
+lean_lib «Project»
 @[default_target]
 lean_lib «M2Lyon2425» where
   -- add any library configuration options here
