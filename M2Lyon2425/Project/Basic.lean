@@ -25,10 +25,10 @@ A monoid is said to be simplifiable if (ab = ac => b = c <= ba = ca).
 ## The positive braid monoids
 -/
 
-/-- We define the free monoids of braid words with only positive crossings -/
+/-- The free monoids of braid words with only positive crossings -/
 def p𝓑𝓦 := FreeMonoid ℕ
 
-/-- By definition, p𝓑𝓦ₙ is a submonoid of p𝓑𝓦 -/
+/-- The submonoids of p𝓑𝓦 With only n strands -/
 def p𝓑𝓦ₙ (n : ℕ) := Submonoid.closure (FreeMonoid.of '' { i : ℕ | i ≤ n })
 
 /-- Every positive braid word monoid is a submonoid of next -/
@@ -49,18 +49,18 @@ theorem p𝓑𝓦ₙ_inclusion (n m : ℕ) (h : n ≤ m) : p𝓑𝓦ₙ n ≤ p�
 /-- σᵢσⱼ = σⱼσᵢ -/
 def slide : p𝓑𝓦 → p𝓑𝓦 → Prop := fun b1 ↦
   match b1 with
-  | i :: j :: _ => fun b2 ↦ ((i - j ≥ 2) ∨ (j - i ≥ 2)) ∧
+  | i :: j :: tl => fun b2 ↦ ((i - j ≥ 2) ∨ (j - i ≥ 2)) ∧
     match b2 with
-    | a :: b :: _ => (a = j) ∧ (b = i)
+    | a :: b :: tl' => (a = j) ∧ (b = i) ∧ (tl = tl')
     | _ => False
   | _ => (fun _ ↦ False)
 
 /-- σᵢσᵢ₊₁σᵢ = σᵢ₊₁σᵢσᵢ₊₁ -/
 def braiding : p𝓑𝓦 → p𝓑𝓦 → Prop := fun b1 ↦
   match b1 with
-  | i :: j :: k :: _ => fun b2 ↦ (k = i) ∧ (j = i + 1) ∧
+  | i :: j :: k :: tl => fun b2 ↦ (k = i) ∧ (j = i + 1) ∧
     match b2 with
-    | a :: b :: c :: _ => (a = i + 1) ∧ (b = i) ∧ (c = i+1)
+    | a :: b :: c :: tl' => (a = i + 1) ∧ (b = i) ∧ (c = i+1) ∧ (tl = tl')
     | _ => False
   | _ => (fun _ ↦ False)
 
@@ -77,16 +77,39 @@ def pB := Con.Quotient braid_congruence
 -- We want to extend this structure to the submonoids 𝓑𝓦ₙ.
 -- We prove that the congruence induces a congruence on each of these monoids.
 
+lemma braid_rel_same_size (w1 w2 : p𝓑𝓦) (hbr : braid_relations w1 w2)
+  : w1.length = w2.length := by
+  induction' hbr with hbr ih
+  · sorry
+  · sorry
+
+lemma braid_rel_same_letters (w1 w2 : p𝓑𝓦) (hbr : braid_relations w1 w2) (i : ℕ)
+  : w1.contains i ↔ w2.contains i := by
+  induction' hbr with ih ih
+  · sorry
+  · sorry
+
 /-- Two congruent positive braid words have same length -/
-lemma braid_con_same_size (w1 w2 : p𝓑𝓦) (hbc : braid_congruence w1 w2) :
-  w1.length = w2.length := by sorry
-  -- We go from w1 to w2 with a finite number of applications of the braid rules.
-  -- Each application does not change the length of the word.
+theorem braid_con_same_size (w1 w2 : p𝓑𝓦) (hbc : braid_congruence w1 w2) :
+  w1.length = w2.length := by
+  induction' hbc
+  with x y ih _ _ _ _ ih _ _ _ _ _ ih1 ih2 _ _ _ _ _ _ ih
+  · exact braid_rel_same_size x y ih
+  · rfl
+  · rw [←ih]
+  · rw [ih1, ih2]
+  · exact ih
 
 /-- Two congruent positive braid words have the same letters -/
-lemma braid_con_same_letters (w1 w2 : p𝓑𝓦) (hbc : braid_congruence w1 w2) (i : ℕ) :
-  w1.contains i → w2.contains i := by sorry
-  -- Each application does not change the letters in the word
+theorem braid_con_same_letters (w1 w2 : p𝓑𝓦) (hbc : braid_congruence w1 w2) (i : ℕ) :
+  w1.contains i ↔ w2.contains i := by
+  induction' hbc
+  with x y ih _ _ _ _ ih _ _ _ _ _ ih1 ih2 _ _ _ _ _ _ ih
+  · exact braid_rel_same_letters x y ih i
+  · simp
+  · exact Iff.symm ih
+  · exact Iff.trans ih1 ih2
+  · exact ih
 
 /-- Two congruent positive braid words are in the same submonoid -/
 lemma braid_con_same_subset (w1 w2 : p𝓑𝓦) (hbc : braid_congruence w1 w2) (n : ℕ) :
@@ -94,7 +117,7 @@ lemma braid_con_same_subset (w1 w2 : p𝓑𝓦) (hbc : braid_congruence w1 w2) (
   -- If every letter in w1 is < n, then by braid_con_same_letters the same goes for w2
 
 def braid_congruenceₙ (n : ℕ) : Con (p𝓑𝓦ₙ n) where
-  r := sorry
+  r := fun w1 w2 ↦ sorry
   mul' := sorry
   iseqv := sorry
 
