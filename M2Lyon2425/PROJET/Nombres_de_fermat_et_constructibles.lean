@@ -5,6 +5,7 @@ import Mathlib.NumberTheory.Padics.PadicVal.Defs
 import Mathlib.Data.Nat.MaxPowDiv
 import Mathlib.Data.Nat.Multiplicity
 
+open Complex
 
 --TENTATIVE DE PREUVE DU THEOREME DE GAUSS-WANTZEl--
 
@@ -328,7 +329,7 @@ theorem ZModx_cyclic (p : ℕ) : Nat.Prime p → IsCyclic (ZMod p)ˣ := by
   sorry
 
 --theorem tower_normal (m : ℕ) (G : Type*) [inst1 : Group G] [inst2 : IsCyclic G] : G ≃* ZMod (2^m) → ∃ (ζ : G), ((Subgroup.zpowers ζ = G) ∧ (Subgroup.zpowers (ζ^(2^m))=IsSubgroup.trivial G) ∧ (∀ k < m, @IsNormalSubgroup (Subgroup.zpowers (ζ^(2^k))) ) := by
-
+/-
 theorem adjoin_is_cyclo (p : ℕ+) (α : ℕ): Nat.Prime p ∧ 0 < α  → IsCyclotomicExtension {p^α} ℚ (Algebra.adjoin ℚ {Complex.exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))}) := by
 intro h
 rw[IsCyclotomicExtension.iff_singleton]
@@ -357,6 +358,11 @@ constructor
     exact bx
   by_contra hf
   sorry
+-/
+theorem adjoin_is_cyclo (p : ℕ+) (α : ℕ) (_: Nat.Prime p) (_ : 0 < α) :
+  IsCyclotomicExtension {p^α} ℚ (Algebra.adjoin ℚ
+    {exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))}) :=
+IsPrimitiveRoot.adjoin_isCyclotomicExtension _ (isPrimitiveRoot_exp _ (PNat.ne_zero (p ^ α)))
 
 theorem cyclic_iso (G H : Type*) [inst1 : Group G] [inst2 : Group H] : (G ≃* H) → (IsCyclic H) → (IsCyclic G) := by
 intro h h1
