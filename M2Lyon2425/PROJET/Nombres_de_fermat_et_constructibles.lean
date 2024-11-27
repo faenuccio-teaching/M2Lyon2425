@@ -191,6 +191,7 @@ theorem wa_algebrique_sur_Q (p α : ℕ) : Nat.Prime p → 0 < α →  IsAlgebra
     · rw[h1.symm]
       simp
 
+--Lemme : ℚ(w) est intégrale
 theorem adjoin_is_integral (α : ℕ) (p : ℕ) : Nat.Prime p ∧ 0 < α → IsIntegral ℚ (Complex.exp (2*↑Real.pi*Complex.I/(p^α))) := by
   intro h
   apply IsAlgebraic.isIntegral
@@ -439,11 +440,19 @@ exact hg
 
 theorem finite_iso (G H : Type*) [inst1 : Group G] [inst2 : Group H] : (G ≃* H) → (Finite H) → (Finite G):= by
 intro phi cardh
-obtain ⟨phii, hphii⟩ := phi
+obtain ⟨phii, _⟩ := phi
 have h := Equiv.finite_iff phii
 apply h.mpr
 exact cardh
 
+structure TowerOfGroup2 {G : Type*} [Group G] where
+  H : ℕ → Subgroup G
+  inclusion : ∀ i, H (i + 1) ≤ H i
+  normalSubGroup : ∀ i, @IsNormalSubgroup (H i) _ (Subgroup.inclusion (inclusion i)).range
+  indice : ∀ i,  Nat.card (H (i+1) ⧸ H i) = 2
+
+
+def Suite_resol_ind2 (G : TowerOfGroup) : Prop := G.ToG_indice_2 ∧ H 0 = G ∧  H m = IsSubgroup.trivial G
 
 theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
 intro h
@@ -463,7 +472,6 @@ cases h with
         have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois Gp_Galois_cycl
         let ζ := exist_gen.choose
         have hz := exist_gen.choose_spec
-
         --have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) (sorry) (sorry) (sorry) (sorry) (sorry)
         sorry
         sorry
@@ -477,12 +485,5 @@ cases h with
 --theorem groupe_galois_Qw_ZpZ (p : ℕ+): premierfermat p → ∃ m, (Polynomial.Gal (Polynomial.cyclotomic p ℚ)) ≃* (ZMod (2^m)) := by
 -- IntermediateField.finSepDegree_adjoin_simple_eq_natSepDegree
 
-structure CollectOfGroup where
-  G : ℕ → (Type)
-  instSet : ∀ i, Set (G i)
-  instGroup: ∀ i, Group (G i)
-
   --instNormalSubgroup: ∀ i, IsNormalSubgroup (G i)
-
-
 --Definition d'être une tour de corps de dimension fin
