@@ -5,9 +5,9 @@ variable {α : Type*}
 
 open Computability -- pour avoir la notation ∗
 
-/- Sections 2.2 et 2.3 du pdf -/
--- on peut désormais facilement et de façon unifiée définir différentes propriétés
--- et propositions dont les preuves sont aisées.
+/- Sections 2.2 et 2.3 du pdf
+On peut désormais facilement et de façon unifiée définir différentes propriétés
+et propositions dont les preuves sont aisées. -/
 
 def isWeaklyCommuting (f₁ f₂ : ARS α) : Prop := f₁⇐ * f₂ ≤ f₂∗ * f₁⇐∗
 
@@ -25,7 +25,7 @@ def isWeaklyConfluent (f : ARS α) : Prop := f⇐ * f ≤ f∗ * f⇐∗
 theorem ChurchRosser (f : ARS α) : isConfluent f ↔ isChurchRosser f := by
   rw [isConfluent, isDiamond, isCommuting, isChurchRosser]
   simp only [inv_trans_eq_trans_inv]
-  exact KleeneChurchRosser
+  exact KleeneChurchRosser -- ce théorème est le clou du spectacle de KleeneAlgebra.lean
 
 /- La preuve "naïve" du même théorème (incomplète) -/
 theorem ChurchRosser' (f : ARS α) :  isConfluent f ↔ isChurchRosser f := by
