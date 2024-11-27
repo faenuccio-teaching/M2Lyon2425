@@ -34,7 +34,7 @@ Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/
 | Oct 30th | _Holidays_ | ---
 | Nov 6th | Rings and Fields 2 | X. Roblot
 | Nov 13th | Topological Spaces 1 | S. Morel
-| **Nov 15th** | **Deadline for project proposal** | --- | **Upload it to your** **`git branch`**
+| **Nov 17th** | **Deadline for project proposal** | --- | **Upload it to your** **`git branch`**
 | Nov 20th | Topological Spaces 2 | S. Morel
 | Nov 27th | Calculus 1 | X. Roblot
 | Dec 4th | Calculus 2 | X. Roblot

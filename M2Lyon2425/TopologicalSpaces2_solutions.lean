@@ -2,6 +2,7 @@ import Mathlib.Analysis.Normed.Module.Basic
 import Mathlib.MeasureTheory.OuterMeasure.AE
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.MeasureTheory.Measure.MeasureSpaceDef
+import Mathlib.Data.Rat.Denumerable
 
 open Filter Set Topology Metric
 
@@ -83,7 +84,8 @@ example {f : X → Y} : Continuous f ↔
 #check Prod.metricSpaceMax -- the product distance is the sup distance
 
 example {f : X → Y} (hf : Continuous f) :
-    Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := sorry
+    Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := hf.fst'.dist hf.snd'
+-- Look at this beautiful proof!
 
 /- The first solution is to use the `continuity` tactic.
 It knows about the continuity of some basic functions,
@@ -143,7 +145,21 @@ example {f : X → Y} (hf : Continuous f) :
 -- This works, but we had to guess the whole proof term.
 
 -- Remember that `E` is a normed vector space over `ℝ`.
-example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by sorry
+example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by
+  change Continuous ((fun (p : ℝ × E) ↦ p.1 • p.2) ∘
+    (fun (p : ℝ × E × E) ↦ ⟨p.1, p.2.1 - p.2.2⟩))
+  apply Continuous.comp
+  · exact continuous_smul
+  · apply Continuous.prod_mk
+    · exact continuous_fst
+    · change Continuous ((fun (p : E × E) ↦ p.1 - p.2) ∘ (fun (p : ℝ × E × E) ↦ p.2))
+      apply Continuous.comp
+      · exact continuous_sub
+      · exact continuous_snd
+
+-- Let's shorten the proof:
+example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) :=
+  continuous_smul.comp (continuous_fst.prod_mk (continuous_sub.comp continuous_snd))
 
 -- Try to solve the exercises using only the lemmas above.
 -- Then try again using these more powerful lemmas:
@@ -151,16 +167,29 @@ example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by sor
 #check Continuous.fst
 #check Continuous.snd
 #check Continuous.prod_map
+#check Continuous.comp'
 
 example {f : X → Y} (hf : Continuous f) :
-    Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := by sorry
+    Continuous fun p : X × X ↦ dist (f p.1) (f p.2) := by
+  apply Continuous.dist
+  · exact hf.comp continuous_fst
+  · exact hf.comp continuous_snd
+
+example {f : X → Y} (hf : Continuous f) :
+    Continuous fun p : X × X ↦ dist (f p.1) (f p.2) :=
+  (hf.comp continuous_fst).dist (hf.comp continuous_snd)
 
 -- Remember that `E` is a normed vector space over `ℝ`.
-example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) := by sorry
+example : Continuous fun p : ℝ × E × E ↦ p.1 • (p.2.1 - p.2.2) :=
+  continuous_fst.smul (continuous_sub.comp continuous_snd)
+
 
 -- One more exercise...
-example {f : ℝ → X} (hf : Continuous f) : Continuous fun x : ℝ ↦ f (x ^ 2 + x) :=
-  sorry
+example {f : ℝ → X} (hf : Continuous f) : Continuous fun x : ℝ ↦ f (x ^ 2 + x) := by
+  apply hf.comp
+  apply Continuous.add
+  · exact continuous_pow 2
+  · exact continuous_id
 
 -- Useful lemmas:
 #check Continuous.add
@@ -233,15 +262,22 @@ example {s : Set X} (hs : IsClosed s) {u : ℕ → X}
 -- Now try to prove this:
 example {s : Set X} (hs : IsClosed s) {f : Y → X} {b : Y}
     (hu : Tendsto f (𝓝 b) (𝓝 a)) (hus : ∀ y, f y ∈ s) : a ∈ s :=
-  sorry
+  hs.mem_of_tendsto hu (Eventually.of_forall hus)
+
 
 example {s : Set X} : a ∈ closure s ↔
     ∀ ε > 0, ∃ b ∈ s, a ∈ Metric.ball b ε :=
   Metric.mem_closure_iff
 
 example {u : ℕ → X} (hu : Tendsto u atTop (𝓝 a)) {s : Set X}
-    (hs : ∀ n, u n ∈ s) : a ∈ closure s :=
-  sorry
+    (hs : ∀ n, u n ∈ s) : a ∈ closure s := by
+  rw [Metric.mem_closure_iff]
+  intro ε εpos
+  rw [Metric.tendsto_nhds] at hu
+  obtain ⟨n, h⟩ := Filter.Eventually.exists_forall_of_atTop (hu ε εpos)
+  use u n, hs n
+  rw [dist_comm]
+  exact h n (le_refl _)
 -- (Don't use `mem_closure_iff_seq_limit`, it would make it too easy.)
 
 /- "Remember" that a topological space `X` is called compact if
@@ -342,8 +378,39 @@ example {f : X → Y} : UniformContinuous f ↔
 space `X` to a metric space `Y` is uniformly continuous.-/
 
 example [CompactSpace X] {f : X → Y} (hf : Continuous f) :
-    UniformContinuous f :=
-  sorry
+    UniformContinuous f := by
+  rw [Metric.uniformContinuous_iff]
+  intro ε hpos
+  set φ : X × X → ℝ := fun p ↦ dist (f p.1) (f p.2)
+  have hφ : Continuous φ := by continuity
+  set K := φ ⁻¹' (Set.Ici ε)
+  have hK : IsCompact K := (isClosed_le continuous_const hφ).isCompact
+  cases eq_empty_or_nonempty K with
+  | inl h =>
+    use 1
+    constructor
+    · simp
+    · intro a b _
+      by_contra habs
+      simp at habs
+      have : ⟨a, b⟩ ∈ K := by simp [K, φ, habs]
+      rw [h] at this
+      exact Set.not_mem_empty _ this
+  | inr h =>
+    obtain ⟨p, hp₁, hp₂⟩ := IsCompact.exists_isMinOn hK h continuous_dist.continuousOn
+    use dist p.1 p.2
+    constructor
+    · rw [gt_iff_lt, dist_pos]
+      by_contra habs
+      simp only [mem_preimage, mem_Ici, K, φ] at hp₁
+      rw [habs, dist_self] at hp₁
+      exact not_lt_of_le hp₁ hpos
+    · intro a b hab
+      by_contra habs
+      have : ⟨a, b⟩ ∈ K := by
+        simp only [mem_preimage, mem_Ici, K, φ]
+        exact le_of_not_lt habs
+      exact lt_irrefl _ (lt_of_lt_of_le hab (hp₂ this))
 
 /-
 Sketch of proof: we need to check that
@@ -395,17 +462,35 @@ theorem cauchySeq_of_le_geometric_two' {u : ℕ → X}
     (hu : ∀ n : ℕ, dist (u n) (u (n + 1)) ≤ (1 / 2) ^ n) : CauchySeq u := by
   rw [Metric.cauchySeq_iff']
   intro ε ε_pos
-  obtain ⟨N, hN⟩ : ∃ N : ℕ, 1 / 2 ^ N * 2 < ε := by sorry
+  obtain ⟨N, hN⟩ : ∃ N : ℕ, 1 / 2 ^ N * 2 < ε := by
+    obtain ⟨N, hN⟩ := pow_unbounded_of_one_lt (y := (2 : ℝ)) (2 / ε) (by simp)
+    use N
+    have : 2 / ε > 0 := by simp [ε_pos]
+    have := one_div_lt_one_div_of_lt this hN
+    calc
+      1 / 2 ^ N * 2 < 1/(2/ε) * 2 := (mul_lt_mul_right (by simp)).mpr this
+      _ = ε := by simp
   use N
   intro n hn
   obtain ⟨k, rfl : n = N + k⟩ := le_iff_exists_add.mp hn
   calc
-    dist (u (N + k)) (u N) = dist (u (N + 0)) (u (N + k)) := sorry
-    _ ≤ ∑ i in range k, dist (u (N + i)) (u (N + (i + 1))) := sorry
-    _ ≤ ∑ i in range k, (1 / 2 : ℝ) ^ (N + i) := sorry
-    _ = 1 / 2 ^ N * ∑ i in range k, (1 / 2 : ℝ) ^ i := sorry
-    _ ≤ 1 / 2 ^ N * 2 := sorry
-    _ < ε := sorry
+    dist (u (N + k)) (u N) = dist (u (N + 0)) (u (N + k)) := by
+      rw [dist_comm]; simp
+    _ ≤ ∑ i in range k, dist (u (N + i)) (u (N + (i + 1))) := by
+      apply dist_le_range_sum_dist (fun i ↦ u (N + i))
+    _ ≤ ∑ i in range k, (1 / 2 : ℝ) ^ (N + i) := by
+      apply Finset.sum_le_sum
+      intro i _
+      apply hu
+    _ = 1 / 2 ^ N * ∑ i in range k, (1 / 2 : ℝ) ^ i := by
+      rw [← one_div_pow]
+      convert (Finset.mul_sum _ _ _).symm
+      rw [pow_add]
+    _ ≤ 1 / 2 ^ N * 2 := by
+      apply mul_le_mul_of_nonneg_left
+      · exact sum_geometric_two_le _
+      · simp only [one_div, inv_nonneg, Nat.ofNat_nonneg, pow_nonneg]
+    _ < ε := hN
 -- Note that `range` stands for `Finset.range`:
 #check Finset.range -- `Finset.range n` of natural numbers `< n`.
 
@@ -433,7 +518,7 @@ open Metric
 example [CompleteSpace X] (f : ℕ → Set X) (ho : ∀ n, IsOpen (f n))
     (hd : ∀ n, Dense (f n)) : Dense (⋂ n, f n) := by
   let B : ℕ → ℝ := fun n ↦ (1 / 2) ^ n
-  have Bpos : ∀ n, 0 < B n := by sorry
+  have Bpos : ∀ n, 0 < B n := by intro n; simp [B]
   /- Translate the density assumption into two functions `center` and
      `radius` associating to any `n, x, δ, δpos` a center and a positive
      radius such that `closedBall center radius` is included both in
@@ -442,8 +527,24 @@ example [CompleteSpace X] (f : ℕ → Set X) (ho : ∀ n, IsOpen (f n))
      Cauchy sequence later. -/
   have : ∀ (n : ℕ) (x : X),
       ∀ δ > 0, ∃ y : X, ∃ r > 0, r ≤ B (n + 1) ∧
-      closedBall y r ⊆ closedBall x δ ∩ f n :=
-    by sorry
+      closedBall y r ⊆ closedBall x δ ∩ f n := by
+    intro n x δ hδ
+    obtain ⟨y, hy⟩ := (hd n).inter_nhds_nonempty (Metric.ball_mem_nhds x hδ)
+    obtain ⟨r', hrpos, hr⟩ :=
+      Metric.isOpen_iff.mp ((ho n).inter (Metric.isOpen_ball (x := x) (ε := δ))) y hy
+    use y, min (r' / 2) (B (n + 1))
+    constructor
+    · simp [hrpos, Bpos]
+    · constructor
+      · simp
+      · calc
+          closedBall y (min (r' / 2) (B (n + 1))) ⊆ ball y r' := by
+            refine closedBall_subset_ball ?_
+            simp [hrpos]
+          _ ⊆ f n ∩ ball x δ := hr
+          _ ⊆ ball x δ ∩ f n := by rw [inter_comm]
+          _ ⊆ closedBall x δ ∩ f n :=
+            inter_subset_inter_left (f n) ball_subset_closedBall
   choose! center radius Hpos HB Hball using this
   /- The tactic `choose` creates a function from statements of the
      form `∀ x, ∃ y, P x y`. More precisely, `choose a b h h' using hyp`
@@ -476,12 +577,29 @@ example [CompleteSpace X] (f : ℕ → Set X) (ho : ∀ n, IsOpen (f n))
       fun n p ↦ Prod.mk (center n p.1 p.2) (radius n p.1 p.2)
   let c : ℕ → X := fun n ↦ (F n).1
   let r : ℕ → ℝ := fun n ↦ (F n).2
-  have rpos : ∀ n, 0 < r n := by sorry
-  have rB : ∀ n, r n ≤ B n := by sorry
+  have rpos : ∀ n, 0 < r n := by
+    intro n
+    induction' n with n hn
+    · simp [r, F, εpos, Bpos]
+    · exact Hpos _ _ _ hn
+  have rB : ∀ n, r n ≤ B n := by
+    intro n
+    match n with
+    | 0 => simp [r, F]
+    | n + 1 => exact HB _ _ _ (rpos _)
   have incl : ∀ n, closedBall (c (n + 1)) (r (n + 1)) ⊆
       closedBall (c n) (r n) ∩ f n := by
-    sorry
-  have cdist : ∀ n, dist (c n) (c (n + 1)) ≤ B n := by sorry
+    intro n
+    apply Hball; simp [rpos, Hpos]
+  have cdist : ∀ n, dist (c n) (c (n + 1)) ≤ B n := by
+    intro n
+    suffices h : c (n + 1) ∈ closedBall (c n) (r n) by
+      calc
+        dist (c n) (c (n + 1)) = dist (c (n + 1)) (c n) := dist_comm _ _
+        _ ≤ r n := mem_closedBall.mp h
+        _  ≤ B n := rB n
+    exact Set.inter_subset_left (incl n (mem_closedBall_self
+      (le_of_lt (rpos (n + 1)))))
   have : CauchySeq c := cauchySeq_of_le_geometric_two' cdist
   -- as the sequence `c n` is Cauchy in a complete space,
   -- it converges to a limit `y`.
@@ -490,9 +608,27 @@ example [CompleteSpace X] (f : ℕ → Set X) (ho : ∀ n, IsOpen (f n))
   -- that it belongs to all `f n` and to `ball x ε`.
   use y
   have I : ∀ n, ∀ m ≥ n, closedBall (c m) (r m) ⊆
-      closedBall (c n) (r n) := by sorry
-  have yball : ∀ n, y ∈ closedBall (c n) (r n) := by sorry
-  sorry
+      closedBall (c n) (r n) := by
+    intro n m h
+    apply Nat.le_induction (m := n)
+      (P := fun m _ ↦ closedBall (c m) (r m) ⊆ closedBall (c n) (r n)) (hmn := h)
+    · exact subset_refl _
+    · intro m _ hsub
+      exact subset_trans (subset_trans (incl m) Set.inter_subset_left) hsub
+  have yball : ∀ n, y ∈ closedBall (c n) (r n) := by
+    intro n
+    apply isClosed_ball.mem_of_tendsto ylim
+    filter_upwards [Filter.Ici_mem_atTop n]
+    intro m hm
+    exact I n m hm (mem_closedBall_self (le_of_lt (rpos m)))
+  constructor
+  · rw [mem_iInter]
+    exact fun n ↦ Set.inter_subset_right (incl n (yball (n + 1)))
+  · exact closedBall_subset_closedBall (min_le_left ε (B 0)) (yball 0)
+
+example {s : Set X} (hs : IsClosed s) {u : ℕ → X}
+    (hu : Tendsto u atTop (𝓝 a)) (hus : ∀ n, u n ∈ s) : a ∈ s :=
+  hs.mem_of_tendsto hu (Eventually.of_forall hus)
 
 end MetricSpaces
 
@@ -564,11 +700,13 @@ of `a` is order-preserving.
 -/
 
 example {a : A} :
-    Monotone (fun (t : TopologicalSpace A) ↦ @nhds A t a) := by sorry
+    Monotone (fun (t : TopologicalSpace A) ↦ @nhds A t a) := by
+  intro t₁ t₂ h
+  rw [le_nhds_iff]
+  exact fun U ha hU ↦ @IsOpen.mem_nhds _ _ _ t₁ (h U hU) ha
 
 #check TopologicalSpace.le_def
 #check le_nhds_iff
-#check mem_nhds_iff
 #check IsOpen.mem_nhds
 
 /- Next we have that `TopologicalSpace A` is a complete lattice,
@@ -633,7 +771,9 @@ of maps (but induction reverses order):-/
 -- (we could also use induction (how?)):
 example (T_A : TopologicalSpace A) (T_B : TopologicalSpace B)
     (f : A → B) :
-    Continuous f ↔ TopologicalSpace.coinduced f T_A ≤ T_B := by sorry
+    Continuous f ↔ TopologicalSpace.coinduced f T_A ≤ T_B := by
+  rw [continuous_def]
+  rfl
 
 #check Continuous.isOpen_preimage -- the definition of continuity
 
@@ -716,7 +856,25 @@ example [FirstCountableTopology X] {s : Set X} {u : ℕ → X} (hs : IsCompact s
 on a topological space to make it behave more like a metric space.
 -/
 -- Metric spaces are first countable:
-example [MetricSpace A] : FirstCountableTopology A := sorry
+example [MetricSpace A] : FirstCountableTopology A := by
+  apply FirstCountableTopology.mk
+  intro a
+  have : (𝓝 a).HasCountableBasis (fun (ε : ℚ) ↦ (ε : ℝ) > 0) (fun ε ↦ ball a ε) := {
+    mem_iff' := by
+      intro U
+      rw [Metric.mem_nhds_iff]
+      constructor
+      · intro ⟨r, hr⟩
+        obtain ⟨ε, hε⟩ := exists_rat_btwn hr.1
+        use ε, hε.1, subset_trans (ball_subset_ball (le_of_lt hε.2)) hr.2
+      · intro ⟨ε, hε⟩
+        use ε, hε.1, hε.2
+    countable := by
+      have : Countable ℚ := (nonempty_denumerable_iff.mp
+        (Nonempty.intro Rat.instDenumerable)).1
+      exact Countable.mono (subset_univ _) countable_univ
+  }
+  exact this.isCountablyGenerated
 
 /- Other such properties are the separation properties, for example:-/
 #print T2Space -- If `x` and `y` are distinct points, there exist disjoint
