@@ -8,4 +8,4 @@
 *.toc 
 *.nav
 plan.txt
-.DS_Store
+*.DS_Store
