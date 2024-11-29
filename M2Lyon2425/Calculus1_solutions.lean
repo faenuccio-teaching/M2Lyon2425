@@ -9,6 +9,8 @@ import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Analysis.Calculus.LHopital
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Series
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
+import Mathlib.Topology.Baire.Lemmas
+import Mathlib.Topology.Baire.CompleteMetrizable
 
 open Set Filter
 
@@ -97,10 +99,12 @@ example : Tendsto (fun n : ℕ ↦ 1 / (n : ℝ)) atTop (𝓝 0) := by
   exact tendsto_const_div_atTop_nhds_zero_nat 1
 
 example : Tendsto (fun n : ℕ ↦ 1 / n) atTop (𝓝 0) := by
-  sorry
+  refine Tendsto.congr' ?_ tendsto_const_nhds
+  filter_upwards [eventually_gt_atTop 1] with n hn
+  rwa [eq_comm, Nat.div_eq_zero_iff (zero_lt_one.trans hn)]
 
 example : Tendsto (fun n : ℕ ↦ n) atTop atTop := by
-  exact fun ⦃U⦄ a ↦ a
+  exact tendsto_natCast_atTop_atTop -- This is a bit cheating
 
 #check Tendsto.congr'
 
@@ -119,10 +123,13 @@ example : Tendsto (fun n : ℕ ↦ (n + 1 : ℝ) / n) atTop (𝓝 1) := by
   · rwa [Nat.cast_ne_zero]
 
 theorem lemma1 : Tendsto (fun n : ℕ ↦ n ^ 2) atTop atTop := by
-  sorry
+  rw [tendsto_pow_atTop_iff]
+  exact two_ne_zero
 
 theorem lemma2 : Tendsto (fun n : ℕ ↦ n ^ 2 + n) atTop atTop := by
-  sorry
+  refine tendsto_atTop_add ?_ ?_
+  exact lemma1
+  exact tendsto_natCast_atTop_atTop
 
 -- Squeeze theorem
 #check tendsto_of_tendsto_of_tendsto_of_le_of_le
@@ -130,7 +137,31 @@ theorem lemma2 : Tendsto (fun n : ℕ ↦ n ^ 2 + n) atTop atTop := by
 #check tendsto_of_tendsto_of_tendsto_of_le_of_le'
 
 example : Tendsto (fun n : ℕ ↦ ((n : ℝ) ^ 2 + 4 * Real.sqrt n) / (n ^ 2)) atTop (𝓝 1) := by
-  sorry
+  have l1 : Tendsto (fun _ : ℕ ↦ (1 : ℝ)) atTop (𝓝 1) := tendsto_const_nhds
+  have l2 : Tendsto  (fun n : ℕ ↦ ((n : ℝ) ^ 2 + n) / (n ^ 2)) atTop (𝓝 1) := by
+    have l3 : Tendsto (fun n : ℕ ↦ 1 / (n : ℝ)) atTop (𝓝 0) := tendsto_const_div_atTop_nhds_zero_nat 1
+    have l4 := Tendsto.add l1 l3
+    rw [add_zero] at l4
+    refine Tendsto.congr' ?_ l4
+    filter_upwards [eventually_ne_atTop 0] with n hn
+    field_simp
+    ring
+  refine tendsto_of_tendsto_of_tendsto_of_le_of_le' l1 l2 ?_ ?_
+  · filter_upwards [eventually_gt_atTop 0] with n hn
+    rw [one_le_div₀, le_add_iff_nonneg_right]
+    · positivity
+    · positivity
+  · filter_upwards [eventually_ge_atTop 16] with n hn
+    rw [div_le_div_right, add_le_add_iff_left]
+    · suffices 4 ≤ √ n by
+        convert mul_le_mul_of_nonneg_right this (Real.sqrt_nonneg n)
+        rw [mul_self_sqrt]
+        exact Nat.cast_nonneg n
+      rw [Real.le_sqrt]
+      · rwa [show (4 : ℝ) ^ 2 = (16 : ℕ) by norm_num, Nat.cast_le]
+      · positivity
+      · exact Nat.cast_nonneg n
+    positivity
 
 example (f : ℝ → ℝ) (g : ℝ → ℝ) (a l : ℝ) (hf : Tendsto f (𝓝 a) (𝓝 l)) (h : f = g) :
     Tendsto g (𝓝 a) (𝓝 l) := by
@@ -149,7 +180,31 @@ example (f : ℝ → ℝ) (a l l' : ℝ) (hf : Tendsto f (𝓝 a) (𝓝 l))  (hf
 -- L'Hôpital's rule
 example : Tendsto (fun x ↦ (exp x - 1) / (sin x)) (𝓝[≠] 0) (𝓝 1) := by
   refine deriv.lhopital_zero_nhds ?_ ?_ ?_ ?_ ?_
-  all_goals sorry
+  · filter_upwards with x
+    refine DifferentiableAt.sub ?_ ?_
+    · exact differentiableAt_exp
+    · exact differentiableAt_const 1
+  · refine ContinuousAt.eventually_ne ?_ ?_
+    · rw [Real.deriv_sin]
+      refine Continuous.continuousAt ?_
+      exact continuous_cos
+    · rw [Real.deriv_sin, cos_zero]
+      exact one_ne_zero
+  · convert Tendsto.sub (continuous_exp.tendsto 0) (tendsto_const_nhds (x := 1))
+    rw [exp_zero, sub_self]
+  · convert continuous_sin.tendsto 0
+    rw [sin_zero]
+  · suffices Tendsto (fun x ↦ exp x / cos x) (𝓝 0) (𝓝 1) by
+      refine Tendsto.congr ?_ this
+      intro x
+      rw [Real.deriv_sin, deriv_sub, Real.deriv_exp, deriv_const, sub_zero]
+      · exact differentiableAt_exp
+      · exact differentiableAt_const 1
+    have c1 : ContinuousAt rexp 0 := Continuous.continuousAt continuous_exp
+    have c2 : ContinuousAt cos 0 := Continuous.continuousAt continuous_cos
+    convert (ContinuousAt.div c1 c2 ?_).tendsto using 2
+    · simp
+    · simp
 
 /-
   # Normed vector space
@@ -221,23 +276,64 @@ example {ι : Type*} [CompleteSpace E] {g : ι → E →L[𝕜] F} (h : ∀ x, �
   let e : ℕ → Set E := fun n ↦ ⋂ i : ι, { x : E | ‖g i x‖ ≤ n }
   -- each of these sets is closed
   have hc : ∀ n : ℕ, IsClosed (e n) := by
-    sorry
+    intro n
+    refine isClosed_iInter fun i ↦ ?_
+    refine isClosed_le ?_ ?_
+    · refine Continuous.norm ?_
+      exact ContinuousLinearMap.continuous (g i)
+    · exact continuous_const
   -- the union is the entire space; this is where we use `h`
   have hU : (⋃ n : ℕ, e n) = univ := by
-    sorry
+    ext x
+    specialize h x
+    constructor
+    · intro _
+      trivial
+    · intro _
+      refine mem_iUnion.mpr ⟨?_, ?_⟩
+      · -- Cannot use obtain here
+        use ⌈h.choose⌉₊
+      · rw [mem_iInter]
+        intro i
+        refine le_trans (h.choose_spec i) ?_
+        exact Nat.le_ceil h.choose
   /- apply the Baire category theorem to conclude that for some `m : ℕ`,
        `e m` contains some `x` -/
-  obtain ⟨m, x, hx⟩ : ∃ m, ∃ x, x ∈ interior (e m) := sorry
-  obtain ⟨ε, ε_pos, hε⟩ : ∃ ε > 0, ball x ε ⊆ interior (e m) := sorry
-  obtain ⟨k, hk⟩ : ∃ k : 𝕜, 1 < ‖k‖ := sorry
+  obtain ⟨m, x, hx⟩ : ∃ m, ∃ x, x ∈ interior (e m) := by
+    exact nonempty_interior_of_iUnion_of_closed hc hU -- Need to fix the imports
+  obtain ⟨ε, ε_pos, hε⟩ : ∃ ε > 0, ball x ε ⊆ interior (e m) := by
+    have : IsOpen (interior (e m)) := isOpen_interior
+    rw [Metric.isOpen_iff] at this
+    exact this x hx
+  obtain ⟨k, hk⟩ : ∃ k : 𝕜, 1 < ‖k‖ := by
+    exact NormedField.exists_one_lt_norm 𝕜
   -- show all elements in the ball have norm bounded by `m` after applying any `g i`
   have real_norm_le : ∀ z ∈ ball x ε, ∀ (i : ι), ‖g i z‖ ≤ m := by
-    sorry
-  have εk_pos : 0 < ε / ‖k‖ := sorry
+    intro z hz i
+    have h := interior_subset (hε hz)
+    rw [Set.mem_iInter] at h
+    specialize h i
+    exact h
+  have εk_pos : 0 < ε / ‖k‖ := by
+    refine div_pos ε_pos ?_
+    linarith
   refine ⟨(m + m : ℕ) / (ε / ‖k‖), fun i ↦ ContinuousLinearMap.opNorm_le_of_shell ε_pos ?_ hk ?_⟩
-  sorry
-  sorry
-
+  · refine div_nonneg ?_ ?_
+    · exact Nat.cast_nonneg _
+    · exact εk_pos.le
+  · intro y h1 h2
+    -- The idea is to write `y = (y + x) - x` and use the linearity of `g i`
+    calc
+      ‖g i y‖ = ‖g i (x + y) - g i y‖           := ?_
+      _       ≤ ‖g i (x + y)‖ + ‖g i y‖         := ?_
+      _       ≤ (m + m : ℕ)                     := ?_
+      _       ≤ (m + m : ℕ) * (‖y‖ / (ε / ‖k‖)) := ?_
+      _       ≤ ↑(m + m) / (ε / ‖k‖) * ‖y‖      := ?_
+    · sorry
+    · sorry
+    · sorry
+    · sorry
+    · sorry
 end
 
 /-
@@ -272,7 +368,8 @@ example {α : Type*} {E : Type*} [NormedAddCommGroup E] (l : Filter α) (f g : �
 
 #check lt_div_iff
 
-lemma result1 (a : ℕ → ℝ) (h1 : ∀ n, 0 ≤ a n) (h2 : a ~[atTop] fun n ↦ n) (ε : ℝ) (hε : 0 < ε) :
+-- Note that the hypothesis `(h1 : ∀ n, 0 ≤ a n)` is not needed in this proof
+lemma result1 (a : ℕ → ℝ) (h2 : a ~[atTop] fun n ↦ n) (ε : ℝ) (hε : 0 < ε) :
     ∀ᶠ n in atTop, (1 - ε) * n < a n ∧ a n < (1 + ε) * n := by
   rw [Asymptotics.isEquivalent_iff_tendsto_one] at h2
   · rw [Metric.tendsto_nhds] at h2
@@ -286,7 +383,9 @@ lemma result1 (a : ℕ → ℝ) (h1 : ∀ n, 0 ≤ a n) (h2 : a ~[atTop] fun n �
       rwa [lt_sub_iff_add_lt', ← sub_eq_add_neg, lt_div_iff] at hn
       rwa [Nat.cast_pos]
     · replace hn := hn.2
-      sorry
+      dsimp at hn
+      rwa [sub_lt_iff_lt_add', div_lt_iff] at hn
+      rwa [Nat.cast_pos]
   · filter_upwards [eventually_ne_atTop 0] with n hn
     rwa [Nat.cast_ne_zero]
 
@@ -304,7 +403,17 @@ example (x : ℝ) :
     cos x = ∑' (n : ℕ), (-1 : ℝ) ^ n * x ^ (2 * n) /(2 * n).factorial := by
   exact cos_eq_tsum x
 
-example : ∑' (n : ℕ), n = 0 := sorry
+example : ∑' (n : ℕ), (n : ℝ) = 0 := by
+  refine tsum_eq_zero_of_not_summable ?_
+  by_contra h
+  replace h := Summable.tendsto_atTop_zero h
+  rw [NormedAddCommGroup.tendsto_nhds_zero] at h
+  specialize h 1 zero_lt_one
+  rw [eventually_atTop] at h
+  obtain ⟨N, hN⟩ := h
+  specialize hN (N + 1) (Nat.le_add_right N 1)
+  rw [Real.norm_eq_abs, Nat.cast_add_one, abs_of_pos (by positivity)] at hN
+  linarith
 
 example {α β : Type*} [AddCommGroup β] [TopologicalSpace β] (f : α → β) (hf : ¬ Summable f) :
     ∑' x, f x = 0 := tsum_eq_zero_of_not_summable hf
@@ -337,6 +446,13 @@ variable (a : ℕ → ℝ) (h1 : ∀ n, 0 ≤ a n) (h2 : a ~[atTop] fun n ↦ n)
 
 #check Real.rpow_le_rpow_iff_of_neg
 
+-- We actually need this version rather than `result1` above. It can be proved in the same way as
+-- `result1` by swapping `a n` and `n` and proving first that `Tendsto a atTop atTop`, thus
+-- `∀ᶠ n in atTop, 0 < a n`.
+lemma result1' (a : ℕ → ℝ) (h1 : ∀ n, 0 ≤ a n) (h2 : a ~[atTop] fun n ↦ n) (ε : ℝ) (hε : 0 < ε) :
+    ∀ᶠ n : ℕ in atTop, (1 - ε) * (n : ℝ)⁻¹ < (a n)⁻¹ ∧ (a n)⁻¹ < (1 + ε) * (n : ℝ)⁻¹ := by
+  sorry
+
 include h1 h2 in
 lemma result2 {s : ℝ} (hs : 1 < s) : Summable (fun n ↦ a n ^ (- s)) := by
   have h_sum : Summable (fun n : ℕ ↦ (n : ℝ) ^ (- s)) := by
@@ -344,15 +460,21 @@ lemma result2 {s : ℝ} (hs : 1 < s) : Summable (fun n ↦ a n ^ (- s)) := by
     apply neg_lt_neg
     exact hs
   refine summable_of_isBigO_nat' h_sum ?_
-  have h_bdd := result1 a h1 h2 1 zero_lt_one
+  have h_bdd := result1' a h1 h2 1 zero_lt_one
   rw [Asymptotics.isBigO_iff]
-  use (1 + 1) ^ (- s)
+  use (1 + 1) ^ s
   filter_upwards [h_bdd] with n hn
-  rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_of_nonneg, abs_of_nonneg, ← Real.mul_rpow]
-  · sorry
-  · sorry
+  rw [Real.norm_eq_abs, Real.norm_eq_abs, abs_of_nonneg, abs_of_nonneg]
   · replace hn := hn.2
-    sorry
+    convert Real.rpow_le_rpow ?_ hn.le (zero_le_one.trans hs.le) using 1
+    · rw [Real.inv_rpow (h1 n), Real.rpow_neg (h1 n)]
+    · rw [Real.mul_rpow (by positivity) (by positivity), Real.inv_rpow (by positivity),
+        Real.rpow_neg (by positivity)]
+    · rw [inv_nonneg]
+      exact h1 n
+  · positivity
+  · refine Real.rpow_nonneg ?_ _
+    exact h1 n
 
 #check tendsto_finset_sum
 
@@ -394,18 +516,14 @@ lemma result4 (T : Finset ℕ) :
     Tendsto (fun s : ℝ ↦ (s - 1) * ∑' n : ↑((T : Set ℕ)ᶜ), (n : ℝ) ^ (- s)) (𝓝[>] 1) (𝓝 1) := by
   have h_sum : (fun s ↦ (s - 1) * ∑' n : ℕ, (n : ℝ) ^ (- s) - (s - 1) * ∑ n ∈ T, (n : ℝ) ^ (- s))
       =ᶠ[𝓝[>] 1] (fun s : ℝ ↦ (s - 1) * ∑' n : ↑((T : Set ℕ)ᶜ), (n : ℝ) ^ (- s)) := by
-    filter_upwards with s
+    filter_upwards [eventually_mem_nhdsWithin] with s hs
     rw [sub_eq_iff_eq_add', ← mul_add, sum_add_tsum_compl]
-    sorry -- You might have to change some lines above too
+    rwa [summable_nat_rpow, neg_lt_neg_iff]
   refine Tendsto.congr' h_sum ?_
   have lim1 := zeta_residue
   have lim2 := result3 (fun n ↦ n) (fun n ↦ Nat.cast_nonneg n) T
   convert Tendsto.sub lim1 lim2
   rw [sub_zero]
-
-lemma result1' (a : ℕ → ℝ) (h1 : ∀ n, 0 ≤ a n) (h2 : a ~[atTop] fun n ↦ n) (ε : ℝ) (hε : 0 < ε) :
-    ∀ᶠ n : ℕ in atTop, (1 - ε) * (n : ℝ)⁻¹ < (a n)⁻¹ ∧ (a n)⁻¹ < (1 + ε) * (n : ℝ)⁻¹ := by
-  sorry
 
 #check tsum_strict_mono
 
@@ -434,14 +552,33 @@ lemma result5 {ε : ℝ} (hε : 0 < ε) (hε' : ε < 1) :
   · calc
       _ = (s - 1) * ∑ n ∈ T, a n ^ (- s) + (s - 1) * ∑' (n : ↑(T : Set ℕ)ᶜ), a n ^ (- s) := ?_
       _ < (s - 1) * ∑ n ∈ T, a n ^ (- s) +
-        (s - 1) * ∑' (n : ↑(T : Set ℕ)ᶜ), (1 + ε) ^ s * (n : ℝ) ^ (- s) := ?_
+          (s - 1) * ∑' (n : ↑(T : Set ℕ)ᶜ), (1 + ε) ^ s * (n : ℝ) ^ (- s) := ?_
       _ = (s - 1) * ∑ n ∈ T, a n ^ (-s) +
           (1 + ε) ^ s * (s - 1) * ∑' (n : ↑(T : Set ℕ)ᶜ), (n : ℝ) ^ (- s) := ?_
     · rw [← mul_add, sum_add_tsum_compl]
       exact result2 a h1 h2 hs
     · gcongr
-      · sorry
-      · sorry
+      · rwa [sub_pos]
+      · refine tsum_strict_mono ?_ ?_ ?_
+        · refine Summable.subtype (f := fun n ↦ (a n) ^ (- s)) ?_ (T : Set ℕ)ᶜ
+          exact result2 a h1 h2 hs
+        · refine Summable.mul_left _ ?_
+          refine Summable.subtype (f := fun (n : ℕ) ↦ (n : ℝ) ^ (- s)) ?_ (T : Set ℕ)ᶜ
+          rw [summable_nat_rpow]
+          exact neg_lt_neg hs
+        · rw [Pi.lt_def]
+          constructor
+          · rintro ⟨n, hn⟩
+            dsimp only
+            simp [T] at hn
+            -- We did something like that already above... We should probably extract a lemma that we will
+            -- use several times (including below)
+            sorry
+          · refine ⟨⟨N, ?_⟩, ?_⟩
+            · simp [T]
+            · dsimp only
+              -- See above
+              sorry
     · rw [tsum_mul_left]
       ring
 
