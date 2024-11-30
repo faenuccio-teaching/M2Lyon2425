@@ -324,16 +324,23 @@ example {ι : Type*} [CompleteSpace E] {g : ι → E →L[𝕜] F} (h : ∀ x, �
   · intro y h1 h2
     -- The idea is to write `y = (y + x) - x` and use the linearity of `g i`
     calc
-      ‖g i y‖ = ‖g i (x + y) - g i y‖           := ?_
-      _       ≤ ‖g i (x + y)‖ + ‖g i y‖         := ?_
-      _       ≤ (m + m : ℕ)                     := ?_
-      _       ≤ (m + m : ℕ) * (‖y‖ / (ε / ‖k‖)) := ?_
+      ‖g i y‖ = ‖g i (y + x) - g i x‖           := ?_
+      _       ≤ ‖g i (y + x)‖ + ‖g i x‖         := ?_
+      _       ≤ ‖g i (y + x)‖ + m               := ?_
+      _       ≤ m + m                           := ?_
+      _       ≤ ↑(m + m) * (‖y‖ / (ε / ‖k‖))    := ?_
       _       ≤ ↑(m + m) / (ε / ‖k‖) * ‖y‖      := ?_
-    · sorry
-    · sorry
-    · sorry
-    · sorry
-    · sorry
+    · rw [map_add, add_sub_cancel_right]
+    · exact norm_sub_le _ _
+    · exact (add_le_add_iff_left _).mpr <| real_norm_le x (mem_ball_self ε_pos) i
+    · rw [add_le_add_iff_right]
+      refine real_norm_le (y + x) ?_ i
+      rwa [add_comm, add_mem_ball_iff_norm]
+    · rw [← Nat.cast_add]
+      refine le_mul_of_one_le_right (Nat.cast_nonneg _) ?_
+      rwa [one_le_div (by positivity)]
+    · rw [mul_comm_div]
+
 end
 
 /-
@@ -572,7 +579,7 @@ lemma result5 {ε : ℝ} (hε : 0 < ε) (hε' : ε < 1) :
             dsimp only
             simp [T] at hn
             -- We did something like that already above... We should probably extract a lemma that we will
-            -- use several times (including below)
+            -- use several times
             sorry
           · refine ⟨⟨N, ?_⟩, ?_⟩
             · simp [T]
@@ -591,6 +598,7 @@ lemma result6 :
   have hε3_pos : 0 < ε / 3 := by positivity
   have hε3_lt : ε / 3 < 1 := lt_of_lt_of_le (div_lt_self hε_pos (by norm_num)) (min_le_left 1 ε')
   obtain ⟨T, hT⟩ := result5 a h1 h2 hε3_pos hε3_lt
-  sorry
+  obtain ⟨δ1, _, hδ1⟩ := Metric.tendsto_nhdsWithin_nhds.mp (result3 a h1 T) _ hε3_pos
+  sorry -- The rest of the proof gets a bit too technical (and some additionnal lemmas are needed)
 
 end Series
