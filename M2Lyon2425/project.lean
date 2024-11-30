@@ -55,10 +55,40 @@ instance LinCombEquiv : Equivalence (isLinearCombination h) where
     rw[← hll]
     simp only [neg_sub]
   trans := by
-    intros x y z hxy hyz
+    intros a b c hxy hyz
     rw[isLinearCombination] at *
+    obtain ⟨l,hl⟩ := hxy
+    obtain ⟨l',hl'⟩ := hyz
+    set l'' := l + l' with hl''
+    use l''
+    rw[hl'']
+    simp only [ Pi.add_apply, smul_eq_mul]
+    have new : a-c = (a-b) + (b-c) := by ring
+    rw[new,hl',hl]
+    simp only [smul_eq_mul]
+    have f1 (s : Finset ℕ)(f : ℕ →₀ ℝ )(hs : f.support ⊆ s): ∑ i in s, f i * h i  = ∑ i in f.support, f i * h i := by
+      rw[Finset.sum_subset hs]
+      intros x hx  hxs
+      rw[Finsupp.not_mem_support_iff] at hxs
+      rw[hxs]
+      ring
+    set s := l.support ∪ l'.support with hs
+    have hss : l.support ⊆ s := by
+      rw[hs]
+      exact Finset.subset_union_left
+    have hss' : l'.support ⊆ s := by
+      rw[hs]
+      exact Finset.subset_union_right
+    have hs1 : (l + l').support ⊆ s := by
+      rw[hs]
+      exact Finsupp.support_add
+    rw[← f1 s l hss,← f1 s l' hss',← f1 s (l+l') hs1,← Finset.sum_add_distrib]
+    apply Finset.sum_congr
+    rfl
+    intros x hx
+    simp only [Finsupp.add_apply]
+    ring
 
-    sorry
 
 /-Now having made these equivalences, we use Setoid.Classes to make classes on these elements, then creating an
 Setoid.IndexedPartition  on ℝ  -/
@@ -85,10 +115,27 @@ Setoid.IndexedPartition  on ℝ  -/
 
 /-Prove that there exists some N₀ st. xᵅₘ  + hₙ ∈ Rᵅₘ ∀ n ≥ N₀ -/
 /-Proof Sketch :- consider an open interval I st. xᵅⱼ ∉ I for j ≤ m-1 (If m = 1, our case is already satisfied). -/
-/- Then choose N₁ st.  Aⱼ = {xᵅⱼ + hₙ, n ≥ N₁} where j≤m and Aⱼ∩ Aₘ ∀ j. Then remove all  the finite points from
+/- Then choose N₁ st.  Aⱼ = {xᵅⱼ + hₙ, n ≥ N₁} where j≤m and I∩Aⱼ = ∅ ∀ j≤m-1 and Aₘ ⊆ I .-/
+/-This implies Aₘ ∩ Aⱼ = ∅ ∀ j ≤ m-1  -/
+
+/-Then remove all  the finite points from
   Aₘ that come from Bⱼ = {xᵅⱼ + hₙ, n ≤  N₁} where j≤m, call it A-/
 /-A contains a set Cₘ st. ∃ ℕ₂ C = {xᵅⱼ + hₙ, n ≥ ℕ₂}. Then C ⊆ Rᵅₘ  -/
 /-Thus ∀ n ≥ N₂
 F(xₘᵅ +hₙ) - F(xₘᵅ) / hₙ  = (F(xₘᵅ) + (xᵅₘ + hₙ - xₘᵅ)f(xₘᵅ) - F(xₘᵅ))/hₙ  = f(xᵅₘ)ₙ-/
 
--- end CounterExample1
+end CounterExample1
+
+namespace CounterExample2
+
+/-## CounterExample 2 -/
+/-Given any closed subinterval [a,b] of ℝ with a < b and any sequence ${hₙ}$ with n ∈ ℕ of nonzero real numbers converging to 0, there exists a continuous function F:[a,b] → ℝ s.t.   -/
+/-for any measurable function f : [a,b] → ℝ there exists a subsequence ${hₗ}$ where l ⊆ ℕ  such that :-  -/
+/- lim {k → ∞} (F(x + hₗ) - F(x))/hₗ  = f(x) almost everywhere on [a,b]  -/
+/-# Proof -/
+/- -/
+end CounterExample2
+
+namespace CounterExample3
+/-There exists a Lebesgue Integrable Function $f : ℝ → ℝ$ such that for all   -/
+end CounterExample3
