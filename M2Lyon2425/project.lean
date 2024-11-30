@@ -4,7 +4,6 @@ import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 import Mathlib
 set_option autoImplicit true
 
-
 noncomputable section
 namespace CounterExample1
 
@@ -89,11 +88,54 @@ instance LinCombEquiv : Equivalence (isLinearCombination h) where
     simp only [Finsupp.add_apply]
     ring
 
+instance ℝhasequiv : HasEquiv ℝ := ⟨isLinearCombination h⟩
 
 /-Now having made these equivalences, we use Setoid.Classes to make classes on these elements, then creating an
 Setoid.IndexedPartition  on ℝ  -/
+instance SR : Setoid ℝ where
+  r := isLinearCombination h
+  iseqv := LinCombEquiv h
 
-/-Here, ℝ = ⋃ Eᵅ  where α is chosen from a particular Eᵃ , which becomes our indexing set-/
+/-Defining the index set for the partition-/
+
+def s : (Quotient (SR h)) → Set ℝ := λ x => {y : ℝ | x = ⟦y⟧}
+
+/-Defining the Indexed partition-/
+
+instance IndexedPartion : IndexedPartition (s h) where
+  eq_of_mem := by
+    intros x i j hxi hxj
+    rw[s] at *
+    simp at *
+    rw[hxi,hxj]
+  some := by
+    intros x
+    have qrepr : ∃ (a : ℝ), Quotient.mk (SR h) a = x := by
+      exact Quotient.exists_rep x
+    set y :=  qrepr.choose with hy
+    exact y
+  some_mem := by
+    intros x
+    rw[s]
+    simp only [Set.mem_setOf_eq]
+    have qrepr : ∃ (a : ℝ), Quotient.mk (SR h) a = x := by
+      exact Quotient.exists_rep x
+    set y :=  qrepr.choose with hy
+    rw[hy,Eq.comm]
+    exact qrepr.choose_spec
+  index := by
+    intros x
+    exact ⟦x⟧
+  mem_index := by
+    intros x
+    rw[s]
+    simp only [Set.mem_setOf_eq]
+
+/-Now we define the function F on ℝpartition-/
+
+
+
+/-Here, ℝ = ⋃ Eᵅ  where α is chosen from a particular Eᵅ  , which becomes our indexing set-/
 /-Prove that Eᵅ is countable for each α   -/
 /- Define a ennumeration {xᵢᵅ} for each Eᵅ. with α = x₁ᵅ -/
 /-Let Eᵅᵢ = {xᵢᵅ} ∪  ⋃ⱼ {xᵢᵅ + hⱼ} , where j ∈ ℕ   -/
