@@ -19,13 +19,13 @@ variable (h : ℕ → ℝ) (h1 : Filter.Tendsto h atTop (nhds 0))(f : ℝ → �
 
 /-First define the equivalence relation-/
 def isLinearCombination(a1 : ℝ)(a2 : ℝ) : Prop :=
-    ∃ l : ℕ →₀ ℝ , a1 - a2 =  ∑ i ∈ l.support, l i • h i
+    ∃ l : ℕ →₀ ℤ  , a1 - a2 =  ∑ i ∈ l.support, l i • h i
 
 instance LinCombEquiv : Equivalence (isLinearCombination h) where
   refl := by
     intro x
     rw[isLinearCombination]
-    set l : ℕ →₀ ℝ := 0 with hl
+    set l : ℕ →₀ ℤ := 0 with hl
     use l
     rw[hl]
     simp only [sub_self, Finsupp.support_zero, Finsupp.coe_zero, Pi.zero_apply, zero_smul,
@@ -34,7 +34,7 @@ instance LinCombEquiv : Equivalence (isLinearCombination h) where
     intros x y hxy
     rw[isLinearCombination] at *
     set l := hxy.choose with hl
-    set l' : ℕ →₀ ℝ := {
+    set l' : ℕ →₀ ℤ := {
       support := l.support,
       toFun := λ i => - (l.toFun i),
       mem_support_toFun := by
@@ -47,10 +47,11 @@ instance LinCombEquiv : Equivalence (isLinearCombination h) where
     simp only [Finsupp.coe_mk, smul_eq_mul, neg_mul, Finset.sum_neg_distrib]
     have hll := hxy.choose_spec
     rw[←hl] at hll
-    simp only [Finsupp.coe_mk,smul_eq_mul] at hll
+    simp only [neg_smul, zsmul_eq_mul, Finset.sum_neg_distrib]
     rw[Finsupp.coe_mk] at hll
     have hl': l = Classical.choose hxy := by rfl
     rw[← hl'] at hll
+    simp only [zsmul_eq_mul] at hll
     rw[← hll]
     simp only [neg_sub]
   trans := by
@@ -61,11 +62,10 @@ instance LinCombEquiv : Equivalence (isLinearCombination h) where
     set l'' := l + l' with hl''
     use l''
     rw[hl'']
-    simp only [ Pi.add_apply, smul_eq_mul]
     have new : a-c = (a-b) + (b-c) := by ring
     rw[new,hl',hl]
-    simp only [smul_eq_mul]
-    have f1 (s : Finset ℕ)(f : ℕ →₀ ℝ )(hs : f.support ⊆ s): ∑ i in s, f i * h i  = ∑ i in f.support, f i * h i := by
+    simp only [zsmul_eq_mul, Pi.add_apply, Int.cast_add]
+    have f1 (s : Finset ℕ)(f : ℕ →₀ ℤ )(hs : f.support ⊆ s): ∑ i in s, f i * h i  = ∑ i in f.support, f i * h i := by
       rw[Finset.sum_subset hs]
       intros x hx  hxs
       rw[Finsupp.not_mem_support_iff] at hxs
@@ -85,7 +85,7 @@ instance LinCombEquiv : Equivalence (isLinearCombination h) where
     apply Finset.sum_congr
     rfl
     intros x hx
-    simp only [Finsupp.add_apply]
+    simp only [Finsupp.coe_add, Pi.add_apply, Int.cast_add]
     ring
 
 instance ℝhasequiv : HasEquiv ℝ := ⟨isLinearCombination h⟩
