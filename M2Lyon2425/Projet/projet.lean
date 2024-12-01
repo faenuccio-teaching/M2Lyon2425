@@ -32,7 +32,7 @@ def conjugate  (x : G) (H : Subgroup G) : Subgroup G where
     use h₁ * h₂, H.mul_mem mem₁ mem₂
     rw [cond₁, cond₂]; group
 
-instance (H : Subgroup G) (S : Sylow  p G) : Sylow p H where
+/-instance (H : Subgroup G) (S : Sylow  p G) : Sylow p H where
   carrier := by sorry
   mul_mem' := by sorry
   inv_mem' := by sorry
@@ -44,7 +44,7 @@ instance (H : Subgroup G) (S : Sylow  p G) : Sylow p H where
 theorem sylow_of_subgroup (H : Subgroup G) (S : Sylow  p G) :
     H ∈   (Sylow p G).toSubgroup := by sorry
 
-
+-/
 
 theorem sylow_of_subgroup (H : Subgroup G) (S : Sylow  p G) :
-    ∃ g ∈ G , H ⊓ (conjugate g (Sylow.toSubgroup S)) ∈  (Sylow p H.toGroup) := by
+    ∃ g : G , H ⊓ (conjugate g (Sylow.toSubgroup S)) ∈  (Sylow p H.toGroup) := by
