@@ -230,7 +230,7 @@ example : True → ¬False := by
 
 
 
--- Use of the `have` tatic
+-- Use of the `have` tactic
 example : (P → Q) → ¬Q → ¬P := by
   intro h1 h2 hP
   have  q: Q := h1 hP
@@ -618,7 +618,7 @@ example : ¬ (P ↔ ¬ P) := by
 /- END TODO -/
 
 /-
-  # Disjonction / Or
+  # Disjunction / Or
   Use `\or` to write `∨`
 -/
 
