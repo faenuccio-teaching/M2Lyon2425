@@ -1,0 +1,9 @@
+
+/-
+1) On définit Z[i]
+2) On montre que Z[i] est euclidien
+3) On montre que les inversibles de Z[i] sont : 1, -1, i et -i
+4) On montre que p s'écrit comme somme de 2 carrés si et seulement si p est réductible dans Z[i]
+5) On montre que p est premier dans Z[i] <=> -1 n'est pas un carré modulo p
+
+-/
