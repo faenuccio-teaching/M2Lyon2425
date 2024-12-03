@@ -43,7 +43,7 @@ section Operations
 variable (α β : Type) (f : α → β)
 
 -- The **image**
-
+#check f
 
 example : 1 ∈ Nat.succ '' univ := by
   -- use 0

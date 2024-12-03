@@ -1,9 +1,10 @@
 /-
 J'ai commencé mon projet, sur la description de SO_2(F_q)
-Pour l'instant j'ai montré que c'est un groupe, et je suis pas loin d'avoir son cardinal lorsque q est une puissance de 2
-
+Pour l'instant j'ai montré que c'est un groupe,
+Pour q= 2^n, j'ai le cardinal de So2 et que les elements sont d'ordre au plus 2,
+Je voudrais bien dire que le groupe est isomorphe à (Z/2Z)^n
 Pour q non puissance de 2 je suis la preuve faite dans le nouvelles histoires hédonistes  de groupes et géométrie tome 2 de Calderos, p 53
-En passant par F_q[X/X^2+1],  mais cela me semble un peu compliqué
+En passant par F_q[X]/X^2+1,  mais cela me semble un peu compliqué
 Pour l'instant j'essaie de finir la charactéristique 2 et j'avise. -/
 
 
@@ -121,9 +122,6 @@ theorem det_ne_zero [Nontrivial R] (g : SpecialOrthogonalGroup n R) : det ↑ₘ
   rw [g.det_coe]
   norm_num
 
-theorem row_ne_zero [Nontrivial R] (g : SpecialOrthogonalGroup n R) (i : n) : ↑ₘg i ≠ 0 := fun h =>
-  g.det_ne_zero <| det_eq_zero_of_row_eq_zero i <| by simp [h]
-
 end CoeLemmas
 
 instance monoid : Monoid (SpecialOrthogonalGroup n R) :=
@@ -145,7 +143,6 @@ instance : Group (SpecialOrthogonalGroup n R) :=
 variable (K : Type v) [Field K] [Fintype K]
 
 open scoped MatrixGroups
-
 
 
 theorem SO2_inv_co (A : SO(2, R)) : A.1 1 0 = -A.1 0 1 ∧ A.1 0 0 = A.1 1 1 ∧ (A.1 0 0)^2 + (A.1 1 0)^2 = 1  := by
@@ -185,8 +182,48 @@ theorem SO2_inv_co (A : SO(2, R)) : A.1 1 0 = -A.1 0 1 ∧ A.1 0 0 = A.1 1 1 ∧
 
 
 
+
 variable {F : Type*} [Field F]
 variable [Fintype F]
+
+def is_So2 (a: F )( b: F )(h : a^2+b^2=1) : SO(2,F ) := by
+  constructor
+  swap
+  · exact  !![a,-b ; b ,a]
+  · constructor
+    · rw[det_fin_two]
+      change a*a - (-b)*b = 1
+      simp
+      repeat rw[← pow_two]
+      exact h
+    · have hT : (transpose !![a, -b; b, a])= !![a, b; -b, a] := by
+        rw [← Matrix.ext_iff ]
+        intro i j
+        match i, j with
+        |0, 0 => rfl
+        |0,1 => rfl
+        |1, 0 => rfl
+        |1,1 => rfl
+      rw [hT]
+      rw[Matrix.mul_fin_two]
+      rw [← Matrix.ext_iff ]
+      intro i j
+      match i, j with
+      |0, 0 => simp; rw[← pow_two,← pow_two ]; exact h
+      |0,1 => simp; rw[mul_comm]; simp
+      |1, 0 => simp ;rw[mul_comm]; simp
+      |1,1 => simp; rw[← pow_two,← pow_two, add_comm ]; exact h
+
+
+
+
+
+
+
+/-theorem is_So2 (A:(Matrix (Fin 2) (Fin 2) F)) (hA : A 1 0 = -A 0 1 ∧ A 0 0 = A 1 1 ∧ (A 0 0)^2 + (A 1 0)^2 = 1 )
+  : ( A∈ SO(2,F).val ) := by-/
+
+
 
 theorem square_char_2 (h : CharP F 2) (A : SO(2, F)) : (A.1= (A⁻¹).1) := by
   have ha := (SO2_inv_co A).left
@@ -203,12 +240,56 @@ theorem square_char_2 (h : CharP F 2) (A : SO(2, F)) : (A.1= (A⁻¹).1) := by
   simp only [coe_inv]
   exact(symm haa)
 
+#check Set.univ
 def f (A:SO(2,F)) := A.1 0 0
+#check f
 
-variable {F_2 : Type*} [Field F_2][Fintype F_2][CharP F_2 2]
 
-theorem card_so2_char2 (h : ringChar F_2 = 2) : (Nat.card SO(2,F_2) = Nat.card F_2) := by
-have q := Nat.card F_2
+def couple := (F × F)
+def uni := Set.univ (α:=(F×F))
+#check uni
+
+
+def g ( a : F× F):=  Matrix.of (fun (i:Fin 2) ↦ (fun (j : Fin 2) ↦  match i,j with
+  |0, 0 => a.1
+  |0,1 => -a.2
+  |1, 0 => a.2
+  |1,1 => a.1
+ ))
+#check g
+
+def g' := fun ( a : F× F) ↦   Matrix.of (fun (i:Fin 2) ↦ (fun (j : Fin 2) ↦  match i,j with
+  |0, 0 => a.1
+  |0,1 => -a.2
+  |1, 0 => a.2
+  |1,1 => a.1
+ ))
+#check g'
+
+
+def C := Set.range (g : F × F → Matrix (Fin 2) (Fin 2) F)
+
+theorem bijg : (Function.Injective (g : F × F → Matrix (Fin 2) (Fin 2) F) ) := by
+  intro a b hab
+  ext
+  · rw[← Matrix.ext_iff] at hab
+    specialize hab 0 0
+    exact hab
+
+  · rw[← Matrix.ext_iff] at hab
+    specialize hab 1 0
+    exact hab
+
+
+def caree := { (a, b) : F × F | a^2+ b^2 =1 }
+
+def E := Polynomial F
+def J:= E⧸( (@Polynomial.X (R:=F) )^2+1)
+#check E
+
+variable {F_2n : Type*} [Field F_2n][Fintype F_2n][CharP F_2n 2]
+
+theorem card_so2_char2  : (Nat.card SO(2,F_2n) = Nat.card F_2n) := by
 refine Nat.card_eq_of_bijective f ?_
 constructor
 · intro A B h
@@ -225,7 +306,7 @@ constructor
     rw[zero_add] at h2
     rw[add_comm]
     exact h2
-  have  : A.1 1 0^2  =(frobenius F_2 2) (A.1 1 0)  := by
+  have  : A.1 1 0^2  =(frobenius F_2n 2) (A.1 1 0)  := by
     rfl
   rw[this] at h1A
   have h1B : B.1 1 0 ^2 = 1+ B.1 0 0^2 :=  by
@@ -236,7 +317,7 @@ constructor
     rw[zero_add] at h2
     rw[add_comm]
     exact h2
-  have  : B.1 1 0^2  =(frobenius F_2 2) (B.1 1 0)  := by
+  have  : B.1 1 0^2  =(frobenius F_2n 2) (B.1 1 0)  := by
     rfl
   rw[this] at h1B
   have h11 := h
@@ -245,7 +326,7 @@ constructor
   rw[← h1B] at h1A
 
   have h10 : A.1 1 0 = B.1 1 0 := by
-    apply injective_frobenius F_2 2
+    apply injective_frobenius F_2n 2
     exact h1A
 
   have h01 :  A.1 0 1 = B.1 0 1 := by
@@ -270,40 +351,56 @@ constructor
   |1,1 =>  exact h11
 
 · intro a
-  have b:= bijective_frobenius F_2 2
+  have b:= bijective_frobenius F_2n 2
   have c := b.right
   specialize c (-a^2+1)
-  have a0  := c.choose_spec
-  have b0 := c.choose
+  obtain ⟨ b0, hb⟩ := c
+  have hb0 : b0^2 =-a^2 +1 := by
+    exact hb
+  set A := !![a,-b0 ; b0 ,a]
+  have hA : det A = 1 ∧ A*A.transpose= 1 := by
+    constructor
+    · rw[det_fin_two]
+      change a * a - (-b0) * b0 = 1
+      simp
+      repeat rw[← pow_two]
+      change a^2 + (frobenius F_2n 2) b0 = 1
+      rw[hb]
+      simp
 
+    · have h : a^2 + b0^2 = 1 := by
+        rw[hb0]
+        simp
+      have hT : (transpose !![a, -b0; b0, a])= !![a, b0; -b0, a] := by
 
+        rw [← Matrix.ext_iff ]
+        intro i j
+        match i, j with
+        |0, 0 => rfl
+        |0,1 => rfl
+        |1, 0 => rfl
+        |1,1 => rfl
+      rw [hT]
+      rw[Matrix.mul_fin_two]
+      rw [← Matrix.ext_iff ]
+      intro i j
+      match i, j with
+      |0, 0 => simp; rw[← pow_two,← pow_two ]; exact h
 
+      |0,1 => simp; rw[mul_comm]; simp
+      |1, 0 => simp ;rw[mul_comm]; simp
+      |1,1 => simp; rw[← pow_two,← pow_two, add_comm ]; exact h
 
-
-
-  sorry
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  use ↑⟨A, hA⟩
+  rw[f ]
+  simp
+  rfl
 
 
 
 
 def sphere := { (a, b) : ℕ ×  ℕ | a * b = 12 }
 
-def caree := { (a, b) : F × F | a^2+ b^2 =1 }
 
 
 
