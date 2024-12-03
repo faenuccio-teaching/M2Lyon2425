@@ -98,14 +98,14 @@ instance SR : Setoid ℝ where
 
 /-Defining the index set for the partition-/
 
-def s : (Quotient (SR h)) → Set ℝ := λ x => {y : ℝ | x = ⟦y⟧}
+def E : (Quotient (SR h)) → Set ℝ := λ x => {y : ℝ | x = ⟦y⟧}
 
 /-Defining the Indexed partition-/
 
-instance IndexedPartion : IndexedPartition (s h) where
+instance IndexedPartiononℝ : IndexedPartition (E h) where
   eq_of_mem := by
     intros x i j hxi hxj
-    rw[s] at *
+    rw[E] at *
     simp at *
     rw[hxi,hxj]
   some := by
@@ -116,7 +116,7 @@ instance IndexedPartion : IndexedPartition (s h) where
     exact y
   some_mem := by
     intros x
-    rw[s]
+    rw[E]
     simp only [Set.mem_setOf_eq]
     have qrepr : ∃ (a : ℝ), Quotient.mk (SR h) a = x := by
       exact Quotient.exists_rep x
@@ -128,11 +128,15 @@ instance IndexedPartion : IndexedPartition (s h) where
     exact ⟦x⟧
   mem_index := by
     intros x
-    rw[s]
+    rw[E]
     simp only [Set.mem_setOf_eq]
 
 /-Now we define the function F on ℝpartition-/
 
+theorem EalphaCountable (α : Quotient (SR h)) : ((E h) α).Countable := by
+  rw[E,←Set.countable_coe_iff,countable_iff_exists_injective]
+
+  sorry
 
 
 /-Here, ℝ = ⋃ Eᵅ  where α is chosen from a particular Eᵅ  , which becomes our indexing set-/
@@ -173,11 +177,40 @@ namespace CounterExample2
 /-## CounterExample 2 -/
 /-Given any closed subinterval [a,b] of ℝ with a < b and any sequence ${hₙ}$ with n ∈ ℕ of nonzero real numbers converging to 0, there exists a continuous function F:[a,b] → ℝ s.t.   -/
 /-for any measurable function f : [a,b] → ℝ there exists a subsequence ${hₗ}$ where l ⊆ ℕ  such that :-  -/
-/- lim {k → ∞} (F(x + hₗ) - F(x))/hₗ  = f(x) almost everywhere on [a,b]  -/
+/- lim {k → ∞} (F(x + hₗ) - F(x))/hₗ  = f(x) almost everywhere on [a,b].  -/
+/- By Lusin'a Approximation theorem, f(x) is continuous in a subset R of [a,b] where μ([a,b]\R) < ε  -/
+/-By Weirstrass Approximation theorem, there exists a sequence of polynomial functions {Pₖ}, such that they converge to f almost everywhere -/
+/-Consider the set A ⊆ C[a,b] which contains functions like g which satisfy :- -/
+/-((g(x + hₘ) - g(x))/hₘ - Pₖ) < 1/n. holds except for points that have lebesgue measure < 1/n. -/
+/-Let S = C[a,b] \ A -/
+/-Sₙₖ be subsets of S that contain elements g which satisfy ∀ m > n:--/
+/-((g(x + hₘ) - g(x))/hₘ - Pₖ) ≥ 1/n holds on some set having lebesgue lebesgue measure > 1/n -/
+/-Prove that S = ∪Sₙₖ ∀ k,n -/
+/-Now show Sₙₖ is nowhere dense in C[a,b] by showing it is closed and C[a,b]\Sₙₖ is dense in C[a,b] for all positive integers n and k.  -/
+/-If Sₙₖ is empty then the result is already true. Say, Sₙₖ is non-empty and there exists a sequence of functions {gₘ} in Sₙₖ that converge to g. We prove that g ∈ Sₙₖ.-/
+/-Chhose ε> 0 such that there exists N ∈ ℕ such that ∀ m ≥ N, ‖gₘ(x) - g(x) ‖ < ε ∀ x ∈ [a,b].Then for m>n, and j > n  we see that -/
+/-‖ (gₘ(x + hⱼ) - gₘ(x))/hⱼ - (g(x + hⱼ) - g(x))/hⱼ ‖ ≤ ‖ (gₘ(x + hⱼ) - g(x + hⱼ))/hⱼ‖ + ‖ (gₘ(x) - g(x))/hⱼ‖  ≤ 2ε/|hⱼ|-/
+/-Now use the property that each gₘ ∈ Sₙₖ for all integers j > n on a set having lebesgue measure not less than 1/n we see that,-/
+/-2ε/|hⱼ| ≥  ‖ (gₘ(x + hⱼ) - gₘ(x))/hⱼ - (g(x + hⱼ) - g(x))/hⱼ ‖  = ‖ (gₘ(x + hⱼ) - gₘ(x))/hⱼ -Pₖ - ((g(x + hⱼ) - g(x))/hⱼ - Pₖ) ‖ ≥ ‖ (gₐ(x + hⱼ) - gₘ(x))/hⱼ -Pₖ‖ - ‖ (g(x + hⱼ) - g(x))/hⱼ -Pₖ ‖ ≥ 1/n - ‖ (g(x + hⱼ) - g(x))/hⱼ -Pₖ ‖ -/
+/-‖ (g(x + hⱼ) - g(x))/hⱼ -Pₖ ‖ ≥ 1/n - 2ε/|hⱼ| -/
+/-This proves that g ∈ Sₙₖ , and hence Sₙₖ is closed. -/
 /-# Proof -/
 /- -/
 end CounterExample2
 
 namespace CounterExample3
-/-There exists a Lebesgue Integrable Function $f : ℝ → ℝ$ such that for all   -/
+/-There exists a bounded Lebesgue Integrable Function $f : [0,1] → ℝ$ such that for all the functions g : [0,1] → ℝ which is equal to f almost everywhere with respect to the lebesgue measure, is never Riemann Integrable-/
+/-## Proof-/
+/-Let A be a set which is contained in [0,1] and has lebesgue measure less than 1 and contains all the rationals in [0,1]. -/
+/- This is constructed by sets Ioo(rₙ - 1/2ⁿ, rₙ + 1/2ⁿ )  where rₙ is an enumeration of the rationals -/
+/- Let the bounded integrable function f be the Indicator function on A. -/
+/-If g is equal to A almost everywhere, then there exists a null set:= N s.t g(x) = 1 ∀ A\N and g(x) = 0 for x ∉ N ∪ A -/
+/-We then use the fact that every bounded Riemann Integrable function is continuous almost everywhere.-/
+/-Since A is open and dense in [0,1], A\N is dense in [0,1]  and (A∪N)ᶜ has some finite measure. -/
+
+/- # Proof-/
+/-A is open and dense in [0,1], so for any open interval I in [0,1], I∩A ≠ ∅. Thus ∃ an open interval I₁ such that I₁ ⊆ I∩A-/
+/-μ(I∩A) > 0  -/
+/- μ(A∩I) = μ(A∩I∖N) + μ(A∩I∩N) = μ(A∩I\N) ≤ μ(A\N)-/
+/-So, g is discontinuous at all the points (A∪N)ᶜ-/
 end CounterExample3
