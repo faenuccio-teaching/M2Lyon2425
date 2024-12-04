@@ -520,6 +520,20 @@ example (f g h : Ω → ℝ)
   simp_rw [Pi.mul_apply, Pi.ofNat_apply, Nat.cast_ofNat, Pi.add_apply, two_mul]
   gcongr
 
+-- Just for fun, let's try to reprove the result above without using `filter_upwards`
+example (f g h : Ω → ℝ)
+    (h₁ : f ≤ᵐ[μ] g) (h₂ : f ≤ᵐ[μ] h) : 2 * f ≤ᵐ[μ] g + h := by
+  rw [EventuallyLE, Filter.Eventually, mem_ae_iff] at h₁ h₂ ⊢
+  have : {x | (2 * f) x ≤ (g + h) x}ᶜ ⊆ {x | f x ≤ g x}ᶜ ∪ {x | f x ≤ h x}ᶜ := by
+    rw [← Set.compl_inter, Set.compl_subset_compl]
+    intro x hx
+    simp_rw [Set.mem_setOf, Pi.mul_apply, Pi.ofNat_apply, Nat.cast_ofNat, Pi.add_apply, two_mul]
+    gcongr
+    · exact hx.1
+    · exact hx.2
+  refine measure_mono_null this ?_
+  exact measure_union_null h₁ h₂
+
 example (f g : Ω → ℝ) (h : f =ᵐ[μ] g) (hg : ∀ᵐ ω ∂μ, 2 * g ω + 1 ≤ 0) :
     ∀ᵐ ω ∂μ, f ω ≤ -1 / 2 := by
   filter_upwards [h, hg] with ω h1 h2
