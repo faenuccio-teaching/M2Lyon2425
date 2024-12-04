@@ -141,7 +141,7 @@ def nombre_constructible (a : ℂ) : Prop :=
   ∃ (T : TowerOfFields) (n : ℕ), T.isFiniteDimensional ∧ T.rankLessTwo ∧ T.K 0 = ℚ ∧
     T.K n = Algebra.adjoin ℚ { a }
 
-theorem multiplicativity_algebra (n m : ℕ+) (R S T : Type*) [inst11 : Field R] [inst12 : Field S] [inst13 : Field T] [inst1 : Algebra R S] [inst2 : Algebra S T] [inst3 : Algebra R T] : FiniteDimensional.finrank R S = n ∧ FiniteDimensional.finrank (S) (T) = m → (FiniteDimensional.finrank (R) (T) = n * m):= by
+theorem multiplicativity_algebra (n m : ℕ+) (R S T : Type*) [inst11 : Field R] [inst12 : Field S] [inst13 : Field T] [inst1 : Algebra R S] [inst2 : Algebra S T] : FiniteDimensional.finrank R S = n ∧ FiniteDimensional.finrank (S) (T) = m → (FiniteDimensional.finrank (R) (T) = n * m):= by
   sorry
 
 --Théorème (Wantzel) : si a est constructible, ℚ(a) est de degré 2^m sur ℚ pour un certains m.
@@ -449,10 +449,10 @@ structure TowerOfGroup2 {G : Type*} [Group G] where
   H : ℕ → Subgroup G
   inclusion : ∀ i, H (i + 1) ≤ H i
   normalSubGroup : ∀ i, @IsNormalSubgroup (H i) _ (Subgroup.inclusion (inclusion i)).range
-  indice : ∀ i,  Nat.card (H (i+1) ⧸ H i) = 2
 
 
-def Suite_resol_ind2 (G : TowerOfGroup) : Prop := G.ToG_indice_2 ∧ H 0 = G ∧  H m = IsSubgroup.trivial G
+
+def Suite_resol_ind2 (m : Nat) (G : Type*) [Group G] : Prop := ∃ (SubG : @TowerOfGroup2 G _ ), SubG.H 0 = G ∧  SubG.H m = IsSubgroup.trivial G ∧ ∀ i, @Subgroup.index (SubG.H i) _ (SubG.inclusion i)
 
 theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
 intro h
