@@ -269,7 +269,7 @@ def g' := fun ( a : F× F) ↦   Matrix.of (fun (i:Fin 2) ↦ (fun (j : Fin 2) �
 
 def C := Set.range (g : F × F → Matrix (Fin 2) (Fin 2) F)
 
-theorem bijg : (Function.Injective (g : F × F → Matrix (Fin 2) (Fin 2) F) ) := by
+theorem injg : (Function.Injective (g : F × F → Matrix (Fin 2) (Fin 2) F) ) := by
   intro a b hab
   ext
   · rw[← Matrix.ext_iff] at hab
@@ -367,12 +367,10 @@ constructor
       change a^2 + (frobenius F_2n 2) b0 = 1
       rw[hb]
       simp
-
     · have h : a^2 + b0^2 = 1 := by
         rw[hb0]
         simp
       have hT : (transpose !![a, -b0; b0, a])= !![a, b0; -b0, a] := by
-
         rw [← Matrix.ext_iff ]
         intro i j
         match i, j with
@@ -386,7 +384,6 @@ constructor
       intro i j
       match i, j with
       |0, 0 => simp; rw[← pow_two,← pow_two ]; exact h
-
       |0,1 => simp; rw[mul_comm]; simp
       |1, 0 => simp ;rw[mul_comm]; simp
       |1,1 => simp; rw[← pow_two,← pow_two, add_comm ]; exact h
