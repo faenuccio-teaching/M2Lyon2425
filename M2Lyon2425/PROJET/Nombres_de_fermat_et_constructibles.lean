@@ -563,20 +563,44 @@ theorem Wantzel2 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteD
                    apply algebraMap at ih
                    apply algebraMap at halgebran1
                    exact halgebran1.comp ih
+  have separable_n : ∀ (n : ℕ), Algebra.IsSeparable (K 0) (K n) :=by
+    intro n
+    induction n with
+    | zero => have hhh:= @Algebra.isSeparable_self (K 0) (K1 0)
+              exact hhh
+              sorry
+    | succ n ih => sorry
   have hyp : ∀ (n : ℕ), ∃ (m : ℕ), FiniteDimensional.finrank (K 0) (K n)=2^m :=by
     intro n
     induction n with
     | zero => use 0
               simp
-              --rw[FiniteDimensional.finrank]
-              have htest := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K 0) (K1 0) (K1 0) (Algebra.id (K 0)) (sorry)
+              have htest := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K 0) (K1 0) (K1 0) (Algebra.id (K 0)) (Algebra.isSeparable_self (K 0))
               rw[FiniteDimensional.finrank] at htest
               have hfield : @Field.finSepDegree (K 0) (K 0) (K1 0) (K1 0) (Algebra.id (K 0)) = 1 :=by
-                sorry
+                exact Field.finSepDegree_self (K 0)
               rw[hfield] at htest
               have htest := htest.symm
               rw[<-FiniteDimensional.finrank] at htest
+              exact htest
               sorry
-    | succ n ih => sorry
+    | succ n ih => have hfdn := h3 n
+                   dsimp at hfdn
+                   obtain ⟨m, hm⟩ := ih
+                   by_cases hn : FiniteDimensional.finrank (K n) (K (n+1)) = 2
+                   · use (m+1)
+                     have hnn := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K n) (K1 0) (K1 n) (algebra_n n) (separable_n n)
+                     have hmm := @Field.finSepDegree_eq_finrank_of_isSeparable (K n) (K (n+1)) (K1 n) (K1 (n+1)) (K2 n) (sorry)
+                     rw [<-hnn] at hm
+                     rw [<-hmm] at hn
+                     have hnm := @Field.finSepDegree_mul_finSepDegree_of_isAlgebraic (K 0) (K n) (K1 0) (K1 n) (algebra_n n) (K (n+1)) (K1 (n+1)) (algebra_n (n+1)) (K2 n) (sorry) (sorry)
+                     have hnnnn := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K (n+1)) (K1 0) (K1 (n+1)) (algebra_n (n+1)) (separable_n (n+1))
+                     rw[<-hnnnn]
+                     change (Field.finSepDegree (K 0) (K (n + 1)) = 2 ^ m * 2)
+                     rw[<-hm,<-hn]
+                     exact hnm.symm
+                   · sorry
   specialize hyp h1
+  obtain ⟨ m, hm ⟩ := hyp
+  use m
   sorry
