@@ -148,19 +148,18 @@ theorem multiplicativity_algebra (n m : ℕ+) (R S T : Type*) [inst11 : Field R]
 
 --Théorème (Wantzel) : si a est constructible, ℚ(a) est de degré 2^m sur ℚ pour un certains m.
 theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
-intro a
-obtain ⟨ h, h1, h2, h3, h4, h5⟩ := a
-obtain ⟨K, h12, h13⟩ := h
-dsimp at h4
-dsimp at h5
-
-have htest : ∀ (i : ℕ), Algebra (K 0) (K i) :=by
+  intro a
+  obtain ⟨ h, h1, h2, h3, h4, h5⟩ := a
+  obtain ⟨K, h12, h13⟩ := h
+  dsimp at h4
+  dsimp at h5
+  have htest : ∀ (i : ℕ), Algebra (K 0) (K i) :=by
   intro i
   induction i with
   | zero => exact Algebra.id (K 0)
   | succ n ih =>
                 sorry
-have h6 : ∀ (i : ℕ), Field.sepDegree (K i) (K (i+1)) * Field.sepDegree (K (i+1)) (K (i+2)) = @Field.sepDegree (K i) (K (i+2)) (h12 i) (h12 (i+2)) (sorry) :=by
+  have h6 : ∀ (i : ℕ), Field.sepDegree (K i) (K (i+1)) * Field.sepDegree (K (i+1)) (K (i+2)) = @Field.sepDegree (K i) (K (i+2)) (h12 i) (h12 (i+2)) (sorry) :=by
   intro i
   have h61 : Algebra (K i) (K (i+2)) :=by
     have h611 := h13 i
@@ -184,12 +183,12 @@ have h6 : ∀ (i : ℕ), Field.sepDegree (K i) (K (i+1)) * Field.sepDegree (K (i
     exact Algebra.IsAlgebraic.of_finite (K i) (K (i + 1))
   have h7 := @Field.sepDegree_mul_sepDegree_of_isAlgebraic (K i) (K (i+1)) (h12 i) (h12 (i+1)) (h13 i) (K (i+2)) (h12 (i+2)) h61 (h13 (i+1)) h62 h63
   sorry
-have h8 : ∀ (n : ℕ), Algebra (K 0) (K n) :=by
+  have h8 : ∀ (n : ℕ), Algebra (K 0) (K n) :=by
   intro n
   induction n with
   | zero => exact Algebra.id (K 0)
   | succ n ih => sorry
-have h9 : ∀ (n : ℕ), ∃ (m :ℕ), FiniteDimensional.finrank (K 0) (K n) = 2^m:=by
+  have h9 : ∀ (n : ℕ), ∃ (m :ℕ), FiniteDimensional.finrank (K 0) (K n) = 2^m:=by
   intro n
   induction n with
   | zero => use 0
@@ -201,13 +200,13 @@ have h9 : ∀ (n : ℕ), ∃ (m :ℕ), FiniteDimensional.finrank (K 0) (K n) = 2
           · use (m+1)
             sorry
           · sorry
-specialize h9 h1
-obtain ⟨h91,hh91⟩ :=h9
-use h91
-rw[<-hh91]
-have hhhh : Algebra (K h1) (K 0)=Algebra (↥(Algebra.adjoin ℚ {a})) (ℚ) :=by
+  specialize h9 h1
+  obtain ⟨h91,hh91⟩ :=h9
+  use h91
+  rw[<-hh91]
+  have hhhh : Algebra (K h1) (K 0)=Algebra (↥(Algebra.adjoin ℚ {a})) (ℚ) :=by
   sorry
-sorry
+  sorry
 
       --rw[<-Module.finrank_mul_finrank] at left
 -- Field.finSepDegree_eq_finrank_iff
@@ -549,3 +548,35 @@ cases h with
 
   --instNormalSubgroup: ∀ i, IsNormalSubgroup (G i)
 --Definition d'être une tour de corps de dimension fin
+
+theorem Wantzel2 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
+  intro nb_consa
+  obtain ⟨h, h1, h2, h3, h4, h5⟩ := nb_consa
+  obtain ⟨K, K1, K2⟩ := h
+  dsimp at h4; dsimp at h5
+  have algebra_n : ∀ (n :ℕ), Algebra (K 0) (K n) :=by
+    intro n
+    induction n with
+    | zero => exact Algebra.id (K 0)
+    | succ n ih => have halgebran1 := K2 n
+                   apply RingHom.toAlgebra
+                   apply algebraMap at ih
+                   apply algebraMap at halgebran1
+                   exact halgebran1.comp ih
+  have hyp : ∀ (n : ℕ), ∃ (m : ℕ), FiniteDimensional.finrank (K 0) (K n)=2^m :=by
+    intro n
+    induction n with
+    | zero => use 0
+              simp
+              --rw[FiniteDimensional.finrank]
+              have htest := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K 0) (K1 0) (K1 0) (Algebra.id (K 0)) (sorry)
+              rw[FiniteDimensional.finrank] at htest
+              have hfield : @Field.finSepDegree (K 0) (K 0) (K1 0) (K1 0) (Algebra.id (K 0)) = 1 :=by
+                sorry
+              rw[hfield] at htest
+              have htest := htest.symm
+              rw[<-FiniteDimensional.finrank] at htest
+              sorry
+    | succ n ih => sorry
+  specialize hyp h1
+  sorry
