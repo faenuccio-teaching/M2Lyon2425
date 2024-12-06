@@ -599,7 +599,22 @@ theorem Wantzel2 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteD
                      change (Field.finSepDegree (K 0) (K (n + 1)) = 2 ^ m * 2)
                      rw[<-hm,<-hn]
                      exact hnm.symm
-                   · sorry
+                   · use m
+                     push_neg at hn
+                     apply (Ne.lt_of_le hn) at hfdn
+                     have hfdn : FiniteDimensional.finrank (K n) (K (n + 1)) = 1 :=by
+                      sorry
+                     have hnn := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K n) (K1 0) (K1 n) (algebra_n n) (separable_n n)
+                     have hmm := @Field.finSepDegree_eq_finrank_of_isSeparable (K n) (K (n+1)) (K1 n) (K1 (n+1)) (K2 n) (sorry)
+                     rw [<-hnn] at hm
+                     rw [<-hmm] at hn
+                     have hnm := @Field.finSepDegree_mul_finSepDegree_of_isAlgebraic (K 0) (K n) (K1 0) (K1 n) (algebra_n n) (K (n+1)) (K1 (n+1)) (algebra_n (n+1)) (K2 n) (sorry) (sorry)
+                     have hnnnn := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K (n+1)) (K1 0) (K1 (n+1)) (algebra_n (n+1)) (separable_n (n+1))
+                     rw[<-hnnnn]
+                     rw[<-hm,<-hn]
+                     exact hnm.symm
+
+
   specialize hyp h1
   obtain ⟨ m, hm ⟩ := hyp
   use m
