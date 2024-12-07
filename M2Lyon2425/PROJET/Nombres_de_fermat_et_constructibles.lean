@@ -14,6 +14,37 @@ open Complex
 
 --On désignera par w le nombre Complex.exp (2*↑Real.pi*Complex.I/p)
 
+--extra lemmes venant d'une autre version de mathlib.
+
+section Field
+
+variable (F : Type*) [Field F] {K E E' : Type*}
+section IsIntegral
+
+variable [Ring K] [Algebra F K]
+variable {F} in
+--theorem isSeparable_algebraMap (x : F) : IsSeparable F (algebraMap F K x) :=
+  --Polynomial.Separable.of_dvd (Polynomial.separable_X_sub_C (x := x))
+    --(minpoly.dvd F (algebraMap F K x) (by simp only [map_sub, aeval_X, aeval_C, sub_self]))
+
+instance Algebra.isSeparable_self : Algebra.IsSeparable F F :=
+  ⟨isSeparable_algebraMap⟩
+
+variable [IsDomain K] [Algebra.IsIntegral F K] [CharZero F]
+
+theorem IsSeparable.of_integral (x : K) : IsSeparable F x :=
+  (minpoly.irreducible <| Algebra.IsIntegral.isIntegral x).separable
+
+
+-- See note [lower instance priority]
+variable (K) in
+/-- A integral field extension in characteristic 0 is separable. -/
+protected instance (priority := 100) Algebra.IsSeparable.of_integral : Algebra.IsSeparable F K :=
+  ⟨_root_.IsSeparable.of_integral _⟩
+
+end IsIntegral
+end Field
+
 -- Définiton d'un nombre premier de Fermat
 def premierfermat (p : ℕ) :=
   (Nat.Prime p) ∧ (∃ n : ℕ, p=2^(2^n)+1)
@@ -548,6 +579,56 @@ cases h with
 
   --instNormalSubgroup: ∀ i, IsNormalSubgroup (G i)
 --Definition d'être une tour de corps de dimension fin
+theorem multiplicativity_degree (m n : ℕ) (R S T : Type*) [i1 : Field R] [i2 : Field S] [i3 : Field T] [i4 : Algebra R S] [i5 : Algebra S T] [i6 : Algebra R T] : FiniteDimensional.finrank R S = m ∧ FiniteDimensional.finrank S T = n → (FiniteDimensional.finrank R T = m*n) := by
+intro h1
+cases h1 with
+| intro left right => have baseRS := PowerBasis R S
+                      have baseST := PowerBasis S T
+
+sorry
+
+theorem Wantzel3 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
+  intro nb_consa
+  obtain ⟨h, h1, h2, h3, h4, h5⟩ := nb_consa
+  obtain ⟨K, K1, K2⟩ := h
+  dsimp at h4; dsimp at h5
+  have algebra_n : ∀ (n :ℕ), Algebra (K 0) (K n) :=by
+    intro n
+    induction n with
+    | zero => exact Algebra.id (K 0)
+    | succ n ih => have halgebran1 := K2 n
+                   apply RingHom.toAlgebra
+                   apply algebraMap at ih
+                   apply algebraMap at halgebran1
+                   exact halgebran1.comp ih
+  have hyp : ∀ (n : ℕ), ∃ (m : ℕ), FiniteDimensional.finrank (K 0) (K n)=2^m :=by
+    intro n
+    induction n with
+    | zero => use 0
+              simp
+              have hhhh: FiniteDimensional.finrank ℚ ℚ =1 :=by
+                exact FiniteDimensional.finrank_self ℚ
+              have hhh := FiniteDimensional.finrank_self (K 0)
+              sorry
+    | succ n ih => obtain ⟨m,hm⟩ := ih
+                   by_cases his2 : FiniteDimensional.finrank (K n) (K (n + 1)) = 2
+                   · use (m+1)
+                     have hmul := multiplicativity_degree (2^m) 2 (K 0) (K n) (K (n+1))
+                     apply hmul
+                     constructor
+                     · exact hm
+                     · exact his2
+                   · use m
+                     have hmul := multiplicativity_degree (2^m) 1 (K 0) (K n) (K (n+1))
+                     simp at hmul
+                     apply hmul
+                     · exact hm
+                     · push_neg at his2
+                        sorry
+  specialize hyp h1
+  use h1
+  sorry
+
 
 theorem Wantzel2 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
   intro nb_consa
@@ -567,7 +648,7 @@ theorem Wantzel2 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteD
     intro n
     induction n with
     | zero => have hhh:= @Algebra.isSeparable_self (K 0) (K1 0)
-              exact hhh
+              --exact hhh
               sorry
     | succ n ih => sorry
   have hyp : ∀ (n : ℕ), ∃ (m : ℕ), FiniteDimensional.finrank (K 0) (K n)=2^m :=by
@@ -602,7 +683,9 @@ theorem Wantzel2 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteD
                    · use m
                      push_neg at hn
                      apply (Ne.lt_of_le hn) at hfdn
-                     have hfdn : FiniteDimensional.finrank (K n) (K (n + 1)) = 1 :=by
+                     have hfdn : FiniteDimensional.finrank (K n) (K (n + 1)) = 1 := by
+                      by_contra hf
+                      push_neg at hf
                       sorry
                      have hnn := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K n) (K1 0) (K1 n) (algebra_n n) (separable_n n)
                      have hmm := @Field.finSepDegree_eq_finrank_of_isSeparable (K n) (K (n+1)) (K1 n) (K1 (n+1)) (K2 n) (sorry)
@@ -611,10 +694,10 @@ theorem Wantzel2 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteD
                      have hnm := @Field.finSepDegree_mul_finSepDegree_of_isAlgebraic (K 0) (K n) (K1 0) (K1 n) (algebra_n n) (K (n+1)) (K1 (n+1)) (algebra_n (n+1)) (K2 n) (sorry) (sorry)
                      have hnnnn := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K (n+1)) (K1 0) (K1 (n+1)) (algebra_n (n+1)) (separable_n (n+1))
                      rw[<-hnnnn]
-                     rw[<-hm,<-hn]
-                     exact hnm.symm
-
-
+                     rw[<-hnm, hm]
+                     simp
+                     rw[hfdn] at hmm
+                     exact hmm
   specialize hyp h1
   obtain ⟨ m, hm ⟩ := hyp
   use m
