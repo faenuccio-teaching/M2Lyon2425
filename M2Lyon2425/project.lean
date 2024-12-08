@@ -100,6 +100,7 @@ instance SR : Setoid ℝ where
 
 def E : (Quotient (SR h)) → Set ℝ := λ x => {y : ℝ | x = ⟦y⟧}
 
+
 /-Defining the Indexed partition-/
 
 instance IndexedPartiononℝ : IndexedPartition (E h) where
@@ -131,14 +132,14 @@ instance IndexedPartiononℝ : IndexedPartition (E h) where
     rw[E]
     simp only [Set.mem_setOf_eq]
 
-/-Now we define the function F on ℝpartition-/
 
+/-We specify that each equivalence class is equivalent -/
 theorem EalphaCountable (α : Quotient (SR h)) : ((E h) α).Countable := by
   rw[E,←Set.countable_coe_iff,countable_iff_exists_injective]
 
   sorry
 
-
+/-Now we define the function F on ℝpartition-/
 /-Here, ℝ = ⋃ Eᵅ  where α is chosen from a particular Eᵅ  , which becomes our indexing set-/
 /-Prove that Eᵅ is countable for each α   -/
 /- Define a ennumeration {xᵢᵅ} for each Eᵅ. -/
