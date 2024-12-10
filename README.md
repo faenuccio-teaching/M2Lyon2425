@@ -43,9 +43,9 @@ Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/
 
 Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a>. The schedule for the second term is as follows:
 
-| Date      | Topic         | Teacher | Optional Link
+| Date      | Topic         | Teacher | Notes
 |-----------|---------------|---------|---------------
-| Jan 8th | Structures | X. Roblot |
+| Jan 8th | Structures | X. Roblot | **The class will finish at 12PM**
 | Jan 15th | Inductive Types | F. Nuccio |
 | Jan 22nd | Classes and Instances 1 | F. Nuccio |
 | Jan 29th | Classes and Instances 2 | F. Nuccio |
