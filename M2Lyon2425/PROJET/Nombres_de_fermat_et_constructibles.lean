@@ -144,11 +144,17 @@ def nombre_constructible (a : ℂ) : Prop :=
 theorem multiplicativity_degree (m n : ℕ+) (R S T : Type*) [i1 : Field R] [i2 : Field S] [i3 : Field T] [i4 : Algebra R S] [i5 : Algebra S T] [i6 : Algebra R T] : FiniteDimensional.finrank R S = m ∧ FiniteDimensional.finrank S T = n → (FiniteDimensional.finrank R T = m*n) := by
 intro h1
 cases h1 with
-| intro left right => have h1 : Module.Finite R S := by
-                        sorry
+| intro left right => have h1 : 0 < FiniteDimensional.finrank R S := by
+                        rw[left]
+                        exact PNat.pos m
+                      have h2 : 0 < FiniteDimensional.finrank S T :=by
+                        rw[right]
+                        exact PNat.pos n
+                      apply Module.finite_of_finrank_pos at h2
+                      apply Module.finite_of_finrank_pos at h1
                       let hRS := FiniteDimensional.finBasis R S
                       rw[left] at hRS
-                      let hST := @FiniteDimensional.finBasis S T _ _ _ _ _ (sorry)
+                      let hST := FiniteDimensional.finBasis S T
                       rw[right] at hST
                       have scalartow : IsScalarTower R S T :=by
                         constructor
