@@ -16,35 +16,6 @@ open Complex
 
 --extra lemmes venant d'une autre version de mathlib.
 
-section Field
-
-variable (F : Type*) [Field F] {K E E' : Type*}
-section IsIntegral
-
-variable [Ring K] [Algebra F K]
-variable {F} in
---theorem isSeparable_algebraMap (x : F) : IsSeparable F (algebraMap F K x) :=
-  --Polynomial.Separable.of_dvd (Polynomial.separable_X_sub_C (x := x))
-    --(minpoly.dvd F (algebraMap F K x) (by simp only [map_sub, aeval_X, aeval_C, sub_self]))
-
-instance Algebra.isSeparable_self : Algebra.IsSeparable F F :=
-  ⟨isSeparable_algebraMap⟩
-
-variable [IsDomain K] [Algebra.IsIntegral F K] [CharZero F]
-
-theorem IsSeparable.of_integral (x : K) : IsSeparable F x :=
-  (minpoly.irreducible <| Algebra.IsIntegral.isIntegral x).separable
-
-
--- See note [lower instance priority]
-variable (K) in
-/-- A integral field extension in characteristic 0 is separable. -/
-protected instance (priority := 100) Algebra.IsSeparable.of_integral : Algebra.IsSeparable F K :=
-  ⟨_root_.IsSeparable.of_integral _⟩
-
-end IsIntegral
-end Field
-
 -- Définiton d'un nombre premier de Fermat
 def premierfermat (p : ℕ) :=
   (Nat.Prime p) ∧ (∃ n : ℕ, p=2^(2^n)+1)
@@ -173,17 +144,25 @@ def nombre_constructible (a : ℂ) : Prop :=
 theorem multiplicativity_degree (m n : ℕ+) (R S T : Type*) [i1 : Field R] [i2 : Field S] [i3 : Field T] [i4 : Algebra R S] [i5 : Algebra S T] [i6 : Algebra R T] : FiniteDimensional.finrank R S = m ∧ FiniteDimensional.finrank S T = n → (FiniteDimensional.finrank R T = m*n) := by
 intro h1
 cases h1 with
-| intro left right => let hRS := @FiniteDimensional.finBasis R S _ _ _ _ _ (sorry)
+| intro left right => have h1 : Module.Finite R S := by
+                        sorry
+                      let hRS := FiniteDimensional.finBasis R S
                       rw[left] at hRS
                       let hST := @FiniteDimensional.finBasis S T _ _ _ _ _ (sorry)
                       rw[right] at hST
-                      have hhRS := DFunLike.coe hRS
-                      have hhST := DFunLike.coe hST
-                      --let v : (i : FiniteDimensional.finrank R S) ↦ (hRS i)
-                      have hlin : Basis (Fin ↑(n*m)) R T :=by
-                        apply Basis.mk
+                      have scalartow : IsScalarTower R S T :=by
+                        constructor
+                        intro xR yS zT
                         sorry
-                      sorry
+                      have hRT := Basis.smulTower hRS hST
+                      have hf := FiniteDimensional.finrank_eq_card_basis hRT
+                      rw[hf]
+                      have hff : Fintype.card (Fin ↑m × Fin ↑n) = Fintype.card (Fin ↑(m * n)):=by
+                        have hfin : Fin m × Fin n ≃ Fin (m * n) :=by
+                          exact finProdFinEquiv
+                        exact Fintype.card_congr hfin
+                      rw[hff]
+                      exact Fintype.card_fin ↑(m * n)
 
 --Théorème (Wantzel) : si a est constructible, ℚ(a) est de degré 2^m sur ℚ pour un certains m.
 theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
@@ -236,7 +215,7 @@ theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteD
   use mhyp
   rw[<-hmyp]
   rw [← top.toLinearEquiv.finrank_eq]
-
+  sorry
 
 
 --Lemme : si p est premier de Fermat, alors Φₚ(X) est irréductible sur ℚ.
