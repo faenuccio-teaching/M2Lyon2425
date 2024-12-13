@@ -159,7 +159,16 @@ cases h1 with
                       have scalartow : IsScalarTower R S T :=by
                         constructor
                         intro xR yS zT
-                        sorry
+                        rw[Algebra.smul_def,Algebra.smul_def, Algebra.smul_def, Algebra.smul_def]
+                        have hcomp : algebraMap R T = (algebraMap S T).comp (algebraMap R S) :=by
+                          ext x
+                          rw [@Algebra.algebraMap_eq_smul_one]
+                          change ( x • 1 = (algebraMap S T) ((algebraMap R S) x) )
+                          rw [<-@Algebra.algebraMap_eq_smul_one]
+                          sorry
+                        rw[hcomp]
+                        simp
+                        rw [@NonUnitalRing.mul_assoc]
                       have hRT := Basis.smulTower hRS hST
                       have hf := FiniteDimensional.finrank_eq_card_basis hRT
                       rw[hf]
