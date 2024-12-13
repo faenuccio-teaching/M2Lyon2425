@@ -137,12 +137,12 @@ constructor
 structure TowerOfFields where
   K : ℕ → Type*
   instField : ∀ i, Field (K i)
+  instChar : ∀ i, CharZero (K i)
   instAlgebra : ∀ i, Algebra (K i) (K (i + 1))
 
 --Definition d'être une tour de corps
 def TQ : TowerOfFields := by
-  refine ⟨fun _ ↦ ℚ , fun _ ↦ inferInstance, fun _ ↦ Algebra.id ℚ⟩
-
+  refine ⟨fun _ ↦ ℚ , fun _ ↦ inferInstance, sorry,fun _ ↦ Algebra.id ℚ⟩
 --Definition d'être une tour de corps de dimension finie
 def TowerOfFields.isFiniteDimensional (T : TowerOfFields) : Prop :=
   ∀ i,  letI := T.instField i
@@ -161,24 +161,83 @@ def TowerOfFields.rankLessTwo (T : TowerOfFields) : Prop :=
         letI := T.instAlgebra i
         FiniteDimensional.finrank (T.K i) (T.K (i + 1)) ≤ 2 ∧ FiniteDimensional.finrank (T.K i) (T.K (i+1)) > 0
 
-example : TQ.rankLessTwo := by
-  intro _
-  rw [TQ, FiniteDimensional.finrank_self]
-  exact one_le_two
-
 --Définition : un nombre a est constructible s'il existe une tour quadratique de ℚ vers ℚ(a).
 
 def nombre_constructible (a : ℂ) : Prop :=
-  ∃ (T : TowerOfFields) (n : ℕ), T.isFiniteDimensional ∧ T.rankLessTwo ∧ T.K 0 = ℚ ∧
-    T.K n = Algebra.adjoin ℚ { a }
+  ∃ (T : TowerOfFields) (n : ℕ)
+    (_ : letI := T.instField 0; letI := T.instChar 0; T.K 0 ≃ₐ[ℚ] ℚ)
+    (_ : letI := T.instField n; letI := T.instChar n; T.K n ≃ₐ[ℚ] (Algebra.adjoin ℚ { a })),
+    T.isFiniteDimensional ∧ T.rankLessTwo ∧ T.K 0 = ℚ
 
+--Théorème : multiplicativité des degrés
+theorem multiplicativity_degree (m n : ℕ+) (R S T : Type*) [i1 : Field R] [i2 : Field S] [i3 : Field T] [i4 : Algebra R S] [i5 : Algebra S T] [i6 : Algebra R T] : FiniteDimensional.finrank R S = m ∧ FiniteDimensional.finrank S T = n → (FiniteDimensional.finrank R T = m*n) := by
+intro h1
+cases h1 with
+| intro left right => let hRS := @FiniteDimensional.finBasis R S _ _ _ _ _ (sorry)
+                      rw[left] at hRS
+                      let hST := @FiniteDimensional.finBasis S T _ _ _ _ _ (sorry)
+                      rw[right] at hST
+                      have hhRS := DFunLike.coe hRS
+                      have hhST := DFunLike.coe hST
+                      --let v : (i : FiniteDimensional.finrank R S) ↦ (hRS i)
+                      have hlin : Basis (Fin ↑(n*m)) R T :=by
+                        apply Basis.mk
+                        sorry
+                      sorry
 
 --Théorème (Wantzel) : si a est constructible, ℚ(a) est de degré 2^m sur ℚ pour un certains m.
 theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
-  sorry
+  intro nb_consa
+  obtain ⟨⟨K, K1, K2, K3⟩, h1, base, top, h2, h3, h4⟩ := nb_consa
+  dsimp at base top
+  have algebra_n : ∀ (n :ℕ), Algebra (K 0) (K n) :=by
+    intro n
+    induction n with
+    | zero => exact Algebra.id (K 0)
+    | succ n ih => have halgebran1 := K3 n
+                   apply RingHom.toAlgebra
+                   apply algebraMap at ih
+                   apply algebraMap at halgebran1
+                   exact halgebran1.comp ih
+  have hyp : ∀ (n : ℕ), ∃ (m : ℕ), FiniteDimensional.finrank (K 0) (K n) = 2^m :=by
+    intro n
+    induction n with
+    | zero => use 0
+              simp
+              have hhh := @FiniteDimensional.finrank_self (K 0) _ _
+              rw[<-hhh]
+              congr
+              sorry
+    | succ n ih => obtain ⟨m,hm⟩ := ih
+                   by_cases his2 : FiniteDimensional.finrank (K n) (K (n + 1)) = 2
+                   · use (m+1)
+                     have hmul := multiplicativity_degree (2^m) 2 (K 0) (K n) (K (n+1))
+                     apply hmul
+                     constructor
+                     · exact hm
+                     · exact his2
+                   · use m
+                     have hmul := multiplicativity_degree (2^m) 1 (K 0) (K n) (K (n+1))
+                     simp at hmul
+                     apply hmul
+                     · exact hm
+                     · push_neg at his2
+                       have hh1 := h3 n
+                       dsimp at hh1
+                       cases hh1 with
+                       | intro left right => apply Nat.one_le_of_lt at right
+                                             apply Ne.le_iff_lt at his2
+                                             apply his2.mp at left
+                                             apply Nat.le_sub_one_of_lt at left
+                                             simp at left
+                                             exact Eq.symm (Nat.le_antisymm right left)
+  specialize hyp h1
+  obtain ⟨mhyp, hmyp⟩:= hyp
+  use mhyp
+  rw[<-hmyp]
+  rw [← top.toLinearEquiv.finrank_eq]
 
-      --rw[<-Module.finrank_mul_finrank] at left
--- Field.finSepDegree_eq_finrank_iff
+
 
 --Lemme : si p est premier de Fermat, alors Φₚ(X) est irréductible sur ℚ.
 theorem poly_cyclo_p_irre (p : ℕ) : premierfermat p → Irreducible (Polynomial.cyclotomic (↑p) ℚ) :=by
@@ -347,13 +406,6 @@ theorem Gauss_Wantzel_p_sens_direct (p : Nat) (α : Nat) : Nat.Prime p ∧ 0 < �
            · exact h12
        · exact ha
 
---Lemme : ℚ(w)/ℚ est l'extension cyclotomic p ℚ
-
---theorem Qw_est_cyclo (p : ℕ+) : Nat.Prime p → (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/p)) } = CyclotomicField p ℚ ) := by
---intro hp
---have h1 := Complex.isPrimitiveRoot_exp p (Nat.ne_zero_iff_zero_lt.mpr (PNat.pos p))
---have h2 := CyclotomicRing.eq_adjoin_primitive_root p ℚ
-
 --Lemme : (Z/pZ)ˣ est cyclique
 theorem ZModx_cyclic (p : ℕ) : Nat.Prime p → IsCyclic (ZMod p)ˣ := by
 --preuve dans Perrin, à voir si j'implémente modulo le temps restant.
@@ -481,9 +533,6 @@ structure TowerOfGroup2 {G : Type*} [Group G] where
   normalSubGroup : ∀ i, @IsNormalSubgroup (H i) _ (Subgroup.inclusion (inclusion i)).range
 
 
-
-def Suite_resol_ind2 (m : Nat) (G : Type*) [Group G] : Prop := ∃ (SubG : @TowerOfGroup2 G _ ), SubG.H 0 = G ∧  SubG.H m = IsSubgroup.trivial G ∧ ∀ i, @Subgroup.index (SubG.H i) _ (SubG.inclusion i)
-
 theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
 intro h
 cases h with
@@ -517,148 +566,4 @@ cases h with
 
   --instNormalSubgroup: ∀ i, IsNormalSubgroup (G i)
 --Definition d'être une tour de corps de dimension fin
-theorem multiplicativity_degree (m n : ℕ+) (R S T : Type*) [i1 : Field R] [i2 : Field S] [i3 : Field T] [i4 : Algebra R S] [i5 : Algebra S T] [i6 : Algebra R T] : FiniteDimensional.finrank R S = m ∧ FiniteDimensional.finrank S T = n → (FiniteDimensional.finrank R T = m*n) := by
-intro h1
-cases h1 with
-| intro left right => have finiteRS : FiniteDimensional R S := by
-                        sorry
-                      have separableRS : Algebra.IsSeparable R S :=by
-                        sorry
-                      have alegbraicRS := Algebra.IsAlgebraic.of_finite R S
-                      have baseRS := Field.powerBasisOfFiniteOfSeparable R S
-                      obtain ⟨h1,h2,h3,h4⟩:= baseRS
-                      have finiteST : FiniteDimensional S T := by
-                        sorry
-                      have separableST : Algebra.IsSeparable S T :=by
-                        sorry
-                      have alegbraicST := Algebra.IsAlgebraic.of_finite S T
-                      have baseST := Field.powerBasisOfFiniteOfSeparable S T
-                      obtain ⟨k1,k2,k3,k4⟩:= baseST
-                      have hh: PowerBasis R T := by
-                        sorry
 --have algebraicRS := @Algebra.IsAlgebraic.of_finite R S
-sorry
-
-theorem Wantzel3 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
-  intro nb_consa
-  obtain ⟨h, h1, h2, h3, h4, h5⟩ := nb_consa
-  obtain ⟨K, K1, K2⟩ := h
-  dsimp at h4; dsimp at h5
-  have algebra_n : ∀ (n :ℕ), Algebra (K 0) (K n) :=by
-    intro n
-    induction n with
-    | zero => exact Algebra.id (K 0)
-    | succ n ih => have halgebran1 := K2 n
-                   apply RingHom.toAlgebra
-                   apply algebraMap at ih
-                   apply algebraMap at halgebran1
-                   exact halgebran1.comp ih
-  have hyp : ∀ (n : ℕ), ∃ (m : ℕ), FiniteDimensional.finrank (K 0) (K n) = 2^m :=by
-    intro n
-    induction n with
-    | zero => use 0
-              simp
-              have hhhh: FiniteDimensional.finrank ℚ ℚ = 1 :=by
-                exact FiniteDimensional.finrank_self ℚ
-              have hhh := @FiniteDimensional.finrank_self (K 0) _ _
-              sorry
-    | succ n ih => obtain ⟨m,hm⟩ := ih
-                   by_cases his2 : FiniteDimensional.finrank (K n) (K (n + 1)) = 2
-                   · use (m+1)
-                     have hmul := multiplicativity_degree (2^m) 2 (K 0) (K n) (K (n+1))
-                     apply hmul
-                     constructor
-                     · exact hm
-                     · exact his2
-                   · use m
-                     have hmul := multiplicativity_degree (2^m) 1 (K 0) (K n) (K (n+1))
-                     simp at hmul
-                     apply hmul
-                     · exact hm
-                     · push_neg at his2
-                       have hh1 := h3 n
-                       dsimp at hh1
-                       cases hh1 with
-                       | intro left right => apply Nat.one_le_of_lt at right
-                                             apply Ne.le_iff_lt at his2
-                                             apply his2.mp at left
-                                             apply Nat.le_sub_one_of_lt at left
-                                             simp at left
-                                             exact Eq.symm (Nat.le_antisymm right left)
-  specialize hyp h1
-  use h1
-  sorry
-
-
-theorem Wantzel2 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteDimensional.finrank ℚ (Algebra.adjoin ℚ { a })) = 2^m := by
-  intro nb_consa
-  obtain ⟨h, h1, h2, h3, h4, h5⟩ := nb_consa
-  obtain ⟨K, K1, K2⟩ := h
-  dsimp at h4; dsimp at h5
-  have algebra_n : ∀ (n :ℕ), Algebra (K 0) (K n) :=by
-    intro n
-    induction n with
-    | zero => exact Algebra.id (K 0)
-    | succ n ih => have halgebran1 := K2 n
-                   apply RingHom.toAlgebra
-                   apply algebraMap at ih
-                   apply algebraMap at halgebran1
-                   exact halgebran1.comp ih
-  have separable_n : ∀ (n : ℕ), Algebra.IsSeparable (K 0) (K n) :=by
-    intro n
-    induction n with
-    | zero => have hhh:= @Algebra.isSeparable_self (K 0) (K1 0)
-              --exact hhh
-              sorry
-    | succ n ih => sorry
-  have hyp : ∀ (n : ℕ), ∃ (m : ℕ), FiniteDimensional.finrank (K 0) (K n)=2^m :=by
-    intro n
-    induction n with
-    | zero => use 0
-              simp
-              have htest := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K 0) (K1 0) (K1 0) (Algebra.id (K 0)) (Algebra.isSeparable_self (K 0))
-              rw[FiniteDimensional.finrank] at htest
-              have hfield : @Field.finSepDegree (K 0) (K 0) (K1 0) (K1 0) (Algebra.id (K 0)) = 1 :=by
-                exact Field.finSepDegree_self (K 0)
-              rw[hfield] at htest
-              have htest := htest.symm
-              rw[<-FiniteDimensional.finrank] at htest
-              exact htest
-              sorry
-    | succ n ih => have hfdn := h3 n
-                   dsimp at hfdn
-                   obtain ⟨m, hm⟩ := ih
-                   by_cases hn : FiniteDimensional.finrank (K n) (K (n+1)) = 2
-                   · use (m+1)
-                     have hnn := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K n) (K1 0) (K1 n) (algebra_n n) (separable_n n)
-                     have hmm := @Field.finSepDegree_eq_finrank_of_isSeparable (K n) (K (n+1)) (K1 n) (K1 (n+1)) (K2 n) (sorry)
-                     rw [<-hnn] at hm
-                     rw [<-hmm] at hn
-                     have hnm := @Field.finSepDegree_mul_finSepDegree_of_isAlgebraic (K 0) (K n) (K1 0) (K1 n) (algebra_n n) (K (n+1)) (K1 (n+1)) (algebra_n (n+1)) (K2 n) (sorry) (sorry)
-                     have hnnnn := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K (n+1)) (K1 0) (K1 (n+1)) (algebra_n (n+1)) (separable_n (n+1))
-                     rw[<-hnnnn]
-                     change (Field.finSepDegree (K 0) (K (n + 1)) = 2 ^ m * 2)
-                     rw[<-hm,<-hn]
-                     exact hnm.symm
-                   · use m
-                     push_neg at hn
-                     apply (Ne.lt_of_le hn) at hfdn
-                     have hfdn : FiniteDimensional.finrank (K n) (K (n + 1)) = 1 := by
-                      by_contra hf
-                      push_neg at hf
-                      sorry
-                     have hnn := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K n) (K1 0) (K1 n) (algebra_n n) (separable_n n)
-                     have hmm := @Field.finSepDegree_eq_finrank_of_isSeparable (K n) (K (n+1)) (K1 n) (K1 (n+1)) (K2 n) (sorry)
-                     rw [<-hnn] at hm
-                     rw [<-hmm] at hn
-                     have hnm := @Field.finSepDegree_mul_finSepDegree_of_isAlgebraic (K 0) (K n) (K1 0) (K1 n) (algebra_n n) (K (n+1)) (K1 (n+1)) (algebra_n (n+1)) (K2 n) (sorry) (sorry)
-                     have hnnnn := @Field.finSepDegree_eq_finrank_of_isSeparable (K 0) (K (n+1)) (K1 0) (K1 (n+1)) (algebra_n (n+1)) (separable_n (n+1))
-                     rw[<-hnnnn]
-                     rw[<-hnm, hm]
-                     simp
-                     rw[hfdn] at hmm
-                     exact hmm
-  specialize hyp h1
-  obtain ⟨ m, hm ⟩ := hyp
-  use m
-  sorry
