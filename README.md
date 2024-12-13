@@ -45,8 +45,10 @@ Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/
 
 | Date      | Topic         | Teacher | Notes
 |-----------|---------------|---------|---------------
+| **Jan 5th** | **Deadline for project submissions** | --- | 
 | Jan 8th | Structures | X. Roblot | **The class will finish at 12PM**
 | Jan 15th | Inductive Types | F. Nuccio |
+| **Jan 15th** | **Projects presentations** | Starting 1PM
 | Jan 22nd | Classes and Instances 1 | F. Nuccio |
 | Jan 29th | Classes and Instances 2 | F. Nuccio |
 | Feb 5th | Categories in Lean 1 | S. Morel
