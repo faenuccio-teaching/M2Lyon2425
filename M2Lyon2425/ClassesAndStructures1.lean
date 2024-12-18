@@ -4,6 +4,8 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Topology.MetricSpace.Cauchy
 import Mathlib.Topology.UniformSpace.Basic
 
+open Classical
+
 noncomputable section
 
 section ForgetfulInheritance
@@ -122,11 +124,42 @@ example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 
 end LocalInstances
 
-example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
+-- example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 
-section Aliases
+section Synonyms
 
-end Aliases
+
+/-Another strategy that works more globally: use type synonyms. The idea is to create a copy of a
+type, that comes with no instance at all. -/
+
+def ℛ := ℝ --type ℛ by \McR
+abbrev 𝓡 := ℝ --type 𝓡 by \MCR
+
+
+#synth TopologicalSpace ℝ
+#synth TopologicalSpace 𝓡
+-- #synth TopologicalSpace ℛ
+#synth Field ℝ
+
+instance : TopologicalSpace ℛ := ⊥
+
+instance : Field ℛ := inferInstanceAs (Field ℝ)
+
+#synth CommRing ℛ
+
+instance : LT ℛ := inferInstanceAs <| LT ℝ
+
+lemma ContJump : Continuous (fun x : ℛ ↦ if x < 0 then 0 else 1) := by
+  apply continuous_bot
+
+end Synonyms
+
+lemma ContJump' : Continuous (fun x : ℛ ↦ if x < 0 then 0 else 1) := by
+  apply continuous_bot
+
+lemma NotContJump : Continuous (fun x : ℝ ↦ if x < 0 then 0 else 1) := by
+  sorry
+
 -- example (α : Type*) [UniformSpace α] (h : 𝓤 α = ⊥) : uniformity α = 𝓟 idRel := by
 --   rw [h]
 --   sorry
