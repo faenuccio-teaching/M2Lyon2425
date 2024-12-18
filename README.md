@@ -1,7 +1,7 @@
 # M2Lyon2425
 This is the webpage for the Lean courses of the program <a href="http://mathematiques.ens-lyon.fr/parcours-2024-2025-394652.kjsp">"Higher Algebra and Formalised Mathematics"</a> of the Advanced Master in Mathematics in Lyon for 2024/25. For the original `git` repository, click <a href="https://github.com/faenuccio-teaching/M2Lyon2425">here</a>.
 
-## Prerequisites
+## Prerequisites 
 
 You will need to do the following tasks before the start of the course. We will help you do these tasks during the "Installation party" on September 4th.
 * Make sure that you have a working wifi, usually via Eduroam.
