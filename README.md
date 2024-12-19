@@ -41,13 +41,13 @@ Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/
 
 ### Second Term
 
-Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a>. The schedule for the second term is as follows:
+Classes are on Wednesday, from 9.45AM to 12.45PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a>, in room M7-411. The schedule for the second term is as follows:
 
 | Date      | Topic         | Teacher | Notes
 |-----------|---------------|---------|---------------
 | **Jan 5th** | **Deadline for project submissions** | --- | 
 | Jan 8th | Structures | X. Roblot | **The class will finish at 12PM**
-| Jan 15th | Inductive Types | F. Nuccio |
+| Jan 15th | Inductive Types | F. Nuccio | **The class will finish at 12PM**
 | **Jan 15th** | **Projects presentations** | Starting 1PM
 | Jan 22nd | Classes and Instances 1 | F. Nuccio |
 | Jan 29th | Classes and Instances 2 | F. Nuccio |
