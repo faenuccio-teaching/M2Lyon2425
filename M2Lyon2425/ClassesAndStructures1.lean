@@ -4,6 +4,8 @@ import Mathlib.Data.Real.Basic
 import Mathlib.Topology.MetricSpace.Cauchy
 import Mathlib.Topology.UniformSpace.Basic
 
+set_option autoImplicit false
+
 open Classical
 
 noncomputable section
@@ -170,7 +172,7 @@ export ExtMul₁ (xmul₁)
 
 infixr:70 "⋄" => xmul₁
 
-variable (α β X Y Z: Type*) [ExtMul₁ β X Y] [ExtMul₁ α Y Z]
+variable {α β X Y Z: Type*} [ExtMul₁ β X Y] [ExtMul₁ α Y Z]
 
 example (a : α) (b : β) (x : X) (z : Z) : a ⋄ (b ⋄ x) = z := sorry
 
@@ -181,7 +183,7 @@ export ExtMul (xmul)
 
 infixr:70 "⬝" => xmul
 
-variable {α β X Y Z: Type*} [ExtMul β X Y] [ExtMul α Y Z]
+variable [ExtMul β X Y] [ExtMul α Y Z]
 
 example (a : α) (b : β) (x : X) (z : Z) : a ⬝ (b ⬝ x) = z := by
   sorry
@@ -199,10 +201,10 @@ a `ExtMul α Y Z` instance, it tries replacing `?v1` with `Y` and backtracks to 
 -/
 
 /- This can still occasionally create problems.-/
-variable (Y' : Type*) [ExtMul α Y' Z] [ha : ExtMul β X Y']
 variable [Zero Z]
+variable [ExtMul α ℕ Z] [ExtMul β X ℕ]
 
-lemma bar (a : α) (y : Y) : a ⬝ y = 0 := by
+lemma bar (a : α) (n : ℕ) : a ⬝ n = 0 := by
   sorry
 
 example (a : α) (b : β) (x : X) : a ⬝ (b ⬝ x) = 0 := by
