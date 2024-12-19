@@ -1,14 +1,160 @@
 import Mathlib.Algebra.Category.Grp.Basic
 import Mathlib.Data.Real.Basic
--- import Mathlib.Topology.MetricSpace.Pseudo.Defs
 import Mathlib.Topology.MetricSpace.Cauchy
 import Mathlib.Topology.UniformSpace.Basic
 
-set_option autoImplicit false
 
 open Classical
 
 noncomputable section
+
+section FunnyBracket
+
+/- Some examples of the interest of ⦃
+
+-/
+
+end FunnyBracket
+section Extends
+
+/- The usual way to define a `structure` is to write its name, then `where` and then the list of
+fields (remember, there is a unique constructor by definition of `structure`!). -/
+
+/- `OneNat` is the structure with just one number. -/
+structure OneNat where
+  fst : Nat
+
+/- `TwoNat` is the structure whose terms are pairs of naturals... -/
+structure TwoNat extends OneNat where
+  snd : Nat
+
+structure OtherTwo where
+  fst : Nat
+  snd : Nat
+
+structure Couple where
+  left : Nat
+  right : Nat
+
+/- The big difference between `TwoNat`, `OtherTwo` and `Couple` are the names of the fields. These
+name **are relevant**! You might think of a term of type `TwoNat` as a pair of *labelled* naturals,
+and that a structure is a collection of labelled terms. So: -/
+
+example (x : OneNat) : TwoNat :=
+  {fst := x.1, snd := x.1}
+-- This forgets the label and takes it back.
+
+example (x : OneNat) : TwoNat :=
+  {x with snd := x.1}
+
+example (x : OneNat) : Couple := sorry
+  -- {x with left := x.1} fields missing: 'right'
+
+example (x : OneNat) : Couple :=
+  {left := x.1, right := x.1}
+
+/- So, the keyword `with` instructs Lean to take all possible labels from that term and to only ask
+for the remaining, throwing away useless ones. -/
+
+structure Mix where
+  fst : Nat
+  right : Nat
+
+def mix1 (x : TwoNat) (y : Couple) : Mix :=
+  {x, y with}
+
+def mix2 (x : TwoNat) (y : Couple) : Mix :=
+  {y, x with}
+
+def mix3 (x : OtherTwo) (y : Couple) : Mix :=
+  {x, y with}
+
+def TwoToOther : TwoNat → OtherTwo := fun x ↦ {x with}
+
+example (x : TwoNat) (y : Couple) : mix1 x y = mix2 x y := rfl
+
+example (x : TwoNat) (y : Couple) : mix1 x y = mix3 (TwoToOther x) y := rfl
+
+/- Under the hood, Lean destructs all these terms and reconstructs them "in the right order". But
+keeping labels! -/
+
+def TwoToCouple : TwoNat → Couple := by --fun x ↦ {left := x.1, right := x.2} -- error! why?
+  rintro ⟨x, y⟩ -- by def, `TwoNat` extends `OneNat`, so `x : OneNat`. So,
+  exact {left := x.1, right := y}
+
+def OtherToCouple : OtherTwo → Couple := fun x ↦ {left := x.1, right := x.2}
+
+/- Yet... -/
+example (x : TwoNat) : TwoToCouple x = OtherToCouple (TwoToOther x) := rfl
+
+
+/- And if there are duplicates? -/
+structure ThreeNat extends TwoNat, Mix
+
+#print ThreeNat -- it seems that `fst` will come from the `toTwoNat` field, not from `Mix`: yet
+
+def two : TwoNat := {fst := 1, snd := 2}
+def mix₁ : Mix := {fst := 17, right := 11}
+def mix₂ : Mix := {fst := 13, right := 11}
+
+def three₁ : ThreeNat := {mix₁, two with}
+def three₁' : ThreeNat := {two, mix₁ with}
+def three₂ : ThreeNat := {mix₂, two with}
+def three₂' : ThreeNat := {two, mix₂ with}
+
+example : three₁.fst = 17 := by rfl
+example : three₁'.fst = 1 := by rfl
+/- So in reality Lean is first using the first variable (`mix` or `two`), possibly throwing away
+useless stuff **ADD AN EXAMPLE OF A STRUCTURE WITH SPURIOUS CONSTRUCTORS, LIKE MIX**, and then using
+what follows to complete them -/
+
+-- example : three₁ = three₁' := rfl
+/- indeed, `three₁={fst = 17, snd = 2, right = 11}` while `three₁'={fst = 1, snd = 2, right = 11}`-/
+example : three₁' = three₂' := rfl
+/- both are `{fst = 1, snd = 2, right = 11}` (the field `left` has been discharged) . -/
+
+
+/- OK, so everything seems marvellous with this `extend` and `with`. But it can lead to problems if
+the *duplication* is not what you're looking for. **ADD HERE SOPHIE'S EXAMPLES**-/
+
+structure C where
+  a : Nat
+
+variable (x : C)
+
+structure D where (a b : Nat)
+
+structure E extends TwoNat
+
+def bleah_old (x : TwoNat) (e : C) : E :=
+  {x, e with}
+
+def bleah_old' (x : TwoNat) (e : C) : E :=
+  {x with}
+
+def bleah_new (x : TwoNat) (e : C) : E :=
+  {e, x with}
+
+#print bleah_old
+#print bleah_old'
+#print bleah_new
+
+example : bleah_old = bleah_old' := rfl
+
+def foo (x : TwoNat) (y : C) : D :=
+  {x , y with}
+
+def bar (x : TwoNat) (y : C) : D :=
+  {x with}
+
+def biz (x : TwoNat) (y : C) : D :=
+  {y, x with}
+
+example : foo = bar := rfl
+example : foo = biz := rfl
+
+
+end Extends
 
 section ForgetfulInheritance
 
@@ -174,9 +320,10 @@ infixr:70 "⋄" => xmul₁
 
 variable {α β X Y Z: Type*} [ExtMul₁ β X Y] [ExtMul₁ α Y Z]
 
-example (a : α) (b : β) (x : X) (z : Z) : a ⋄ (b ⋄ x) = z := sorry
+-- example (a : α) (b : β) (x : X) (z : Z) : a ⋄ (b ⋄ x) = z := sorry
 
-class ExtMul (γ δ: Type*) (W : outParam (Type*)) where
+-- Let's try to do better
+class ExtMul (γ : Type*) (δ : semiOutParam (Type*)) (W  : outParam (Type*)) where
   xmul : γ → δ → W
 
 export ExtMul (xmul)
@@ -191,24 +338,22 @@ example (a : α) (b : β) (x : X) (z : Z) : a ⬝ (b ⬝ x) = z := by
 inference, whereas for `ExtMul` it can replace it with a metavariable and hope that later on
 thigs get ok.
 
-Concerning `ExtMul₁`, it first evaluates `b ⋄ x` and needs a `ExtMul₁` instance so it creates
-a metavariable `?v1` and hopes to find a `ExtMul₁ β X ?v1` instance. Then it evaluates `a ⋄ (b ⋄ x)`
-and for this it needs an instance `ExtMul₁ α ?v1 Z` which it cannot find (this is exactly the error
-message). On the other hand, `ExtMul` arrives at `ExtMul β X ?v1` and when it evaluates
-`a ⬝ (b ⬝ x)` it knows that the type of `?v1` needs to be unified with the context: since it finds
-a `ExtMul α Y Z` instance, it tries replacing `?v1` with `Y` and backtracks to see if it finds a
-`ExtMul β X Y` instance, which it does, so everybody is happy.
--/
+Concerning `ExtMul₁`, it first evaluates `a ⋄ b` and needs a `ExtMul₁` instance so it creates
+a metavariable `?v1` and hopes to find a `ExtMul₁ β ?v1 Z` instance (this is exactly the error
+message). On the other hand, `ExtMul` arrives at `ExtMul β ?v1 Z` and then it evaluates
+`(b ⬝ x)` (supposed of type `?v1`): since it finds a `ExtMul β X Y` instance, it tries replacing
+`?v1` with `Y` and backtracks to see if it finds a `ExtMul α Y X` instance, which it does, so
+everybody is happy. -/
 
-/- This can still occasionally create problems.-/
-variable [Zero Z]
-variable [ExtMul α ℕ Z] [ExtMul β X ℕ]
+/- This can still occasionally create problems: indeed, by design, when an `outParam` is around it
+can only take one value (via `instances`), so the following does create problems: -/
 
-lemma bar (a : α) (n : ℕ) : a ⬝ n = 0 := by
-  sorry
 
-example (a : α) (b : β) (x : X) : a ⬝ (b ⬝ x) = 0 := by
--- Lean prefers `ExtMul β X Y'` rather than `ExtMul X Y`, so the above lemma does not apply
-  have := bar a (b ⬝ x)
+instance : ExtMul ℝ ℝ ℕ := ⟨fun _ _ ↦ 0⟩
+instance : ExtMul ℝ ℝ Prop := ⟨fun _ _ ↦ False⟩
+
+example (x y : ℝ) : x ⬝ y = 0 := rfl
+-- example (x y : ℝ) : x ⬝ y = False := rfl-- but removing the first instance makes this type-check
+
 
 end OutParam
