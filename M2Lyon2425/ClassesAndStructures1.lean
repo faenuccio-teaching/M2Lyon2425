@@ -58,7 +58,7 @@ class NormedModule (M : Type*) extends ModuleWithRel M where
   norm : M → ℝ
 
 
-variable (X : Type) [NormedModule X]
+variable (X : Type*) [NormedModule X]
 #synth ModuleWithRel X
 
 instance (M : Type*) [NormedModule M] : ModuleWithRel M := inferInstance
@@ -73,7 +73,6 @@ notation "‖" e "‖" => norm e
 instance (M N : Type*) [NormedModule M] [NormedModule N] : NormedModule (M × N) where
   rel := fun ⟨m1, n1⟩ ⟨m2, n2⟩ ↦ (rel m1 m2) ∧ (rel n1 n2)
   norm := fun ⟨m, n⟩ ↦ max ‖m‖ ‖n‖
-
 
 variable (p : ∀ {T : Type}, (T → Prop) → Prop)
 
@@ -95,8 +94,7 @@ example : instUniformSpaceNat = ⊥ := rfl
 
 open scoped Filter Uniformity
 
-example : (uniformity ℕ) = (𝓟 idRel) := rfl
-example : (uniformity ℕ) = ⊥ := by sorry
+example : (uniformity ℕ) = (𝓟 idRel) := rfl -- this is the "trivial" or "discrete" uniformity.
 
 attribute [- instance] instUniformSpaceNat --this is local, it only applies to the current section
 
@@ -116,7 +114,6 @@ the metric. Can we access it at a later stage outside this section? -/
 
 /-! This is actually true! See
 -- `Counterexamples/DiscreteTopologyNonDiscreteUniformity.lean`-/
-
 lemma idIsCauchy : CauchySeq (id : ℕ → ℕ) := by sorry
 
 
@@ -132,18 +129,21 @@ section Synonyms
 /-Another strategy that works more globally: use type synonyms. The idea is to create a copy of a
 type, that comes with no instance at all. -/
 
-def ℛ := ℝ --type ℛ by \McR
-abbrev 𝓡 := ℝ --type 𝓡 by \MCR
+def ℛ := ℝ --type ℛ with \McR
+abbrev 𝓡 := ℝ --type 𝓡 with \MCR
+def 𝒩 := ℕ --type 𝓡 with 𝒩 \McR
 
 
 #synth TopologicalSpace ℝ
 #synth TopologicalSpace 𝓡
+-- #synth TopologicalSpace 𝒩
 -- #synth TopologicalSpace ℛ
 #synth Field ℝ
 
 instance : TopologicalSpace ℛ := ⊥
 
 instance : Field ℛ := inferInstanceAs (Field ℝ)
+-- instance : Field 𝒩 := inferInstanceAs (Field ℝ)
 
 #synth CommRing ℛ
 
@@ -160,24 +160,53 @@ lemma ContJump' : Continuous (fun x : ℛ ↦ if x < 0 then 0 else 1) := by
 lemma NotContJump : Continuous (fun x : ℝ ↦ if x < 0 then 0 else 1) := by
   sorry
 
--- example (α : Type*) [UniformSpace α] (h : 𝓤 α = ⊥) : uniformity α = 𝓟 idRel := by
---   rw [h]
---   sorry
 
+section OutParam
 
+class ExtMul₁ (γ δ W : Type*) where
+  xmul₁ : γ → δ → W
 
--- example : (uniformity ℕ) = ⊥ := by
--- example : (uniformity ℕ) = ⊥ := by
---   convert_to (uniformity ℕ) = (𝓟 idRel)
---   · have := bot_uniformity (α := ℕ)
---     infer_instance
+export ExtMul₁ (xmul₁)
 
+infixr:70 "⋄" => xmul₁
 
---   · rfl
---   let U : UniformSpace ℕ := by exact instUniformSpaceNat
---   have : U = ⊥ := rfl
---   -- rcases U with ⟨h1, h2, h3, h4⟩
---   -- rcases h1 with ⟨f1, f2, f3, f4⟩
---   let B : Bot (UniformSpace ℕ) := by exact instBotUniformSpace
---   have also : U = B.1 := rfl
---   simp_all
+variable (α β X Y Z: Type*) [ExtMul₁ β X Y] [ExtMul₁ α Y Z]
+
+example (a : α) (b : β) (x : X) (z : Z) : a ⋄ (b ⋄ x) = z := sorry
+
+class ExtMul (γ δ: Type*) (W : outParam (Type*)) where
+  xmul : γ → δ → W
+
+export ExtMul (xmul)
+
+infixr:70 "⬝" => xmul
+
+variable {α β X Y Z: Type*} [ExtMul β X Y] [ExtMul α Y Z]
+
+example (a : α) (b : β) (x : X) (z : Z) : a ⬝ (b ⬝ x) = z := by
+  sorry
+/-What is going on is that for `ExtMul₁` Lean needs to know the landing type when trying class
+inference, whereas for `ExtMul` it can replace it with a metavariable and hope that later on
+thigs get ok.
+
+Concerning `ExtMul₁`, it first evaluates `b ⋄ x` and needs a `ExtMul₁` instance so it creates
+a metavariable `?v1` and hopes to find a `ExtMul₁ β X ?v1` instance. Then it evaluates `a ⋄ (b ⋄ x)`
+and for this it needs an instance `ExtMul₁ α ?v1 Z` which it cannot find (this is exactly the error
+message). On the other hand, `ExtMul` arrives at `ExtMul β X ?v1` and when it evaluates
+`a ⬝ (b ⬝ x)` it knows that the type of `?v1` needs to be unified with the context: since it finds
+a `ExtMul α Y Z` instance, it tries replacing `?v1` with `Y` and backtracks to see if it finds a
+`ExtMul β X Y` instance, which it does, so everybody is happy.
+-/
+
+/- This can still occasionally create problems.-/
+variable (Y' : Type*) [ExtMul α Y' Z] [ha : ExtMul β X Y']
+variable [Zero Z]
+
+lemma bar (a : α) (y : Y) : a ⬝ y = 0 := by
+  sorry
+
+example (a : α) (b : β) (x : X) : a ⬝ (b ⬝ x) = 0 := by
+-- Lean prefers `ExtMul β X Y'` rather than `ExtMul X Y`, so the above lemma does not apply
+  have := bar a (b ⬝ x)
+
+end OutParam
