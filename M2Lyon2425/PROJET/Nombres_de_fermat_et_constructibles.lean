@@ -14,7 +14,7 @@ open Complex
 
 --On désignera par w le nombre Complex.exp (2*↑Real.pi*Complex.I/p)
 
---extra lemmes venant d'une autre version de mathlib.
+
 
 -- Définiton d'un nombre premier de Fermat
 def premierfermat (p : ℕ) :=
@@ -157,18 +157,8 @@ cases h1 with
                       let hST := FiniteDimensional.finBasis S T
                       rw[right] at hST
                       have scalartow : IsScalarTower R S T :=by
-                        constructor
-                        intro xR yS zT
-                        rw[Algebra.smul_def,Algebra.smul_def, Algebra.smul_def, Algebra.smul_def]
-                        have hcomp : algebraMap R T = (algebraMap S T).comp (algebraMap R S) :=by
-                          ext x
-                          rw [@Algebra.algebraMap_eq_smul_one]
-                          change ( x • 1 = (algebraMap S T) ((algebraMap R S) x) )
-                          rw [<-@Algebra.algebraMap_eq_smul_one]
-                          sorry
-                        rw[hcomp]
-                        simp
-                        rw [@NonUnitalRing.mul_assoc]
+                         sorry
+                         --rw[hcomp]
                       have hRT := Basis.smulTower hRS hST
                       have hf := FiniteDimensional.finrank_eq_card_basis hRT
                       rw[hf]
@@ -441,6 +431,23 @@ theorem adjoin_is_cyclo (p : ℕ+) (α : ℕ) (_: Nat.Prime p) (_ : 0 < α) :
     {exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))}) :=
 IsPrimitiveRoot.adjoin_isCyclotomicExtension _ (isPrimitiveRoot_exp _ (PNat.ne_zero (p ^ α)))
 
+
+theorem adjoin_is_field (p : ℕ+) (α : ℕ) : Nat.Prime p ∧ 0 < α → IsField
+(Algebra.adjoin ℚ
+    {exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))}) := by
+intro h1
+have h2 := adjoin_is_cyclo p α h1.1 h1.2
+constructor 
+· use 0
+  use 1
+  simp
+· intro x y 
+  exact CommMonoid.mul_comm x y
+· intro a ha
+  sorry
+  
+
+
 theorem cyclic_iso (G H : Type*) [inst1 : Group G] [inst2 : Group H] : (G ≃* H) → (IsCyclic H) → (IsCyclic G) := by
 intro h h1
 obtain ⟨ φ, phi1⟩ := h
@@ -535,7 +542,8 @@ cases h with
     · exact hp.left
     · constructor
       · rw[ha]; exact Nat.one_pos
-      · have Gp_Galois := Polynomial.Gal.instGroup (Polynomial.cyclotomic (↑p) ℚ)
+      · rw[ha]; simp
+        have Gp_Galois := Polynomial.Gal.instGroup (Polynomial.cyclotomic (↑p) ℚ)
         have Gp_Galois_iso := (Polynomial.cyclotomic.irreducible_rat (Nat.Prime.pos hp.left))
         apply galCyclotomicEquivUnitsZMod at Gp_Galois_iso
         have zmodcycl := ZModx_cyclic p hp.left
@@ -545,7 +553,11 @@ cases h with
         have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois Gp_Galois_cycl
         let ζ := exist_gen.choose
         have hz := exist_gen.choose_spec
-        --have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) (sorry) (sorry) (sorry) (sorry) (sorry)
+        have hQ := adjoin_is_cyclo p 1 (hp.1) (Nat.one_pos)
+        simp at hQ
+        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) })
+        simp at hsub 
+      
         sorry
         sorry
         sorry
