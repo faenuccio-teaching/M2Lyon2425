@@ -26,13 +26,13 @@ open Real Set
 example : HasDerivAt sin 1 0 := by simpa using hasDerivAt_sin 0
 
 example (x : ℝ) : DifferentiableAt ℝ sin x := by
-  sorry
+  simpa using differentiable_sin x
 
 example {f : ℝ → ℝ} {x a : ℝ} (h : HasDerivAt f a x) : deriv f x = a := by
   sorry
 
 example {a : ℝ} : deriv sin a = cos a := by
-  sorry
+  simp only [Real.deriv_sin]
 
 example {f : ℝ → ℝ} {x : ℝ} (h : ¬DifferentiableAt ℝ f x) : deriv f x = 0 := by
   sorry
@@ -56,10 +56,12 @@ example : deriv (fun x : ℝ ↦ x ^ 5 + 1) 6 = 5 * 6 ^ 4 := by
   sorry
 
 example : deriv sin π = -1 := by
-  sorry
+  simp only [Real.deriv_sin, cos_pi]
 
 -- Try proving it by hand.
-example : Differentiable ℝ fun x => cos (sin x) * exp x := by sorry
+example : Differentiable ℝ fun x => cos (sin x) * exp x := by
+
+  sorry
 
 -- Now see what `hint` has to say!
 example : Differentiable ℝ fun x => cos (sin x) * exp x := by
