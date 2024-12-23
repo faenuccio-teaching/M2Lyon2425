@@ -186,7 +186,7 @@ theorem SO2_inv_co (A : SO(2, R)) : A.1 1 0 = -A.1 0 1 ∧ A.1 0 0 = A.1 1 1 ∧
 variable {F : Type*} [Field F]
 variable [Fintype F]
 
-def is_So2 (a: F )( b: F )(h : a^2+b^2=1) : SO(2,F ) := by
+def make_So2 (a: F )( b: F )(h : a^2+b^2=1) : SO(2,F ) := by
   constructor
   swap
   · exact  !![a,-b ; b ,a]
@@ -224,6 +224,9 @@ def is_So2 (a: F )( b: F )(h : a^2+b^2=1) : SO(2,F ) := by
   : ( A∈ SO(2,F).val ) := by-/
 
 
+-- Part on char 2
+
+section Char2
 
 theorem square_char_2 (h : CharP F 2) (A : SO(2, F)) : (A.1= (A⁻¹).1) := by
   have ha := (SO2_inv_co A).left
@@ -240,54 +243,35 @@ theorem square_char_2 (h : CharP F 2) (A : SO(2, F)) : (A.1= (A⁻¹).1) := by
   simp only [coe_inv]
   exact(symm haa)
 
-#check Set.univ
+theorem auto_inv_char2 (h : CharP F 2) (A : SO(2, F)) : A= (A⁻¹) := by
+  have ha := square_char_2 (h : CharP F 2) (A : SO(2, F))
+  exact ext A A⁻¹ fun i ↦ congrFun (congrFun ha i)
+
+
+
 def f (A:SO(2,F)) := A.1 0 0
-#check f
 
 
-def couple := (F × F)
-def uni := Set.univ (α:=(F×F))
-#check uni
+variable {F_2n : Type*} [Field F_2n][Fintype F_2n][char2 :CharP F_2n 2]
+
+noncomputable def m := Nat.card F_2n
+
+theorem auto_inv_char2'  (A : SO(2, F_2n)) : A= (A⁻¹) := by
+  have := auto_inv_char2 (char2) (A)
+  exact this
 
 
-def g ( a : F× F):=  Matrix.of (fun (i:Fin 2) ↦ (fun (j : Fin 2) ↦  match i,j with
-  |0, 0 => a.1
-  |0,1 => -a.2
-  |1, 0 => a.2
-  |1,1 => a.1
- ))
-#check g
+instance commGroup : CommGroup (SO(2,F_2n))  where
 
-def g' := fun ( a : F× F) ↦   Matrix.of (fun (i:Fin 2) ↦ (fun (j : Fin 2) ↦  match i,j with
-  |0, 0 => a.1
-  |0,1 => -a.2
-  |1, 0 => a.2
-  |1,1 => a.1
- ))
-#check g'
+  mul_comm (a:SO(2,F_2n)) b := by
+    rw [ auto_inv_char2' (a*b)]
+    simp
+    nth_rewrite 2 [auto_inv_char2' b]
+    nth_rewrite 2 [auto_inv_char2' a]
+    rfl
+#check Additive SO(2,F_2n)
 
-
-def C := Set.range (g : F × F → Matrix (Fin 2) (Fin 2) F)
-
-theorem injg : (Function.Injective (g : F × F → Matrix (Fin 2) (Fin 2) F) ) := by
-  intro a b hab
-  ext
-  · rw[← Matrix.ext_iff] at hab
-    specialize hab 0 0
-    exact hab
-
-  · rw[← Matrix.ext_iff] at hab
-    specialize hab 1 0
-    exact hab
-
-
-def caree := { (a, b) : F × F | a^2+ b^2 =1 }
-
-def E := Polynomial F
-def J:= E⧸( (@Polynomial.X (R:=F) )^2+1)
-#check E
-
-variable {F_2n : Type*} [Field F_2n][Fintype F_2n][CharP F_2n 2]
+-- AddCommGroup.equiv_directSum_zmod_of_fintype (Additive SO(2,F_2n))
 
 theorem card_so2_char2  : (Nat.card SO(2,F_2n) = Nat.card F_2n) := by
 refine Nat.card_eq_of_bijective f ?_
@@ -392,6 +376,82 @@ constructor
   rw[f ]
   simp
   rfl
+
+
+theorem structure_char2' : ((SO(2,F_2n)) ≃* ZMod (Nat.card F_2n) ) := by
+
+  sorry
+
+
+theorem structure_char2 : ((Additive SO(2,F_2n)) ≃+ ZMod (Nat.card F_2n) ) := by
+  sorry
+
+end  Char2
+
+
+def couple := (F × F)
+def uni := Set.univ (α:=(F×F))
+#check uni
+
+
+def g ( a : F× F):=  Matrix.of (fun (i:Fin 2) ↦ (fun (j : Fin 2) ↦  match i,j with
+  |0, 0 => a.1
+  |0,1 => -a.2
+  |1, 0 => a.2
+  |1,1 => a.1
+ ))
+#check g
+
+def g' := fun ( a : F× F) ↦   Matrix.of (fun (i:Fin 2) ↦ (fun (j : Fin 2) ↦  match i,j with
+  |0, 0 => a.1
+  |0,1 => -a.2
+  |1, 0 => a.2
+  |1,1 => a.1
+ ))
+
+
+def C := Set.range (g : F × F → Matrix (Fin 2) (Fin 2) F)
+
+#print C
+#check C
+--def C' := { A  : Matrix (Fin 2) (Fin 2) F // (a,b) ∈  F × F ∧   A = !![a, -b ; b,a] }
+
+
+theorem injg : (Function.Injective (g : F × F → Matrix (Fin 2) (Fin 2) F) ) := by
+  intro a b hab
+  ext
+  · rw[← Matrix.ext_iff] at hab
+    specialize hab 0 0
+    exact hab
+
+  · rw[← Matrix.ext_iff] at hab
+    specialize hab 1 0
+    exact hab
+
+
+def caree := { (a, b) : F × F | a^2+ b^2 =1 }
+
+open Polynomial
+
+
+def E:= F[X]⧸Ideal.span ({Polynomial.X^2+1}: Set F[X])
+
+def p := fun ( A : C ) ↦  C.{u_1} ( A.1 0 0 )  + ( ( A.1 0 1 ) * X ) : F[X]
+
+#check E
+
+
+def det (A:C^x)
+/--/
+def E':= F[X]⧸ ⟨ X^2+1⟩
+noncomputable def P := (@Polynomial.X (R:=F))
+def Q := @Polynomial.X (R:=F) + 1
+
+def EE := Ideal ((@Polynomial.X (R:=F)) + 1 )
+def J:= E⧸( (@Polynomial.X (R:=F) )^2+1)
+#check E
+
+
 
 
 
