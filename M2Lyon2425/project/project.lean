@@ -361,6 +361,9 @@ theorem inter_finite (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × 
   rw [← Set.Infinite] at h
   exact contradiction_of_exists ξ A₀ H (exists_of_infinite h)
 
+theorem lines_inter (L L' : Set (ℝ × ℝ)) (hL : ∃ a b c, L = Line a b c) (hL' : ∃ a' b' c', L' = Line a' b' c') :
+    Cardinal.mk (L ∩ L' : Set (ℝ × ℝ)) ≤ 1 := sorry
+
 theorem fae (ξ : ordinals_lt c)
   (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
     ∃ A : ordinals_lt c → Set (ℝ × ℝ),
@@ -368,16 +371,72 @@ theorem fae (ξ : ordinals_lt c)
   obtain ⟨A₀, hA₀⟩ := H
   set B := ⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) with hB
   have hB_le : Cardinal.mk B < Cardinal.continuum := Cardinal.mk_sUnion_lt_continuum ξ A₀ hA₀
-  let 𝒢 := {S | 2 ≤ Cardinal.mk ↑(S ∩ B) ∧ ∃ a b c, S = Line a b c}
-  have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := sorry-- or directly `< Cardinal.continuum`
-  let n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ))-- Nat.card or Cardinal.mk?
+  let 𝒢 := {S | (2 ≤ Nat.card ↑(S ∩ B) ∨ ¬(Set.Finite ↑(S ∩ B))) ∧ ∃ a b c, S = Line a b c}
+  have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := sorry-- or directly `< Cardinal.continuum
+  set n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ)) with ndef -- Nat.card or Cardinal.mk?
   have byP : n ≤ 2 ∧ Set.Finite (B ∩ (Lines ξ)) := ⟨inter_line_card_le_two ξ A₀ hA₀,
     inter_finite ξ A₀ hA₀⟩
-  let Aξ : Set (ℝ × ℝ) :=
+  by_cases hn : n = 2
+  · let Aξ : Set (ℝ × ℝ) := ∅
+    sorry
+  · have hn₀ : ∃ (x y : ℝ × ℝ), x ∈ (Lines ξ).1 \ (⋃₀ 𝒢) ∧ y ∈ (Lines ξ).1 \ (⋃₀ 𝒢)
+      ∧ x ≠ y := by
+      have hninter : (Lines ξ).1 ∉ 𝒢 := by
+        intro hinter
+        replace hinter := hinter.out.1
+        have hlt := byP.1
+        have := lt_of_le_of_ne hlt hn
+        cases' hinter with hinter₁ hinter₂
+        · rw [Set.inter_comm, ← ndef] at hinter₁
+          exact not_le_of_lt this hinter₁
+        · rw [Set.inter_comm] at hinter₂
+          exact hinter₂ byP.2
+      have hninter₂ : ∀ ℒ ∈ 𝒢, Cardinal.mk ((Lines ξ).1 ∩ ℒ : Set (ℝ × ℝ)) ≤ 1 := by
+        intros ℒ hℒ
+        exact lines_inter (Lines ξ).1 ℒ (Lines ξ).2 hℒ.2
+      have hninter₃ : Cardinal.mk ((Lines ξ).1 ∩ ⋃₀ 𝒢 : Set (ℝ × ℝ)) ≤ Cardinal.mk 𝒢 := by
+        have : (Lines ξ).1 ∩ ⋃₀ 𝒢 = ⋃₀ {S | ∃ ℒ ∈ 𝒢, S = (Lines ξ).1 ∩ ℒ} := by
+          ext x
+          refine ⟨?_, ?_⟩
+          · intro hx
+            simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_sUnion] at hx
+            obtain ⟨hx₁, t, ht⟩ := hx
+            simp only [Set.mem_setOf_eq, Set.mem_sUnion]
+            exact ⟨(Lines ξ).1 ∩ t, ⟨t, ht.1, by rfl⟩, ⟨hx₁, ht.2⟩⟩
+          · intro hx
+            simp only [Set.mem_setOf_eq, Set.mem_sUnion] at hx
+            obtain ⟨t, ⟨ℒ, hℒ, hx⟩, ht⟩ := hx
+            simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_sUnion]
+            rw [hx] at ht
+            exact ⟨ht.1, ⟨ℒ, hℒ, ht.2⟩⟩
+        rw [this]
+        have := Cardinal.mk_sUnion_le {S | ∃ ℒ ∈ 𝒢, S = (Lines ξ).1 ∩ ℒ}
+        have this₂ : Cardinal.mk ↑{S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ} = Cardinal.mk 𝒢 := by
+          refine Cardinal.mk_congr ⟨?_, ?_, ?_, ?_⟩
+          sorry
+          sorry
+          sorry
+          sorry
+        have this₃ : ⨆ (s : {S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ}), Cardinal.mk ↑↑s = 1 := sorry
+        rw [this₂, this₃, mul_one] at this
+        exact this
+      have hninter₄ : Cardinal.mk ((Lines ξ).1 ∩ ⋃₀ 𝒢 : Set (ℝ × ℝ)) < Cardinal.mk (Lines ξ).1 := by
+        sorry
+      have hninter₅ : Cardinal.mk ((Lines ξ).1 \ ⋃₀ 𝒢 : Set (ℝ × ℝ)) ≥ 2 := by
+        sorry
+      sorry
+    obtain ⟨x, y, hn₀⟩ := hn₀
+    by_cases hn₁ : n = 1
+    · let Aξ : Set (ℝ × ℝ) := {x}
+      sorry
+    · let Aξ : Set (ℝ × ℝ) := {x, y}
+      sorry
+
+  /- let Aξ : Set (ℝ × ℝ) :=
     if n = 2 then ∅
     else
-      if n = 1 then sorry
-      else sorry
+      if n = 1 then {x}
+      else {x, y}
   apply Exists.intro
   swap
   intro ζ
@@ -396,4 +455,4 @@ theorem fae (ξ : ordinals_lt c)
   · convert hA₀ ⟨η, hη⟩
     simp only [dite_eq_ite, ite_eq_left_iff, not_lt]
     intro h
-    sorry
+    sorry -/
