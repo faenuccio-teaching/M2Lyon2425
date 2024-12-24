@@ -37,14 +37,15 @@ All the PDFs of the references can be found in the [[file:references/][reference
 
 ** Status of the project
 
-There are [4/7] tasks realized:
+There are [6/8] tasks realized:
 - [X] Definition of the λ-calculus with De Bruijn's indices
 - [X] Basic definitions and proofs on abstract rewritin systems + different closures of β-reduction.
 - [X] Confluency of the β-reduction.
 - [X] Non-triviality of the β-reduction.
 - [ ] Standardization theorem.
-- [ ] Definition of simple types and a typing system.
-- [ ] Subject reduction, strong normalization.
+- [X] Definition of simple types and a typing system.
+- [X] Subject reduction
+- [ ] Strong normalization.
 
 ** References
 

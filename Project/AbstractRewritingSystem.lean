@@ -71,7 +71,7 @@ postfix:1024 "⁰" => reflexiveClosure
 
 /-- The transitive closure of a relation is defined by induction as:
         R₁ = R, Rᵢ₊₁ = R ∙ Rᵢ, R⁺ = ⋃ᵢ Rᵢ.
-    It is denoted `R⁺`. --/
+    Of course, it is denoted `R⁺`. --/
 inductive transitiveClosure {α : Type} (R : BinaryRelation α) : α → α → Prop :=
   | carrier : ∀ x y, R x y → transitiveClosure R x y
   | concat  : ∀ x y z, R x y → transitiveClosure R y z → transitiveClosure R x z
@@ -102,9 +102,6 @@ postfix:1024 "≡" => reflTransSymClosure
 
 /-! ## Properties !-/
 
--- confluence, local confluence, diamond, church-rosser, strongly normalising, 
--- weakly normalising
-
 /-- We say that a relation has the `diamond` property whenever the following diagram:
                                    a
                                  ↙   ↘  
@@ -112,14 +109,13 @@ postfix:1024 "≡" => reflTransSymClosure
                                  ↘   ↙  
                                    b
     holds for every a, a₀, a₁. --/
-def has_diamond {α : Type} (R : BinaryRelation α) : Prop :=
-  ∀ a a' a'', R a a' → R a a'' → ∃ b, R a' b ∧ R a'' b
+class HasDiamond {α : Type} (R : BinaryRelation α) :=
+  has_diamond : ∀ a a' a'', R a a' → R a a'' → ∃ b, R a' b ∧ R a'' b
 
 /-- We say that a relation is `confluent` whenever its reflexive and transitive closure 
     has the diamond property. --/
-def is_confluent {α : Type} (R : BinaryRelation α) : Prop :=
-  has_diamond R⋆
-
+class abbrev IsConfluent {α : Type} (R : BinaryRelation α) := HasDiamond (R⋆)
+  
 /-- We say that a relation is `locally confluent` whenever the following diagram:
                                    a
                                  ↙   ↘  
@@ -127,27 +123,27 @@ def is_confluent {α : Type} (R : BinaryRelation α) : Prop :=
                                  ↘⁎  ⁎↙  
                                    b
     holds for every a, a₀, a₁. --/
-def is_locally_confluent {α : Type} (R : BinaryRelation α) : Prop :=
-  ∀ a a' a'', R a a' → R a a'' → ∃ b, R⋆ a' b ∧ R⋆ a'' b
+class IsLocallyConfluent {α : Type} (R : BinaryRelation α) :=
+  is_locally_confluent : ∀ a a' a'', R a a' → R a a'' → ∃ b, R⋆ a' b ∧ R⋆ a'' b
 
 /-- Finally, we say that a relation is Church-Rosser if from any zig-zag, we can always
     converge to one element. --/
-def is_church_rosser {α : Type} (R : BinaryRelation α) : Prop :=
-  ∀ a a', R≡ a a' → ∃ b, R⋆ a b ∧ R⋆ a' b
+class IsChurchRosser {α : Type} (R : BinaryRelation α) :=
+  is_church_rosser : ∀ a a', R≡ a a' → ∃ b, R⋆ a b ∧ R⋆ a' b
 
 /-- An element `a` is "in normal form" for a binary relation `R` if there is no `b` such
     that (a, b) ∈ R. --/
 def in_normal_form {α : Type} (R : BinaryRelation α) (a : α) : Prop :=
   ¬(∃ b, R a b)
 
-/-- An element `a` is said "normalising" for a binary relation `R` if there exists a `b`
+/-- An element `a` is said "normalizing" for a binary relation `R` if there exists a `b`
     in normal form such that a →⋆ b. --/
-def is_term_normalising {α : Type} (R : BinaryRelation α) (a : α) : Prop :=
+def is_normalizing {α : Type} (R : BinaryRelation α) (a : α) : Prop :=
   ∃ b, in_normal_form R b ∧ R⋆ a b
 
-/-- A relation is said `normalising` whenever every element of α is normalising. --/
-def is_normalising {α : Type} (R : BinaryRelation α) : Prop :=
-  ∀ a, is_term_normalising R a
+/-- A relation is said `normalizing` whenever every element of α is normalising. --/
+class IsNormalizing {α : Type} (R : BinaryRelation α) :=
+  is_normalizing : ∀ (a : α), is_normalizing R a
 
 /-- We follow the strong normalisation definition of [Nord88]. It is done by first 
     defining an "accessibility" predicate `Accessible` by induction.
@@ -158,11 +154,15 @@ def is_normalising {α : Type} (R : BinaryRelation α) : Prop :=
 inductive Accessible {α : Type} (R : BinaryRelation α) : α → Prop :=
   | intro : ∀ b, (∀ a, R a b → Accessible R a) → Accessible R b
 
-/-- Then, a relation is said "strongly normalising" whenever there is no infinite sequence
-    of reductions, i.e., when we can finitely reach from a term in normal form all its 
-    terms it can be reduced from. --/
-def is_strongly_normalizing {α : Type} (R : BinaryRelation α) : Prop :=
-  ∀ a, Accessible R⁻¹ a
+/-- Then, a term is said "strongly normalising" whenever there is no infinite sequence
+    of reductions starting from this term, i.e., when we can finitely reach from a term in 
+    normal form all its terms it can be reduced from. --/
+def is_strongly_normalizing {α : Type} (R : BinaryRelation α) (a : α) : Prop :=
+  Accessible R⁻¹ a
+
+/-- A relation is strongly normalizing when all its terms are strongly normalizing. -/
+class IsStronglyNormalizing {α : Type} (R : BinaryRelation α) :=
+  is_strongly_normalizing : ∀ (a : α), is_strongly_normalizing R a
 
 /-- A relation R is included in a relation S, denoted R ⊂ S, if for every (a, b) ∈ R,
     (a, b) ∈ S. --/
@@ -208,15 +208,9 @@ lemma concat_trans_refl :
 @[inherit_doc]
 infixl:70 " ∙⋆ " => concat_trans_refl
 
-def toTransClosure {α : Type} {R : BinaryRelation α} {x y : α} (h : R x y) : R⁺ x y :=
-  transitiveClosure.carrier x y h
-
-def toTransReflClosure {α : Type} {R : BinaryRelation α} {x y : α} (h : R x y) : R⋆ x y :=
-  Or.inl (toTransClosure h)
-
 /-! ### Useful inclusion properties -/
 
-/-- If (x, y) ∈ R⁺ or R⋆, then (x, y) is also in the (symmetric closure of R)⁺/⋆. --/
+/-- If (x, y) ∈ R⋆, then (x, y) is also in the (symmetric closure of R)⋆. --/
 lemma in_trans_rel_in_sym_closure :
   ∀ {α : Type} {R : BinaryRelation α} {x y : α},
     R⁺ x y → (symmetricClosure R)⁺ x y := by
@@ -301,15 +295,15 @@ lemma is_subrelation_refl_trans_closure :
     If x → b in one step, then local confluency suffices to conclude. Otherwise, we use
     the confluence condition to conclude. --/
 lemma newmann_aux :
-  ∀ {α : Type} {R : BinaryRelation α} {x a b : α}, 
-    is_locally_confluent R → R x a → R⁺ x b 
-    → (∀ c, R x c → ∀ a' a'', R⋆ c a' → R⋆ c a'' → ∃ d, R⋆ a' d ∧ R⋆ a'' d)
-    → ∃ y, R⋆ a y ∧ R⋆ b y := by
+  ∀ {α : Type} {R : BinaryRelation α} {x a b : α} [IsLocallyConfluent R],
+    R x a → R⁺ x b → 
+      (∀ c, R x c → ∀ a' a'', R⋆ c a' → R⋆ c a'' → ∃ d, R⋆ a' d ∧ R⋆ a'' d) →
+      ∃ y, R⋆ a y ∧ R⋆ b y := by
   intro α R x a b hconfl hxa hxb hchild
   induction hxb with
-  | carrier y z hyz => exact hconfl y a z hxa hyz
+  | carrier y z hyz => exact hconfl.is_locally_confluent y a z hxa hyz
   | concat y z t hyz hzt _ => 
-    have := hconfl y z a hyz hxa
+    have := hconfl.is_locally_confluent y z a hyz hxa
     cases this with
     | intro u h' => 
       cases h' with
@@ -329,41 +323,43 @@ lemma newmann_aux :
     b' →⋆ t by local confluence. Then, get `t₁` such that a →⋆ t₁ and t →⋆ t₁ by 
     confluency of a', and finally get `t₂` such that t₁ →⋆ t₂ and b →⋆ t₂ by confluency
     of b'. --/
-lemma newmann : 
-  ∀ {α : Type} {R : BinaryRelation α}, 
-    is_strongly_normalizing R → is_locally_confluent R → is_confluent R := by
-  intro α R hnorm hconfl a
-  induction (hnorm a) with
-  | intro x _ ih => 
-    intro a' a'' hxa' hxa''
-    cases hxa' with
-    | inl hxa' => cases hxa'' with
-      | inl hxa'' => induction hxa' with
-        | carrier y z hyz => apply newmann_aux <;> trivial
-        | concat y z t hyz hzt => induction hxa'' with
-          | carrier y' z' hyz' =>
-            have hy't := transitiveClosure.concat y' z t hyz hzt
-            have := newmann_aux hconfl hyz' hy't ih
-            cases this with
-            | intro b h => exists b; constructor; exact h.right; exact h.left
-          | concat y' z' t' hyz' hzt' => 
-              have := hconfl y' z z' hyz hyz'
-              cases this with
-              | intro t₀ h => 
-                have := ih z hyz t t₀ (Or.inl hzt) h.left
-                cases this with
-                | intro t₁ h' =>
-                  have := ih z' hyz' t' t₁ (Or.inl hzt') (h.right ∙⋆ h'.right)
+instance {α : Type} {R : BinaryRelation α} 
+         [hnorm : IsStronglyNormalizing R] [hconfl : IsLocallyConfluent R] : IsConfluent R 
+  where
+  has_diamond := by
+    intro a
+    induction (hnorm.is_strongly_normalizing a) with
+    | intro x _ ih => 
+      intro a' a'' hxa' hxa''
+      cases hxa' with
+      | inl hxa' => cases hxa'' with
+        | inl hxa'' => induction hxa' with
+          | carrier y z hyz => apply newmann_aux <;> trivial
+          | concat y z t hyz hzt => 
+              induction hxa'' with
+              | carrier y' z' hyz' =>
+                  have hy't := transitiveClosure.concat y' z t hyz hzt
+                  have := newmann_aux hyz' hy't ih
                   cases this with
-                  | intro t₂ h'' => exists t₂; constructor
-                                    · exact h'.left ∙⋆ h''.right
-                                    · exact h''.left
-      | inr e => rw [←e]; exists a'; constructor
+                  | intro b h => exists b; constructor; exact h.right; exact h.left
+              | concat y' z' t' hyz' hzt' => 
+                  have := hconfl.is_locally_confluent y' z z' hyz hyz'
+                  cases this with
+                  | intro t₀ h => 
+                      have := ih z hyz t t₀ (Or.inl hzt) h.left
+                      cases this with
+                      | intro t₁ h' =>
+                          have := ih z' hyz' t' t₁ (Or.inl hzt') (h.right ∙⋆ h'.right)
+                          cases this with
+                          | intro t₂ h'' => exists t₂; constructor
+                                            · exact h'.left ∙⋆ h''.right
+                                            · exact h''.left
+        | inr e => rw [←e]; exists a'; constructor
+                   · right; rfl
+                   · left; trivial
+      | inr e => exists a''; rw [←e]; constructor
+                 · trivial
                  · right; rfl
-                 · left; trivial
-    | inr e => exists a''; rw [←e]; constructor
-               · trivial
-               · right; rfl
 
 /-! ### Church-Rosser theorem -/
 
@@ -371,51 +367,49 @@ lemma newmann :
 
     We start by showing that if a relation is confluent, then it is Church-Rosser. This proof
     is the standard one ─ by induction on the length of the derivation ↔. --/
-lemma is_confluent_is_church_rosser :
-  ∀ {α : Type} {R : BinaryRelation α},
-    is_confluent R → is_church_rosser R := by
-  intro α R hconfl a a' h
-  induction h with
-  | inl h => induction h with
-    | carrier x y hxy => cases hxy with
-      | inl h => use y; constructor
-                 · left; left; trivial
-                 · right; rfl
-      | inr h => use x; constructor
-                 · right; rfl
-                 · left; left; trivial
-    | concat x y z hxy hyz ih => cases hxy with
-      | inl h => cases ih with
-        | intro b ih => cases ih with
-          | intro hyb hzb => cases hyb with
-            | inl hyb => use b; constructor
-                         · left; right <;> trivial
-                         · trivial
-            | inr e   => use y; constructor
-                         · left; left; trivial
-                         · rw [e]; trivial
-      | inr h => cases ih with
-        | intro b ih => cases ih with
-          | intro hyb hzb => 
-            have hyx: (R⋆) y x := Or.inl (transitiveClosure.carrier y x h)
-            have := hconfl y x b hyx hyb
-            cases this with
-            | intro c h => use c; constructor
-                           · exact h.left
-                           · exact hzb ∙⋆ h.right
-  | inr e => use a; rw [e]; constructor <;> right <;> rfl
+instance {α : Type} {R : BinaryRelation α} [hconfl : IsConfluent R] : IsChurchRosser R where 
+  is_church_rosser := by
+    intro a a' h
+    induction h with
+    | inl h => induction h with
+      | carrier x y hxy => cases hxy with
+        | inl h => use y; constructor
+                   · left; left; trivial
+                   · right; rfl
+        | inr h => use x; constructor
+                   · right; rfl
+                   · left; left; trivial
+      | concat x y z hxy hyz ih => cases hxy with
+        | inl h => cases ih with
+          | intro b ih => cases ih with
+            | intro hyb hzb => cases hyb with
+              | inl hyb => use b; constructor
+                           · left; right <;> trivial
+                           · trivial
+              | inr e   => use y; constructor
+                           · left; left; trivial
+                           · rw [e]; trivial
+        | inr h => cases ih with
+          | intro b ih => cases ih with
+            | intro hyb hzb => 
+              have hyx: (R⋆) y x := Or.inl (transitiveClosure.carrier y x h)
+              have := hconfl.has_diamond y x b hyx hyb
+              cases this with
+              | intro c h => use c; constructor
+                             · exact h.left
+                             · exact hzb ∙⋆ h.right
+    | inr e => use a; rw [e]; constructor <;> right <;> rfl
 
 
 /-- We now show that if a relation is Church-Rosser, then it is confluent.
     It is, in fact, trivial, as (→⋆) ⊂ (↔)⋆. --/
-lemma is_church_rosser_is_confluent :
-  ∀ {α : Type} {R : BinaryRelation α},
-    is_church_rosser R → is_confluent R := by
-  intro α R hcr x a a' hxa hxa'
-  apply hcr
-  have h' := by apply in_rel_in_sym_closure'; exact hxa
-  have h  := by apply in_rel_in_sym_closure; exact hxa'
-  exact h' ∙⋆ h
+instance {α : Type} {R : BinaryRelation α} [hcr : IsChurchRosser R] : IsConfluent R where 
+  has_diamond := by
+    intro x a a' hxa hxa'
+    apply hcr.is_church_rosser
+    have h' := by apply in_rel_in_sym_closure'; exact hxa
+    have h  := by apply in_rel_in_sym_closure; exact hxa'
+    exact h' ∙⋆ h
 
 /-- The reflexive and transitive closure is an idempotent operation --/ 
 lemma refl_trans_closure_is_idempotent :
@@ -438,15 +432,17 @@ lemma refl_trans_closure_is_idempotent :
                                  ↘⁎  ↙  
                                    t -/
 lemma has_diamond_is_confluent_aux :
-  ∀ {α : Type} {R : BinaryRelation α},
-    has_diamond R → ∀ x y z, R x y → R⋆ x z → ∃ t, R⋆ y t ∧ R z t := by
+  ∀ {α : Type} {R : BinaryRelation α} [HasDiamond R],
+    ∀ x y z, R x y → R⋆ x z → ∃ t, R⋆ y t ∧ R z t := by
   intro α R hd x y z hxy hxz; cases hxz with
   | inl hxz => revert y; induction' hxz with x y' hxy' x y' z hxy' _ ih
-               · intro y hxy; specialize hd x y y' hxy hxy'; cases hd with
+               · intro y hxy 
+                 have hd := hd.has_diamond x y y' hxy hxy'; cases hd with
                  | intro t h => exists t; constructor
                                 · left; left; exact h.left
                                 · exact h.right
-               · intro y hxy; specialize hd x y y' hxy hxy'; cases hd with
+               · intro y hxy
+                 have hd := hd.has_diamond x y y' hxy hxy'; cases hd with
                  | intro t h => specialize (ih t h.right); cases ih with
                    | intro u hu => exists u; constructor
                                    · cases hu.left with
@@ -456,22 +452,22 @@ lemma has_diamond_is_confluent_aux :
   | inr e   => exists y; constructor; right; rfl; erw [←e]; trivial
 
 /-- Then, using this auxiliary lemma, we can show the following property: --/
-lemma has_diamond_is_confluent :
-  ∀ {α : Type} {R : BinaryRelation α},
-    has_diamond R → is_confluent R := by
-  intro α R hd a a' a'' ha' ha''; cases ha' with
-  | inl ha' => revert a''; induction' ha' with a a' ha' a a' a'' ha' _ ih
-               · intro a'' ha''
-                 have := by apply has_diamond_is_confluent_aux hd <;> trivial
-                 cases this with
-                 | intro t h => exists t; constructor; exact h.left; left; left; exact h.right
-               · intro a₀ ha₀;
-                 have := by apply has_diamond_is_confluent_aux <;> trivial
-                 cases this with
-                 | intro t h => specialize ih t h.left; cases ih with
-                   | intro u h' => exists u; constructor
-                                   · exact h'.left
-                                   · cases h'.right with
-                                     | inl ht => left; right; exact h.right; trivial
-                                     | inr e  => left; left; rw [←e]; exact h.right
-  | inr e   => exists a''; constructor; rw [←e]; trivial; right; rfl
+instance {α : Type} {R : BinaryRelation α} [hd : HasDiamond R] : IsConfluent R where
+  has_diamond := by
+    intro a a' a'' ha' ha''; cases ha' with
+    | inl ha' => 
+        revert a''; induction' ha' with a a' ha' a a' a'' ha' _ ih
+        · intro a'' ha''
+          have := by apply @has_diamond_is_confluent_aux α R hd <;> trivial
+          cases this with
+          | intro t h => exists t; constructor; exact h.left; left; left; exact h.right
+        · intro a₀ ha₀;
+          have := by apply @has_diamond_is_confluent_aux α R hd <;> trivial
+          cases this with
+          | intro t h => specialize ih t h.left; cases ih with
+            | intro u h' => exists u; constructor
+                            · exact h'.left
+                            · cases h'.right with
+                              | inl ht => left; right; exact h.right; trivial
+                              | inr e  => left; left; rw [←e]; exact h.right
+    | inr e   => exists a''; constructor; rw [←e]; trivial; right; rfl

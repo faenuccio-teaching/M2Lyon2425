@@ -28,15 +28,23 @@ notation "Λ" => Lambda
 
 As we use De Bruijn's indices, we cannot directly define the substitution.
 Instead, we first have to define a "lifting" operation (lift j i M) by induction on M:
-  ∙ If M = Var n, then (↑ j i M) = n if n < i, n + j otherwise
-  ∙ If M = (λ M'), then (↑ j i M) = λ (↑ j (i + 1) M')
-  ∙ If M = N P, then (↑ j i M) = (↑ j i N) (↑ j i P).
+  ∙ If M = Var n, then (lift j i M) = n if n < i, n + j otherwise
+  ∙ If M = (λ M'), then (lift j i M) = λ (lift j (i + 1) M')
+  ∙ If M = N P, then (lift j i M) = (lift j i N) (lift j i P).
  -/
 def lift (j i : ℕ) (M : Λ) : Λ :=
   match M with
   | Lambda.Var n => if n < i then Lambda.Var n else Lambda.Var (n + j)
   | Lambda.Lam M => Lambda.Lam (lift j (i + 1) M)
   | Lambda.App M N => Lambda.App (lift j i M) (lift j i N)
+
+/-! Lifting by 0 is the same as doing nothing. -/
+lemma lift_zero : ∀ (k : ℕ) (M : Λ), lift 0 k M = M := by
+  intro k M; revert k; induction' M with x M ih M N ihM ihN <;> intro k
+  · unfold lift; split
+    rfl; rw [Nat.add_zero]
+  · unfold lift; rw [ih]
+  · unfold lift; rw [ihM, ihN]
 
 /-! We can simplify the result of two liftings:
        ↑ m ℓ (↑ i j M) = ↑ (m + i) j M
@@ -93,7 +101,6 @@ lemma double_lift' :
              Lambda.App (lift m (i + j) (lift i j M)) (lift m (i + j) (lift i j N))
     rw [ihM i j ℓ m, ihN i j ℓ m] <;> omega
 
-/-! If i ≥ ℓ, we can show that ↑ k ℓ (↑ j i M) = ↑ j (i + k) (↑ k ℓ M). -/
 lemma double_lift'' :
   ∀ (i j k ℓ : ℕ) (M : Λ), i ≥ ℓ → lift k ℓ (lift j i M) = lift j (i + k) (lift k ℓ M) := by
   intro i j k ℓ M hle; revert ℓ k j i; induction M with
@@ -297,6 +304,15 @@ infixl:75 " →β⋆ " => βreduction⋆
 infixl:75 " ≡β " => βreduction≡ 
 
 /-! ## Context of closures -/
+
+lemma context_subst :
+  ∀ (M M' N : Λ) (x : ℕ), 
+    M →β M' → M[N⧸x] →β M'[N⧸x] := by
+  intro M M' N x h; revert x; induction h with
+  | β M P => intro x; rw [substitution_lemma, Nat.sub_zero]; constructor; omega
+  | context₀ M P _ ih => intro x; unfold substitute; constructor; apply ih
+  | context₁ M M' P _ ih => intro x; unfold substitute; constructor; apply ih
+  | context₂ M M' P _ ih => intro x; unfold substitute; constructor; apply ih
 
 lemma context₀_trans : 
   ∀ M M', M →β⁺ M' → (Lambda.Lam M) →β⁺ (Lambda.Lam M') := by

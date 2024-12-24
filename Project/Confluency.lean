@@ -6,14 +6,16 @@ import «Project».Definition
 /-!
 # Confluency of the untyped λ-calculus
 
-This file shows that the β-reduction defined in the file Definition.lean is a confluent
+This file shows that the β-reduction defined in the file `Definition` is a confluent
 abstract rewriting system.
-The proof of this file follows the standard proof that uses parallel β-reduction, i.e., the
-one that can be found in [Mim22, §3.4].
+The proof of this file follows the standard proof that uses parallel β-reduction. It follows
+the steps of [Mim22, §3.4].
 
 ## References
 
-* [S. Mimram. PROGRAM=PROOF. 2022][Mim22] -/
+* [S. Mimram. PROGRAM=PROOF. 2022][Mim22] 
+In this file, the proofs follow the book very closely. -/
+
 
 /-!
 ## Parallel β-reduction 
@@ -134,82 +136,84 @@ lemma parallel_reduction_compatible_subst :
   parallel_reduction_compatible_subst_aux 0
 
 /-- Parallel β-reduction has the diamond property. --/
-lemma has_diamond_parallel_reduction : has_diamond Pβreduction := by
-  intro M N N' hMN; revert N'; induction hMN with
-  | βx x => 
-    intro N' hMN'
-    use N'; constructor
-    · trivial
-    · apply is_refl_parallel
-  | βs M M' P P' _ _ ihM ihP => 
-    intro N' hMN'
-    cases hMN' with
-    | βs _ M'' _ P'' hM'' hP'' =>
-      specialize ihM M'' hM''; specialize ihP P'' hP''
-      cases ihM with
-      | intro Q h => cases ihP with
-        | intro Q' h' => exists Q[Q'⧸0]; constructor
-                         · apply parallel_reduction_compatible_subst 
-                           exact h.left; exact h'.left
-                         · apply parallel_reduction_compatible_subst
-                           exact h.right; exact h'.right
-    | βa Q Q' R R' hQ hP =>
-      cases hQ with
-      | βl M' M''  hM'' => 
-        specialize ihM M'' hM''; specialize ihP R' hP
-        cases ihM with
-        | intro S h => cases ihP with
-        | intro S' h' => exists S[S'⧸0]; constructor
-                         · apply parallel_reduction_compatible_subst
-                           exact h.left; exact h'.left
-                         · constructor; exact h.right; exact h'.right
-  | βa P P' M M' hP _ ihP ihM =>
-    intro N' hMN'
-    cases hMN' with
-    | βs P P'' _ M'' hP'' hM'' =>
-      cases hP with
-      | βl _ P' hP' =>
-        specialize ihM M'' hM''; specialize ihP (Lambda.Lam P'')
-        have : Lambda.Lam P ⇉ Lambda.Lam P'' := by constructor; trivial
-        specialize ihP this; cases ihM with
-        | intro R hR => cases ihP with
-          | intro R' hR' => cases hR' with
-            | intro hP' hP'' => cases hP' with
-              | βl _ S hS => cases hP'' with
-                | βl _ S' hS' => exists S[R⧸0]; constructor
-                                 · constructor; trivial; exact hR.left
-                                 · apply parallel_reduction_compatible_subst; trivial
-                                   exact hR.right
-    | βa _ P'' _ M'' hP'' hM'' =>
-      specialize ihM M'' hM''; specialize ihP P'' hP''
-      cases ihM with
-      | intro Q hQ => cases ihP with
-        | intro Q' hQ' => exists (Lambda.App Q' Q); constructor
-                          · constructor; exact hQ'.left; exact hQ.left
-                          · constructor; exact hQ'.right; exact hQ.right
-  | βl M M' _ ih =>
-    intro N' hMN'
-    cases hMN' with
-    | βl _ M'' hM'' => 
-      specialize ih M'' hM''; cases ih with
-      | intro P hP => exists (Lambda.Lam P); constructor
-                      · constructor; exact hP.left
-                      · constructor; exact hP.right
+instance : HasDiamond Pβreduction where
+  has_diamond := by
+    intro M N N' hMN; revert N'; induction hMN with
+    | βx x => 
+        intro N' hMN'
+        use N'; constructor
+        · trivial
+        · apply is_refl_parallel
+    | βs M M' P P' _ _ ihM ihP => 
+        intro N' hMN'
+        cases hMN' with
+        | βs _ M'' _ P'' hM'' hP'' =>
+            specialize ihM M'' hM''; specialize ihP P'' hP''
+            cases ihM with
+            | intro Q h => cases ihP with
+              | intro Q' h' => exists Q[Q'⧸0]; constructor
+                               · apply parallel_reduction_compatible_subst 
+                                 exact h.left; exact h'.left
+                               · apply parallel_reduction_compatible_subst
+                                 exact h.right; exact h'.right
+        | βa Q Q' R R' hQ hP =>
+            cases hQ with
+            | βl M' M''  hM'' => 
+                specialize ihM M'' hM''; specialize ihP R' hP
+                cases ihM with
+                | intro S h => cases ihP with
+                | intro S' h' => exists S[S'⧸0]; constructor
+                                 · apply parallel_reduction_compatible_subst
+                                   exact h.left; exact h'.left
+                                 · constructor; exact h.right; exact h'.right
+    | βa P P' M M' hP _ ihP ihM =>
+        intro N' hMN'
+        cases hMN' with
+        | βs P P'' _ M'' hP'' hM'' =>
+            cases hP with
+            | βl _ P' hP' =>
+                specialize ihM M'' hM''; specialize ihP (Lambda.Lam P'')
+                have : Lambda.Lam P ⇉ Lambda.Lam P'' := by constructor; trivial
+                specialize ihP this; cases ihM with
+                | intro R hR => cases ihP with
+                  | intro R' hR' => cases hR' with
+                    | intro hP' hP'' => cases hP' with
+                      | βl _ S hS => cases hP'' with
+                        | βl _ S' hS' => exists S[R⧸0]; constructor
+                                         · constructor; trivial; exact hR.left
+                                         · apply parallel_reduction_compatible_subst; trivial
+                                           exact hR.right
+        | βa _ P'' _ M'' hP'' hM'' =>
+            specialize ihM M'' hM''; specialize ihP P'' hP''
+            cases ihM with
+            | intro Q hQ => cases ihP with
+              | intro Q' hQ' => exists (Lambda.App Q' Q); constructor
+                                · constructor; exact hQ'.left; exact hQ.left
+                                · constructor; exact hQ'.right; exact hQ.right
+    | βl M M' _ ih =>
+        intro N' hMN'
+        cases hMN' with
+        | βl _ M'' hM'' => 
+            specialize ih M'' hM''; cases ih with
+            | intro P hP => exists (Lambda.Lam P); constructor
+                            · constructor; exact hP.left
+                            · constructor; exact hP.right
 
 /-! ## Confluency Results -/
 
-/-- Every relation that has the diamond property is confluent -/
-lemma is_confluent_parallel_reduction : is_confluent Pβreduction := by
-  apply has_diamond_is_confluent; exact has_diamond_parallel_reduction
+/- As every relation that has the diamond property is confluent, we can define a term
+   that says that parallel β-reduction has an instance of confluence. -/
+def is_confluent_par_beta_reduction := (inferInstance : IsConfluent Pβreduction)
 
 /-- As ⇉⋆ = →β⋆, it directly implies the confluency of →β⋆. -/
-theorem is_confluent_beta_reduction : is_confluent βreduction := by
-  have := is_confluent_parallel_reduction
-  unfold is_confluent at this; rw [transitive_closure_parallel_coincides] at this
-  assumption
+instance : IsConfluent βreduction where
+  has_diamond := by
+    have := is_confluent_par_beta_reduction.has_diamond
+    rw [transitive_closure_parallel_coincides] at this
+    assumption
 
-theorem is_church_rosser_beta_reduction : is_church_rosser βreduction := by
-  apply is_confluent_is_church_rosser; exact is_confluent_beta_reduction
+def is_confluent_beta_reduction := (inferInstance : IsConfluent βreduction)
+def is_church_rosser_beta_reduction := (inferInstance : IsChurchRosser βreduction)
 
 /-! ## Non-triviality Results -/
 
@@ -219,7 +223,7 @@ lemma beta_equivalent_in_normal_form_are_equal :
     M ≡β N → M = N := by
   intro M N hnormM hnormN hequiv
   have := is_church_rosser_beta_reduction
-  specialize this M N hequiv
+  have := this.is_church_rosser M N hequiv
   cases this with
   | intro P h =>
     have e₁ : M = P := by
