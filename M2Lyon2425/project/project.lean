@@ -132,68 +132,21 @@ example (S : Set (ℝ × ℝ)) (hS : IsTwoPointSet S) :
 
 -- Construction of the two-point set
 
-def IsColinear (a b : ℝ × ℝ) : Prop :=
-  ∃ (a' b' c' : ℝ), a ∈ Line a' b' c' ∧ b ∈ Line a' b' c'
+-- This is proved in mathlib4.
+universe v u
 
-def NoThreeColinearPoints {α : Type*} (s : α → Set (ℝ × ℝ)) : Prop :=
-  ¬(∃ a b c, a ∈ Set.iUnion s ∧ b ∈ Set.iUnion s ∧ c ∈ Set.iUnion s
-  ∧ IsColinear a b ∧ IsColinear b c)
+theorem Cardinal.mk_iUnion_Ordinal_lift_le_of_le {β : Type v} {o : Ordinal.{u}} {c : Cardinal.{v}}
+    (ho : Cardinal.lift.{v, u} o.card ≤ Cardinal.lift.{u, v} c) (hc : Cardinal.aleph0 ≤ c)
+    (A : Ordinal.{u} → Set β) (hA : ∀ j < o, Cardinal.mk ↑(A j) ≤ c) :
+    Cardinal.mk ↑(⋃ (j : Ordinal.{u}), ⋃ (_ : j < o), A j) ≤ c := sorry
+--
+
+-- Definitions
+
+def IsColinear (a b : ℝ × ℝ) : Prop :=
+  ∃ a' b' c', a ∈ Line a' b' c' ∧ b ∈ Line a' b' c'
 
 def ordinals_lt (o : Ordinal) : Set Ordinal := setOf (· < o)
-
-def ordinals_le_lt (o₁ o₂ : Ordinal) : Set (ordinals_lt o₁) := setOf (· ≤ o₂)
-
--- Should I prove this?
-def Lines : ordinals_lt Cardinal.continuum.ord → setOf (∃ a b c, · = Line a b c) := sorry
-
-lemma Lines_bijective : Lines.Bijective := sorry
---
-
-def Lines₂ (o : Ordinal) (ho : o ≤ Cardinal.continuum.ord) :
-    ordinals_lt o → setOf (∃ a b c, · = Line a b c) :=
-  fun ⟨o₂, ho₂⟩ ↦ Lines ⟨o₂, lt_of_lt_of_le ho₂ ho⟩
-
--- We want to build a sequence with the properties prop₁, prop₂, prop₃ below.
-def seq_A_prop₁ (o : Ordinal) (f : ordinals_lt o → Set (ℝ × ℝ)) : Prop :=
-  ∀ ε : ordinals_lt o, Cardinal.mk (f ε) ≤ 2
-
-def seq_A_prop₂ (o : Ordinal) (f : ordinals_lt o → Set (ℝ × ℝ)) : Prop :=
-  ∀ ε : ordinals_lt o, NoThreeColinearPoints (fun (i : ordinals_le_lt o ε) ↦ f i)
-
-def seq_A_prop₃ (o : Ordinal) (f : ordinals_lt o → Set (ℝ × ℝ)) : Prop :=
-  ∀ ε : ordinals_lt o, (ho : o ≤ Cardinal.continuum.ord) →
-  Cardinal.mk (Subtype (· ∈ Set.iUnion (fun (i : ordinals_le_lt o ε) ↦ f i)
-  ∩ Lines₂ o ho ε)) = 2
---
-
-def exists_seq_A : ∃ (f : ordinals_lt Cardinal.continuum.ord → Set (ℝ × ℝ)),
-    seq_A_prop₁ Cardinal.continuum.ord f
-    ∧ seq_A_prop₂ Cardinal.continuum.ord f
-    ∧ seq_A_prop₃ Cardinal.continuum.ord f := by
-  apply Ordinal.induction
-    (p := fun (o : Ordinal) ↦ ∃ (f : ordinals_lt o → Set (ℝ × ℝ)),
-    seq_A_prop₁ o f ∧ seq_A_prop₂ o f ∧ seq_A_prop₃ o f) Cardinal.continuum.ord
-  intros ε hε
-  have := ε.zero_or_succ_or_limit
-  cases' this with h₁ h₂
-  · rw [h₁]
-    use (fun _ ↦ ∅)
-    refine ⟨fun ε ↦ ?_, fun ε ↦ ?_, fun ε ↦ ?_⟩
-    exfalso
-    exact ε.1.not_lt_zero ε.2
-    exfalso
-    exact ε.1.not_lt_zero ε.2
-    exfalso
-    exact ε.1.not_lt_zero ε.2
-  · cases' h₂ with h₂ h₃
-    · obtain ⟨a, ha⟩ := h₂
-      rw [ha] at hε
-      specialize hε a (Order.lt_succ a)
-      obtain ⟨f, hf⟩ := hε
-      sorry
-    . sorry
-
--- Filippo: some trials
 
 def ordinals_le (o : Ordinal) : Set Ordinal := setOf (· ≤ o)
 
@@ -206,6 +159,11 @@ abbrev c := Cardinal.continuum.ord
 def union_le_fae (A : ordinals_lt c → Set (ℝ × ℝ)) (o : ordinals_lt c) : Set (ℝ × ℝ) :=
   (⋃ (b : ordinals_le o), A ⟨b, (lt_of_le_of_lt b.2 o.2.out)⟩)
 
+-- Should I prove this?
+def Lines : ordinals_lt Cardinal.continuum.ord → setOf (∃ a b c, · = Line a b c) := sorry
+
+lemma Lines_bijective : Lines.Bijective := sorry
+--
 
 /- This is the condition that `(I)`, `(P)` and `(D)` on page 81 are satisfied up to a certain `ξ`.
 The function `A` is total, but the property only holds up to `ξ`-/
@@ -215,40 +173,37 @@ def prop_fae (A : ordinals_lt c → Set (ℝ × ℝ)) (ξ : ordinals_lt c) : Pro
   Nat.card ((union_le_fae A ξ) ∩ (Lines ξ) : Set (ℝ × ℝ)) = 2
 -- To think about: Nat.card or Cardinal.mk?
 
--- This is proved in mathlib4.
-universe v u
-
-theorem Cardinal.mk_iUnion_Ordinal_lift_le_of_le {β : Type v} {o : Ordinal.{u}} {c : Cardinal.{v}}
-    (ho : Cardinal.lift.{v, u} o.card ≤ Cardinal.lift.{u, v} c) (hc : Cardinal.aleph0 ≤ c)
-    (A : Ordinal.{u} → Set β) (hA : ∀ j < o, Cardinal.mk ↑(A j) ≤ c) :
-    Cardinal.mk ↑(⋃ (j : Ordinal.{u}), ⋃ (_ : j < o), A j) ≤ c := sorry
---
-
+/- We find a union which has the same cardinality as the set of ordinals less than o
+(o being an ordinal). It's the union of the singleton sets {j} where j is an ordinal
+less than o. We do this because we know the cardinality of an indexed union. -/
 def Equiv.iUnion_ordinals_lt (o : Ordinal) :
     ⋃ j, ⋃ (_ : j < o), (fun α ↦ setOf (· = α)) j ≃ ordinals_lt o := by
   refine ⟨fun a ↦ ⟨a.1, ?_⟩, fun a ↦ ⟨a.1,
     Set.mem_iUnion.2 ⟨a, Set.mem_iUnion.2 ⟨a.2, rfl⟩⟩⟩, fun _ ↦ rfl, fun _ ↦ rfl⟩
   obtain ⟨a, ha⟩ := a
-  simp only [Set.mem_iUnion, exists_prop] at ha
-  obtain ⟨i, ⟨hi, hi₂⟩⟩ := ha
+  simp only [Set.mem_iUnion] at ha
+  obtain ⟨i, hi, hi₂⟩ := ha
   rwa [← hi₂] at hi
 
+open Cardinal in
+/- We prove the following by proving that
+1) The cardinality of (ordinals_lt ξ) is less or equal to ℵ₀ + #ξ (we know the cardinality
+of an indexed union)
+2) ℵ₀ + #ξ is less than the cardinality of the continuum (we know that if two cardinal numbers are
+less than a certain cardinal c than their sum is less than c) -/
 theorem Cardinal.mk_ordinals_lt_lt_continuum (ξ : ordinals_lt c) :
-    Cardinal.mk (ordinals_lt ξ) < Cardinal.continuum := by
-  set A := fun (α : Ordinal) ↦ setOf (· = α) with hA
-  have heq : Cardinal.mk (⋃ j, ⋃ (_ : j < ξ.1), A j) = Cardinal.mk (ordinals_lt ξ) :=
-    Cardinal.mk_congr (Equiv.iUnion_ordinals_lt ξ)
-  rw [← heq]
-  have this₃ : Cardinal.aleph0 + Cardinal.lift.{u_1 + 1, u_1} ξ.1.card < Cardinal.continuum :=
-    Cardinal.add_lt_of_lt Cardinal.aleph0_le_continuum Cardinal.aleph0_lt_continuum
-    (Cardinal.lift_lt_continuum.mpr (Cardinal.lt_ord.1 ξ.2))
-  refine lt_of_le_of_lt (Cardinal.mk_iUnion_Ordinal_lift_le_of_le ?_ ?_ A (fun j _ ↦ ?_)) this₃
-  · simp only [Ordinal.lift_card, Cardinal.lift_add, Cardinal.lift_aleph0, Ordinal.lift_lift,
+    mk (ordinals_lt ξ) < continuum := by
+  rw [← mk_congr (Equiv.iUnion_ordinals_lt ξ)]
+  have : aleph0 + lift.{u_1 + 1, u_1} ξ.1.card < continuum :=
+    add_lt_of_lt aleph0_le_continuum aleph0_lt_continuum (lift_lt_continuum.2 (lt_ord.1 ξ.2))
+  refine lt_of_le_of_lt (mk_iUnion_Ordinal_lift_le_of_le ?_ ?_ (fun α ↦ setOf (· = α)) ?_) this
+  · simp only [Ordinal.lift_card, lift_add, lift_aleph0, Ordinal.lift_lift,
     self_le_add_left]
   · simp only [Ordinal.lift_card, self_le_add_right]
-  · simp only [hA, Set.setOf_eq_eq_singleton, Cardinal.mk_fintype, Fintype.card_ofSubsingleton,
+  · intros j _
+    simp only [Set.setOf_eq_eq_singleton, mk_fintype, Fintype.card_ofSubsingleton,
     Nat.cast_one, Ordinal.lift_card]
-    exact le_trans Cardinal.one_le_aleph0 (self_le_add_right _ _)
+    exact le_trans one_le_aleph0 (self_le_add_right _ _)
 
 theorem Cardinal.mk_sUnion_lt_continuum (ξ : ordinals_lt c)
     (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
@@ -388,8 +343,8 @@ theorem fae (ξ : ordinals_lt c)
     refine ⟨?_, ?_, ?_⟩
     · by_cases hδ : δ.1 < ξ
       · have := (hA₀ ⟨δ.1, hδ⟩).1
-        have hA : A ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ =
-            A₀ ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ := by
+        have hA : A ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ =
+            A₀ ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ := by
           rw [A_def]
           simp only [dite_eq_ite, ite_eq_right_iff]
           intro h
@@ -398,15 +353,11 @@ theorem fae (ξ : ordinals_lt c)
           exact ne_of_lt hδ h
         rw [hA]
         exact this
-      · have := δ.2.out
-        have heq := eq_of_le_of_not_lt this hδ
-        have hA : A ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ =
-            Aξ := by
+      · have heq := eq_of_le_of_not_lt δ.2.out hδ
+        have hA : A ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ = Aξ := by
           rw [A_def]
           simp only [dite_eq_ite, Subtype.coe_eta, heq, ↓reduceIte]
-        rw [hA]
-        have : Cardinal.mk ↑Aξ = 0 := Cardinal.mk_emptyCollection (ℝ × ℝ)
-        rw [this]
+        rw [hA, Cardinal.mk_emptyCollection]
         exact Cardinal.zero_le 2
     · by_cases hδ : δ.1 < ξ
       · have hunion : union_le_fae A ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ =
