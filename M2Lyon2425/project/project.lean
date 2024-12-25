@@ -186,7 +186,7 @@ def Equiv.iUnion_ordinals_lt (o : Ordinal) :
   rwa [← hi₂] at hi
 
 open Cardinal in
-/- We prove the following by proving that
+/- We show this statement by proving that
 1) The cardinality of (ordinals_lt ξ) is less or equal to ℵ₀ + #ξ (we know the cardinality
 of an indexed union)
 2) ℵ₀ + #ξ is less than the cardinality of the continuum (we know that if two cardinal numbers are
