@@ -378,7 +378,36 @@ theorem fae (ξ : ordinals_lt c)
     inter_finite ξ A₀ hA₀⟩
   by_cases hn : n = 2
   · let Aξ : Set (ℝ × ℝ) := ∅
-    sorry
+    set A : ↑(ordinals_lt c) → Set (ℝ × ℝ) := by
+      intro α
+      by_cases hα : α = ξ
+      exact Aξ
+      exact A₀ α with A_def
+    use A
+    intro δ
+    refine ⟨?_, ?_, ?_⟩
+    · by_cases hδ : δ.1 < ξ
+      · have := (hA₀ ⟨δ.1, hδ⟩).1
+        have hA : A ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ =
+            A₀ ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ := by
+          rw [A_def]
+          simp only [dite_eq_ite, ite_eq_right_iff]
+          intro h
+          exfalso
+          rw [Subtype.ext_iff_val] at h
+          exact ne_of_lt hδ h
+        rw [hA]
+        exact this
+      · have := δ.2.out
+        have heq := eq_of_le_of_not_lt this hδ
+        have hA : A ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ =
+            Aξ := by
+          rw [A_def]
+          simp only [dite_eq_ite, Subtype.coe_eta, heq, ↓reduceIte]
+        rw [hA]
+        sorry
+    · sorry
+    · sorry
   · have hn₀ : ∃ (x y : ℝ × ℝ), x ∈ (Lines ξ).1 \ (⋃₀ 𝒢) ∧ y ∈ (Lines ξ).1 \ (⋃₀ 𝒢)
       ∧ x ≠ y := by
       have hninter : (Lines ξ).1 ∉ 𝒢 := by
@@ -411,15 +440,28 @@ theorem fae (ξ : ordinals_lt c)
             exact ⟨ht.1, ⟨ℒ, hℒ, ht.2⟩⟩
         rw [this]
         have := Cardinal.mk_sUnion_le {S | ∃ ℒ ∈ 𝒢, S = (Lines ξ).1 ∩ ℒ}
-        have this₂ : Cardinal.mk ↑{S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ} = Cardinal.mk 𝒢 := by
-          refine Cardinal.mk_congr ⟨?_, ?_, ?_, ?_⟩
+        have this₂ : Cardinal.mk ↑{S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ} ≤ Cardinal.mk 𝒢 := by
+          refine Function.Embedding.cardinal_le ⟨?_, ?_⟩
+          · intro S
+            have hS := S.2.out
+            exact ⟨hS.choose, hS.choose_spec.1⟩
+          · rw [Function.Injective]
+            intros a₁ a₂
+            dsimp
+            intro ha
+            simp only [Subtype.mk.injEq] at ha
+            rw [← Subtype.val_inj]
+            have this₁ := @Exists.choose_spec (Set (ℝ × ℝ)) (fun ℒ ↦ ℒ ∈ 𝒢 ∧ ↑a₁ = ↑(Lines ξ) ∩ ℒ)
+            have this₂ := @Exists.choose_spec (Set (ℝ × ℝ)) (fun ℒ ↦ ℒ ∈ 𝒢 ∧ ↑a₂ = ↑(Lines ξ) ∩ ℒ)
+            replace this₁ := (this₁ a₁.2).2
+            replace this₂ := (this₂ a₂.2).2
+            rw [this₁, this₂, ha]
+        have this₃ : ⨆ (s : {S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ}), Cardinal.mk ↑↑s = 1 := by
           sorry
-          sorry
-          sorry
-          sorry
-        have this₃ : ⨆ (s : {S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ}), Cardinal.mk ↑↑s = 1 := sorry
-        rw [this₂, this₃, mul_one] at this
-        exact this
+        rw [this₃, mul_one] at this
+        exact
+          Preorder.le_trans (Cardinal.mk ↑(⋃₀ {S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ}))
+            (Cardinal.mk ↑{S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ}) (Cardinal.mk ↑𝒢) this this₂
       have hninter₄ : Cardinal.mk ((Lines ξ).1 ∩ ⋃₀ 𝒢 : Set (ℝ × ℝ)) < Cardinal.mk (Lines ξ).1 := by
         sorry
       have hninter₅ : Cardinal.mk ((Lines ξ).1 \ ⋃₀ 𝒢 : Set (ℝ × ℝ)) ≥ 2 := by
