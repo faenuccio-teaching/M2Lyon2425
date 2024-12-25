@@ -405,8 +405,59 @@ theorem fae (ξ : ordinals_lt c)
           rw [A_def]
           simp only [dite_eq_ite, Subtype.coe_eta, heq, ↓reduceIte]
         rw [hA]
-        sorry
-    · sorry
+        have : Cardinal.mk ↑Aξ = 0 := Cardinal.mk_emptyCollection (ℝ × ℝ)
+        rw [this]
+        exact Cardinal.zero_le 2
+    · by_cases hδ : δ.1 < ξ
+      · have hunion : union_le_fae A ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ =
+            union_le_fae A₀ ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ := by
+          rw [union_le_fae, union_le_fae]
+          ext x
+          refine ⟨?_, ?_⟩
+          intro hx
+          simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+          obtain ⟨i, hi, hi₂⟩ := hx
+          refine ⟨i, hi, ?_⟩
+          rw [A_def] at hi₂
+          dsimp at hi₂
+          have := (ne_of_lt (lt_of_le_of_lt hi hδ))
+          have : ⟨i, lt_of_le_of_lt (le_trans hi δ.2.out) ξ.2.out⟩ ≠ ξ := by
+            exact Subtype.coe_ne_coe.1 this
+          simp only [this, ↓reduceIte] at hi₂
+          exact hi₂
+          intro hx
+          simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+          obtain ⟨i, hi, hi₂⟩ := hx
+          refine ⟨i, hi, ?_⟩
+          rw [A_def]
+          have := (ne_of_lt (lt_of_le_of_lt hi hδ))
+          have : ⟨i, lt_of_le_of_lt (le_trans hi δ.2.out) ξ.2.out⟩ ≠ ξ := by
+            exact Subtype.coe_ne_coe.1 this
+          simp only [this]
+          exact hi₂
+        rw [hunion]
+        exact (hA₀ ⟨δ.1, hδ⟩).2.1
+      · have := δ.2.out
+        have heq := eq_of_le_of_not_lt this hδ
+        have res : fae_NoThreeColinearPoints (⋃ (b : ordinals_lt ξ), A₀ ⟨b, lt_trans b.2.out ξ.2⟩) := by
+          rw [fae_NoThreeColinearPoints]
+          intro h
+          obtain ⟨a, b, c, ha, hb, hc, h⟩ := h
+          simp only [Set.iUnion_coe_set, Set.mem_iUnion] at ha
+          obtain ⟨ia, hia, ha⟩ := ha
+          simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hb
+          obtain ⟨ib, hib, hb⟩ := hb
+          simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hc
+          obtain ⟨ic, hic, hc⟩ := hc
+          let ζ := max ia (max ib ic)
+          have hζ : ζ ∈ ordinals_lt ξ := sorry
+          have := (hA₀ ⟨ζ, hζ⟩).2.1
+          sorry
+        rw [union_le_fae]
+        have : ⋃ (b : ordinals_le δ), A ⟨b, lt_of_le_of_lt b.2.out (lt_of_le_of_lt δ.2.out ξ.2)⟩ =
+            ⋃ (b : ordinals_lt ξ), A₀ ⟨b, lt_trans b.2.out ξ.2⟩ := sorry
+        rw [this]
+        exact res
     · sorry
   · have hn₀ : ∃ (x y : ℝ × ℝ), x ∈ (Lines ξ).1 \ (⋃₀ 𝒢) ∧ y ∈ (Lines ξ).1 \ (⋃₀ 𝒢)
       ∧ x ≠ y := by
