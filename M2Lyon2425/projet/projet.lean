@@ -128,18 +128,37 @@ def hasUniqueNormalFormProp (f : ARS α) : Prop := ∀ a b : NFARS f, (f≡) a b
 def isSemiConvergent (f : ARS α) : Prop := hasUniqueNormalFormProp f ∧ isNormalizingRel f
 
 lemma uniqueExists_NF_of_SemiConvergence (f : ARS α) :
-  isSemiConvergent f → ∀ a, ∃! b : NFARS f, f∗ a b.val := by
+  isSemiConvergent f →
+  ∀ a, ∃ b : NFARS f, (f∗ a b.val ∧ ∀ b' : NFARS f, f∗ a b'.val → b = b') := by
     intro hfSC a
-    have := (hfSC.right a).choose
+    let b := (hfSC.right a).choose
+    have hb := (hfSC.right a).choose_spec
+    use b
     constructor
-    · simp only [Subtype.forall]
-
-      sorry
-    · exact this
+    · exact hb
+    · intro c hfac
+      have hbc : (f≡) b c := by
+        let nb := hb.choose
+        let hnb := hb.choose_spec
+        let nc := hfac.choose
+        let hnc := hfac.choose_spec
+        use nb+nc
+        rw [pow_add]
+        use a
+        constructor
+        · have ineq : f⇐ ≤ f⇔ := by simp only [add_eq_sup, le_sup_right]
+          have implication : f⇐ ^ nb ≤ f⇔ ^ nb := topown_mono nb ineq
+          have : (f⇐ ^ nb) b.val a := by
+            rw [inv_pow_eq_pow_inv, inverse]
+            exact hnb
+          exact ARS.le_iff_imp.mp implication b.val a this
+        · have ineq : f ≤ f⇔ := by simp only [add_eq_sup, le_sup_left]
+          have implication : f ^ nc ≤ f⇔ ^ nc := topown_mono nc ineq
+          have : (f ^ nc) a c.val := hnc
+          exact ARS.le_iff_imp.mp implication a c.val this
+      exact hfSC.left b c hbc
 
 def isNFCompatibleFun (f : ARS α) (φ : α → NFARS f) : Prop := ∀ a, f∗ a (φ a)
-
-
 
 lemma eq_of_trans_and_NF {f : ARS α} (b : NFARS f) : ∀ w, f∗ b.val w → b.val = w := by
   intro w hyp
