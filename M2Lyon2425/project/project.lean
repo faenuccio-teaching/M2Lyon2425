@@ -205,27 +205,40 @@ theorem Cardinal.mk_ordinals_lt_lt_continuum (ξ : ordinals_lt c) :
     Nat.cast_one, Ordinal.lift_card]
     exact le_trans one_le_aleph0 (self_le_add_right _ _)
 
+open Cardinal in
+/- We have a sequence A₀ of subsets of the plane such that the elements (up to a certain rank)
+satisfy the conditions (I), (P) and (D). We show that the cardinality of the union of
+the sequence A₀ (up to a certain rank ξ) is less than the cardinality of the continuum.
+A few comments on the proof:
+1) The cardinality of A₀ (up to the rank ξ) is bounded by the cardinality of (ordinals_lt ξ)
+(which we know thanks to the statement above)
+2) To conclude, we use the fact that the multiplication of two cardinal numbers (less than
+a cardinal number c) is less than c. -/
 theorem Cardinal.mk_sUnion_lt_continuum (ξ : ordinals_lt c)
     (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
-    Cardinal.mk (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)) < Cardinal.continuum := by
-  set fB := fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩
+    mk (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)) < continuum := by
+  set fB := fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩
   let pre_B := Set.range fB
-  let card_pre_B := (fun (i : pre_B) ↦ Cardinal.mk i)
-  have this₁ : Cardinal.mk pre_B < Cardinal.continuum := by
-    have := Cardinal.mk_subset_ge_of_subset_image_lift fB (subset_of_eq Set.image_univ.symm)
+  let fcard_pre_B := fun (i : pre_B) ↦ mk i
+  have card_pre_B : mk pre_B < continuum := by
+    have := mk_subset_ge_of_subset_image_lift fB (subset_of_eq Set.image_univ.symm)
     simp only [Set.mem_univ, Set.mem_range, exists_apply_eq_apply, and_self, Set.setOf_true,
-      Cardinal.mk_univ, Cardinal.lift_id'] at this
-    exact Cardinal.lift_lt_continuum.mp (lt_of_le_of_lt this (Cardinal.mk_ordinals_lt_lt_continuum ξ))
-  refine lt_of_le_of_lt (Cardinal.mk_sUnion_le pre_B)
-    (Cardinal.mul_lt_of_lt Cardinal.aleph0_le_continuum this₁ (lt_of_le_of_lt (le_trans
-    (Cardinal.iSup_le_sum card_pre_B) ?_) (Cardinal.mul_lt_of_lt Cardinal.aleph0_le_continuum this₁
-    (Cardinal.nat_lt_continuum 2))))
-  rw [← Cardinal.sum_const']
-  refine Cardinal.sum_le_sum _ _ (fun i ↦ ?_)
-  obtain ⟨y, hy⟩ := i.2
-  have := (H y).1
-  apply_fun Cardinal.mk at hy
-  rwa [hy] at this
+      mk_univ, lift_id'] at this
+    exact lift_lt_continuum.1 (lt_of_le_of_lt this (mk_ordinals_lt_lt_continuum ξ))
+  have card_iSup : ⨆ (s : pre_B), mk s ≤ mk pre_B * 2 := by
+    have this := iSup_le_sum fcard_pre_B
+    have this₂ : sum fcard_pre_B ≤ mk pre_B * 2 := by
+      rw [← sum_const']
+      refine sum_le_sum _ _ ?_
+      intro i
+      obtain ⟨y, hy⟩ := i.2
+      apply_fun mk at hy
+      have this₂ := (H y).1
+      rwa [hy] at this₂
+    exact le_trans this this₂
+  exact lt_of_le_of_lt (mk_sUnion_le pre_B) (mul_lt_of_lt aleph0_le_continuum card_pre_B
+    (lt_of_le_of_lt card_iSup (mul_lt_of_lt aleph0_le_continuum card_pre_B
+    (nat_lt_continuum 2))))
 
 theorem exists_of_two_le_card {α : Type*} {S : Set α} (h : 2 < Nat.card S) : ∃ a b c, a ≠ b ∧
     b ≠ c ∧ a ≠ c ∧ a ∈ S ∧ b ∈ S ∧ c ∈ S := by
