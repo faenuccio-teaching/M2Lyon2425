@@ -320,7 +320,10 @@ theorem contradiction_of_exists (ξ : ordinals_lt c) (A₀ : ordinals_lt c → S
     by rwa [h''] at hb₂, by rwa [h''] at hc₂⟩⟩
 
 /- We reformulate the statement above so it fits in the
-proof of the main result "fae". -/
+proof of the main result "fae". To be precise, the following statement is weaker than the one above :
+if the Nat.card of a set is less or equal to 2, then the set is either of cardinality 0, 1, 2
+or infinite. We later show that the intersection is a finite set
+(please see the theorem "inter_Finite"). -/
 theorem card_inter_line_le_two (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
     (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
     Nat.card ((⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
@@ -329,26 +332,50 @@ theorem card_inter_line_le_two (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Se
   push_neg at h
   exact contradiction_of_exists ξ A₀ H (exists_of_two_lt_card h)
 
-theorem exists_of_infinite {α : Type*} {S : Set α} (hS : S.Infinite) :
+theorem exists_of_Infinite {α : Type*} {S : Set α} [DecidableEq α] (hS : S.Infinite) :
     ∃ a b c, a ≠ b ∧ b ≠ c ∧ a ≠ c ∧ a ∈ S ∧ b ∈ S ∧ c ∈ S := by
     obtain ⟨t, hsub, hcard⟩ := Set.Infinite.exists_subset_card_eq hS 3
-    rw [← Set.ncard_coe_Finset, Set.ncard_eq_three] at hcard
-    obtain ⟨x, y, z, hxy, hxz, hyz, ht⟩ := hcard
-    exact ⟨x, y, z, hxy, hyz, hxz, hsub (by simp only [ht, Set.mem_insert_iff,
-      Set.mem_singleton_iff, true_or]), hsub (by simp only [ht, Set.mem_insert_iff,
-      Set.mem_singleton_iff, true_or, or_true]), hsub (by simp only [ht, Set.mem_insert_iff,
-      Set.mem_singleton_iff, or_true])⟩
+    obtain ⟨x, y, z, hxy, hxz, hyz, ht⟩ := Finset.card_eq_three.1 hcard
+    exact ⟨x, y, z, hxy, hyz, hxz, hsub (by simp only [ht, Finset.coe_insert,
+      Finset.coe_singleton, Set.mem_insert_iff, Set.mem_singleton_iff, true_or]),
+      hsub (by simp only [ht, Finset.coe_insert, Finset.coe_singleton,
+      Set.mem_insert_iff, Set.mem_singleton_iff, true_or, or_true]), hsub
+      (by simp only [ht, Finset.coe_insert, Finset.coe_singleton, Set.mem_insert_iff,
+          Set.mem_singleton_iff, or_true])⟩
 
-theorem inter_finite (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+theorem inter_Finite (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
     (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
-    Set.Finite (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) ∩ Lines ξ) := by
-  set B := ⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)
+    ((⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) ∩ Lines ξ).Finite := by
   by_contra h
   rw [← Set.Infinite] at h
-  exact contradiction_of_exists ξ A₀ H (exists_of_infinite h)
+  exact contradiction_of_exists ξ A₀ H (exists_of_Infinite h)
 
-theorem lines_inter (L L' : Set (ℝ × ℝ)) (hL : ∃ a b c, L = Line a b c) (hL' : ∃ a' b' c', L' = Line a' b' c') :
-    Cardinal.mk (L ∩ L' : Set (ℝ × ℝ)) ≤ 1 := sorry
+-- Should I prove this?
+theorem lines_inter (L L' : Set (ℝ × ℝ)) (hL : ∃ a b c, L = Line a b c)
+    (hL' : ∃ a' b' c', L' = Line a' b' c') : Cardinal.mk (L ∩ L' : Set (ℝ × ℝ)) ≤ 1 := sorry
+--
+
+/- Starting from a sequence A₀ which satisfies the conditions (I), (P), (D), we build
+a new sequence A of subsets of the plane which satisfies (I). We build this new sequence
+by replacing an element of A₀ (at a specific rank) with the empty set. -/
+theorem card_A_le_two (ξ : ordinals_lt c) (δ : ordinals_le ξ) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (hA₀ : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (A : ordinals_lt c → Set (ℝ × ℝ)) (A_def : A = fun α ↦ if hα : α = ξ then ∅ else A₀ α) :
+    Cardinal.mk (A ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩) ≤ 2 := by
+  by_cases hδ : δ.1 < ξ
+  · have hA : A ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ = A₀ ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ := by
+      rw [A_def]
+      simp only [dite_eq_ite, ite_eq_right_iff]
+      intro h
+      exfalso
+      exact ne_of_lt hδ (Subtype.ext_iff_val.1 h)
+    have := (hA₀ ⟨δ.1, hδ⟩).1
+    rwa [← hA] at this
+  · have hA : A ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ = ∅ := by
+      rw [A_def]
+      simp only [dite_eq_ite, Subtype.coe_eta, eq_of_le_of_not_lt δ.2.out hδ, ↓reduceIte]
+    rw [hA, Cardinal.mk_emptyCollection]
+    exact Cardinal.zero_le 2
 
 theorem fae (ξ : ordinals_lt c)
   (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
@@ -361,35 +388,16 @@ theorem fae (ξ : ordinals_lt c)
   have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := sorry-- or directly `< Cardinal.continuum
   set n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ)) with ndef -- Nat.card or Cardinal.mk?
   have byP : n ≤ 2 ∧ Set.Finite (B ∩ (Lines ξ)) := ⟨card_inter_line_le_two ξ A₀ hA₀,
-    inter_finite ξ A₀ hA₀⟩
+    inter_Finite ξ A₀ hA₀⟩
   by_cases hn : n = 2
   · let Aξ : Set (ℝ × ℝ) := ∅
-    set A : ↑(ordinals_lt c) → Set (ℝ × ℝ) := by
+    set A : ordinals_lt c → Set (ℝ × ℝ) := by
       intro α
       by_cases hα : α = ξ
       exact Aξ
       exact A₀ α with A_def
-    use A
-    intro δ
-    refine ⟨?_, ?_, ?_⟩
-    · by_cases hδ : δ.1 < ξ
-      · have := (hA₀ ⟨δ.1, hδ⟩).1
-        have hA : A ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ =
-            A₀ ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ := by
-          rw [A_def]
-          simp only [dite_eq_ite, ite_eq_right_iff]
-          intro h
-          exfalso
-          rw [Subtype.ext_iff_val] at h
-          exact ne_of_lt hδ h
-        rw [hA]
-        exact this
-      · have heq := eq_of_le_of_not_lt δ.2.out hδ
-        have hA : A ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ = Aξ := by
-          rw [A_def]
-          simp only [dite_eq_ite, Subtype.coe_eta, heq, ↓reduceIte]
-        rw [hA, Cardinal.mk_emptyCollection]
-        exact Cardinal.zero_le 2
+    refine ⟨A, fun δ ↦ ⟨?_, ?_, ?_⟩⟩
+    · exact card_A_le_two ξ δ A₀ hA₀ A A_def
     · by_cases hδ : δ.1 < ξ
       · have hunion : union_le_fae A ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ =
             union_le_fae A₀ ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ := by
