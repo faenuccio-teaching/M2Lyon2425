@@ -240,76 +240,94 @@ theorem Cardinal.mk_sUnion_lt_continuum (ξ : ordinals_lt c)
     (lt_of_le_of_lt card_iSup (mul_lt_of_lt aleph0_le_continuum card_pre_B
     (nat_lt_continuum 2))))
 
-theorem exists_of_two_le_card {α : Type*} {S : Set α} (h : 2 < Nat.card S) : ∃ a b c, a ≠ b ∧
+theorem exists_of_two_lt_card {α : Type*} {S : Set α} (h : 2 < Nat.card S) : ∃ a b c, a ≠ b ∧
     b ≠ c ∧ a ≠ c ∧ a ∈ S ∧ b ∈ S ∧ c ∈ S := by
-  have hn : Nat.card S ≠ 0 := by
-    intro hn
-    rw [hn] at h
-    contradiction
-  have e := Nat.equivFinOfCardPos hn
-  have e_inj : Function.Injective e.2 := e.symm.injective
-  exact ⟨e.2 ⟨0, lt_trans two_pos h⟩, e.2 ⟨1, lt_trans Nat.one_lt_two h⟩, e.2 ⟨2, h⟩,
-    fun he ↦ zero_ne_one (Fin.mk.inj_iff.1 (e_inj (Subtype.eq he))),
-    fun he ↦ OfNat.one_ne_ofNat 2 (Fin.mk.inj_iff.1 (e_inj (Subtype.eq he))),
-    fun he ↦ two_ne_zero (Fin.mk.inj_iff.1 (e_inj (Subtype.eq he))).symm,
-    (e.2 ⟨0, _⟩).2, (e.2 ⟨1, _⟩).2, (e.2 ⟨2, h⟩).2⟩
+  let e := Nat.equivFinOfCardPos (Nat.not_eq_zero_of_lt h)
+  have e_inj := e.symm.injective
+  refine ⟨e.2 ⟨0, Nat.zero_lt_of_lt h⟩, e.2 ⟨1, Nat.lt_of_succ_lt h⟩, e.2 ⟨2, h⟩, ?_, ?_, ?_,
+    (e.2 ⟨0, _⟩).2, (e.2 ⟨1, _⟩).2, (e.2 ⟨2, _⟩).2⟩
+  · intro he
+    exact zero_ne_one (Fin.mk.inj_iff.1 (e_inj (Subtype.eq he)))
+  · intro he
+    exact OfNat.one_ne_ofNat 2 (Fin.mk.inj_iff.1 (e_inj (Subtype.eq he)))
+  · intro he
+    exact two_ne_zero (Fin.mk.inj_iff.1 (e_inj (Subtype.eq he))).symm
 
+/- We show that if three points belong to the union of A₀ (up to a certain rank ξ), then
+there exists a rank ζ such that a, b and c belong to the union of A₀ up to the rank ζ.
+This rank ζ is the maximum of the indices of the sets to which a, b and c belong. -/
+theorem mem_union_le_fae (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (a b c : ℝ × ℝ)
+    (ha : a ∈ ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (hb : b ∈ ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (hc : c ∈ ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
+    ∃ (ζ : ordinals_lt ξ), a ∈ union_le_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩
+    ∧ b ∈ union_le_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩
+    ∧ c ∈ union_le_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩ := by
+  rw [Set.mem_sUnion] at ha hb hc
+  cases' ha with t₁ ht₁
+  cases' hb with t₂ ht₂
+  cases' hc with t₃ ht₃
+  rw [Set.mem_range] at ht₁ ht₂ ht₃
+  obtain ⟨⟨x₁, hx₁⟩, hx₁'⟩ := ht₁
+  obtain ⟨⟨x₂, hx₂⟩, hx₂'⟩ := ht₂
+  obtain ⟨⟨x₃, hx₃⟩, hx₃'⟩ := ht₃
+  refine ⟨⟨(x₁.1 ⊔ x₂.1) ⊔ x₃.1, ?_⟩, ?_, ?_, ?_⟩
+  · change (x₁.1 ⊔ x₂.1) ⊔ x₃.1 < ξ.1
+    simp only [sup_lt_iff]
+    exact ⟨⟨x₁.2, x₂.2⟩, x₃.2⟩
+  · rw [union_le_fae, Set.mem_iUnion]
+    refine ⟨⟨x₁.1, ?_⟩, by rwa [← hx₁] at hx₁'⟩
+    dsimp
+    change x₁.1 ≤ x₁.1 ⊔ x₂.1 ⊔ x₃.1
+    simp only [le_sup_iff, le_sup_left, Subtype.coe_le_coe, true_or]
+    left
+    left
+    exact Preorder.le_refl x₁
+  · rw [union_le_fae, Set.mem_iUnion]
+    refine ⟨⟨x₂.1, ?_⟩, by rwa [← hx₂] at hx₂'⟩
+    dsimp
+    change x₂.1 ≤ x₁.1 ⊔ x₂.1 ⊔ x₃.1
+    simp only [le_sup_iff, le_sup_left, Subtype.coe_le_coe, true_or]
+    left
+    right
+    exact Preorder.le_refl x₂
+  · rw [union_le_fae, Set.mem_iUnion]
+    refine ⟨⟨x₃.1, ?_⟩, by rwa [← hx₃] at hx₃'⟩
+    dsimp
+    change x₃.1 ≤ x₁.1 ⊔ x₂.1 ⊔ x₃.1
+    simp only [le_sup_iff, le_sup_left, Subtype.coe_le_coe, true_or]
+    right
+    exact Preorder.le_refl x₃
+
+/- Earlier, we had indexed the set of lines of the plane using (ordinals_lt Cardinal.continuum.ord).
+This is all the ordinals less than the smallest ordinal with cardinality the cardinality of the continuum.
+We show that the union of A₀ (up to a certain rank ξ) intersects the line indexed by ξ
+in two points at most. This is true because otherwise, we would get a union of elements of A₀ with
+three colinear points. -/
 theorem contradiction_of_exists (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
     (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
     ¬(∃ a b c, a ≠ b ∧ b ≠ c ∧ a ≠ c
-    ∧ a ∈ (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) ∩ Lines ξ)
-    ∧ b ∈ (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) ∩ Lines ξ)
-    ∧ c ∈ (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) ∩ Lines ξ)) := by
-  intro H
-  obtain ⟨a, b, c, _, _, _, ⟨ha₁, ha₂⟩, ⟨hb₁, hb₂⟩, ⟨hc₁, hc₂⟩⟩ := H
-  have h₃ : ∃ (ζ : Ordinal) (hζ : ζ < ξ), a ∈ union_le_fae A₀ ⟨ζ, lt_trans hζ ξ.2⟩
-    ∧ b ∈ union_le_fae A₀ ⟨ζ, lt_trans hζ ξ.2⟩
-    ∧ c ∈ union_le_fae A₀ ⟨ζ, lt_trans hζ ξ.2⟩ := by
-    rw [Set.mem_sUnion] at ha₁ hb₁ hc₁
-    obtain ⟨t₁, ht₁, ht₁'⟩ := ha₁
-    obtain ⟨t₂, ht₂, ht₂'⟩ := hb₁
-    obtain ⟨t₃, ht₃, ht₃'⟩ := hc₁
-    rw [Set.mem_range] at ht₁ ht₂ ht₃
-    obtain ⟨x₁, hx₁⟩ := ht₁
-    obtain ⟨x₂, hx₂⟩ := ht₂
-    obtain ⟨x₃, hx₃⟩ := ht₃
-    refine ⟨(x₁ ⊔ x₂) ⊔ x₃, ?_, ?_⟩
-    · simp only [sup_lt_iff]
-      exact ⟨⟨x₁.2, x₂.2⟩, x₃.2⟩
-    · refine ⟨Set.mem_iUnion.2 ⟨⟨x₁, ?_⟩, by rwa [← hx₁] at ht₁'⟩, Set.mem_iUnion.2 ⟨⟨x₂, ?_⟩,
-        by rwa [← hx₂] at ht₂'⟩, Set.mem_iUnion.2 ⟨⟨x₃, ?_⟩, by rwa [← hx₃] at ht₃'⟩⟩
-      · change x₁ ≤ x₁ ⊔ x₂ ⊔ x₃
-        rw [le_sup_iff]
-        left
-        rw [le_sup_iff]
-        left
-        exact le_refl x₁
-      · change x₂ ≤ x₁ ⊔ x₂ ⊔ x₃
-        rw [le_sup_iff]
-        left
-        rw [le_sup_iff]
-        right
-        exact le_refl x₂
-      · change x₃ ≤ x₁ ⊔ x₂ ⊔ x₃
-        rw [le_sup_iff]
-        right
-        exact le_refl x₃
-  obtain ⟨ζ, hζ, h₃⟩ := h₃
-  apply (H ⟨ζ, hζ⟩).2.1
-  refine ⟨a, b, c, h₃.1, h₃.2.1, h₃.2.2, ?_⟩
-  obtain ⟨a', b', c', h'⟩ := (Lines ξ).2
-  exact ⟨⟨a', b', c', by rwa [h'] at ha₂, by rwa [h'] at hb₂⟩, ⟨a', b', c',
-    by rwa [h'] at hb₂, by rwa [h'] at hc₂⟩⟩
+    ∧ a ∈ ((⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) ∩ Lines ξ)
+    ∧ b ∈ ((⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) ∩ Lines ξ)
+    ∧ c ∈ ((⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) ∩ Lines ξ)) := by
+  intro h
+  obtain ⟨a, b, c, _, _, _, ⟨ha₁, ha₂⟩, ⟨hb₁, hb₂⟩, ⟨hc₁, hc₂⟩⟩ := h
+  obtain ⟨ζ, h'⟩ := mem_union_le_fae ξ A₀ a b c ha₁ hb₁ hc₁
+  apply (H ζ).2.1
+  refine ⟨a, b, c, h'.1, h'.2.1, h'.2.2, ?_⟩
+  obtain ⟨a', b', c', h''⟩ := (Lines ξ).2
+  exact ⟨⟨a', b', c', by rwa [h''] at ha₂, by rwa [h''] at hb₂⟩, ⟨a', b', c',
+    by rwa [h''] at hb₂, by rwa [h''] at hc₂⟩⟩
 
-theorem inter_line_card_le_two (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+/- We reformulate the statement above so it fits in the
+proof of the main result "fae". -/
+theorem card_inter_line_le_two (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
     (H : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
-    Nat.card (⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)
-    ∩ (Lines ξ) : Set (ℝ × ℝ)) ≤ 2 := by
-  set B := ⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩)
-  set n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ))
+    Nat.card ((⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    ∩ Lines ξ : Set (ℝ × ℝ)) ≤ 2 := by
   by_contra h
   push_neg at h
-  exact contradiction_of_exists ξ A₀ H (exists_of_two_le_card h)
+  exact contradiction_of_exists ξ A₀ H (exists_of_two_lt_card h)
 
 theorem exists_of_infinite {α : Type*} {S : Set α} (hS : S.Infinite) :
     ∃ a b c, a ≠ b ∧ b ≠ c ∧ a ≠ c ∧ a ∈ S ∧ b ∈ S ∧ c ∈ S := by
@@ -342,7 +360,7 @@ theorem fae (ξ : ordinals_lt c)
   let 𝒢 := {S | (2 ≤ Nat.card ↑(S ∩ B) ∨ ¬(Set.Finite ↑(S ∩ B))) ∧ ∃ a b c, S = Line a b c}
   have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := sorry-- or directly `< Cardinal.continuum
   set n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ)) with ndef -- Nat.card or Cardinal.mk?
-  have byP : n ≤ 2 ∧ Set.Finite (B ∩ (Lines ξ)) := ⟨inter_line_card_le_two ξ A₀ hA₀,
+  have byP : n ≤ 2 ∧ Set.Finite (B ∩ (Lines ξ)) := ⟨card_inter_line_le_two ξ A₀ hA₀,
     inter_finite ξ A₀ hA₀⟩
   by_cases hn : n = 2
   · let Aξ : Set (ℝ × ℝ) := ∅
