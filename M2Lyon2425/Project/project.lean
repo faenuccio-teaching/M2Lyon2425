@@ -151,6 +151,7 @@ theorem Ealphadefault(α : Quotient (SR h)) : ∃ x : ℝ , ⟦x⟧ = α := by
 /-Enumeration of the set-/
 def EnumerateEalpha (α : Quotient (SR h)) : ℕ → ℝ := (Set.enumerateCountable (EalphaCountable h α)  (Ealphadefault h α).choose)
 
+
 /-Now we define the function F on ℝpartition-/
 /-Here, ℝ = ⋃ Eᵅ  where α is chosen from a particular Eᵅ  , which becomes our indexing set-/
 /-Prove that Eᵅ is countable for each α   -/
@@ -169,10 +170,16 @@ lemma EalphaUnionEalphai_aux (α : Quotient (SR h)) : (Ealphadefault h α).choos
   simp only [Set.mem_setOf_eq]
   exact ((Ealphadefault h α).choose_spec).symm
 
+
 lemma EalphaUnionEalphai_aux1 (α : Quotient (SR h)) : Set.range (EnumerateEalpha h α) = E h α  := by
   rw[EnumerateEalpha]
   apply Set.range_enumerateCountable_of_mem
   exact EalphaUnionEalphai_aux h α
+
+lemma EnumerateEalpha_injective (α : Quotient (SR h)) : Function.Injective (EnumerateEalpha h α) := by
+  rw[EnumerateEalpha]
+
+  sorry
 
 lemma EalphaUnionEalphai_aux2(α : Quotient (SR h)) : ⟦ EnumerateEalpha h α i ⟧ = α := by
   have lem : EnumerateEalpha h α i ∈ E h α := by
@@ -239,14 +246,45 @@ def Ralpha (α : Quotient (SR h))(m : ℕ) : Set ℝ :=  match m with
 /-Prove that there exists some N₀ st. xᵅₘ  + hₙ ∈ Rᵅₘ ∀ n ≥ N₀ -/
 /-Proof Sketch :- consider an open interval I st. xᵅⱼ ∉ I for j ≤ m-1 (If m = 1, our case is already satisfied). -/
 def I (α : Quotient (SR h))(m : ℕ) : Set ℝ := by
-  let p := EnumerateEalpha h α m
-  have h(n : ℕ)(hn : n ∈ Finset.range (m)) :  ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Set.Ioo (p - ε) (p + ε))) := by
+  set p := EnumerateEalpha h α m with hp
+  have main(n : ℕ)(hn : n ∈ Finset.range (m)) :  ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.ball p ε)) := by
     by_contra lem
-    let d := |(EnumerateEalpha h α n) - p|/2
+    set d := |(EnumerateEalpha h α n) - p|/2 with hd1
     have hd : d > 0 := by
+      rw[hd1,hp]
+      simp only [gt_iff_lt, Nat.ofNat_pos, div_pos_iff_of_pos_right, abs_pos, ne_eq]
+      intros h2
+      have h3 : EnumerateEalpha h α n = EnumerateEalpha h α m := by
+        linarith
+      have h4 : n =m := by
+        apply EnumerateEalpha_injective
+        rw[h3]
+      rw[h4] at hn
+      simp only [Finset.mem_range, lt_self_iff_false] at hn
+    specialize lem d hd
+    rw[Real.ball_eq_Ioo] at lem
+    rw[Set.Ioo,hd1] at lem
+    simp only [Set.mem_setOf_eq] at lem
+    have lem1 := lem.1
+    have lem2 := lem.2
+    have lem3 : p - EnumerateEalpha h α n < |(EnumerateEalpha h α n) - p|/2 := by
+      linarith
+    have lem4 : EnumerateEalpha h α n - p < |(EnumerateEalpha h α n) - p|/2 := by
+      linarith
+    have lem5 : p ≤ (EnumerateEalpha h α n) ∨  (EnumerateEalpha h α n) < p := le_or_lt p (EnumerateEalpha h α n)
+    cases lem5
+    case inl hp1 =>
+      have lem6 : |(EnumerateEalpha h α n) - p| = (EnumerateEalpha h α n) - p := by
+        rw[abs_eq_self]
+        linarith
+      linarith
+    case inr hp1 =>
+      have lem6 : |(EnumerateEalpha h α n) - p| =  -((EnumerateEalpha h α n) - p) := by
+        rw[abs_eq_neg_self]
+        linarith
+      linarith
+  push_neg at main
 
-      sorry
-    sorry
   sorry
 
 /- Then choose N₁ st.  Aⱼ = {xᵅⱼ + hₙ, n ≥ N₁} where j≤m and I∩Aⱼ = ∅ ∀ j≤m-1 and Aₘ ⊆ I .-/
