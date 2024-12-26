@@ -88,13 +88,16 @@ instance LinCombEquiv : Equivalence (isLinearCombination h) where
     simp only [Finsupp.coe_add, Pi.add_apply, Int.cast_add]
     ring
 
-instance ℝhasequiv : HasEquiv ℝ := ⟨isLinearCombination h⟩
 
 /-Now having made these equivalences, we use Setoid.Classes to make classes on these elements, then creating an
 Setoid.IndexedPartition  on ℝ  -/
 instance SR : Setoid ℝ where
   r := isLinearCombination h
   iseqv := LinCombEquiv h
+
+@[simp]
+lemma equiv_aux(a : ℝ )(b : ℝ)(hb : (isLinearCombination h) a b): (⟦a⟧ : Quotient (SR h)) = (⟦b⟧ : Quotient (SR h)) := Quotient.eq.mpr hb
+
 
 /-Defining the index set for the partition-/
 
@@ -133,20 +136,133 @@ instance IndexedPartiononℝ : IndexedPartition (E h) where
     simp only [Set.mem_setOf_eq]
 
 
-/-We specify that each equivalence class is equivalent -/
+
+/-We specify that each equivalence class is countable -/
 theorem EalphaCountable (α : Quotient (SR h)) : ((E h) α).Countable := by
   rw[E,←Set.countable_coe_iff,countable_iff_exists_injective]
-
   sorry
+
+
+theorem Ealphadefault(α : Quotient (SR h)) : ∃ x : ℝ , ⟦x⟧ = α := by
+  exact (Quotient.exists_rep α)
+
+
+
+/-Enumeration of the set-/
+def EnumerateEalpha (α : Quotient (SR h)) : ℕ → ℝ := (Set.enumerateCountable (EalphaCountable h α)  (Ealphadefault h α).choose)
 
 /-Now we define the function F on ℝpartition-/
 /-Here, ℝ = ⋃ Eᵅ  where α is chosen from a particular Eᵅ  , which becomes our indexing set-/
 /-Prove that Eᵅ is countable for each α   -/
+
 /- Define a ennumeration {xᵢᵅ} for each Eᵅ. -/
+
 /-Let Eᵅᵢ = {xᵢᵅ} ∪  ⋃ⱼ {xᵢᵅ + hⱼ} , where j ∈ ℕ   -/
+def Ealphai1 (α : Quotient (SR h))(i : ℕ) (n: ℕ) : Set ℝ := {(EnumerateEalpha h α i) + h n}
+
+def Ealpha0 (α : Quotient (SR h))(i : ℕ) : Set ℝ := {EnumerateEalpha h α i}
+
+def Ealphai (α : Quotient (SR h))(i : ℕ) : Set ℝ := Ealpha0 h α i ∪ ⋃ n, Ealphai1 h α i n
+
+lemma EalphaUnionEalphai_aux (α : Quotient (SR h)) : (Ealphadefault h α).choose ∈ E h α := by
+  rw[E]
+  simp only [Set.mem_setOf_eq]
+  exact ((Ealphadefault h α).choose_spec).symm
+
+lemma EalphaUnionEalphai_aux1 (α : Quotient (SR h)) : Set.range (EnumerateEalpha h α) = E h α  := by
+  rw[EnumerateEalpha]
+  apply Set.range_enumerateCountable_of_mem
+  exact EalphaUnionEalphai_aux h α
+
+lemma EalphaUnionEalphai_aux2(α : Quotient (SR h)) : ⟦ EnumerateEalpha h α i ⟧ = α := by
+  have lem : EnumerateEalpha h α i ∈ E h α := by
+    rw[←EalphaUnionEalphai_aux1 h α]
+    simp only [Set.mem_range, exists_apply_eq_apply]
+  rw[E] at lem
+  simp at lem
+  exact lem.symm
 
 /-Prove that Eᵅ = ⋃ᵢ Eᵅᵢ , where i ∈ ℕ -/
+lemma EalphaUnionEalphai (α : Quotient (SR h)) : (E h α) = ⋃ i, Ealphai h α i := by
+  apply subset_antisymm
+  intro x hx
+  have h1 : E h α ⊆ Set.range (EnumerateEalpha h α) := by
+    apply Set.subset_range_enumerate
+  have h2 : x ∈ Set.range (EnumerateEalpha h α) := by
+    exact h1 hx
+  obtain ⟨i,hi⟩ := Set.mem_range.mp h2
+  apply Set.mem_iUnion_of_mem i
+  simp only [Ealphai, Ealpha0, Set.singleton_union, Set.mem_insert_iff, Set.mem_iUnion]
+  left
+  exact hi.symm
+  apply Set.iUnion_subset
+  intro i
+  simp[Ealphai]
+  constructor
+  rw[Ealpha0]
+  rw[←EalphaUnionEalphai_aux1]
+  simp only [Set.singleton_subset_iff, Set.mem_range, exists_apply_eq_apply]
+  intro j
+  rw[Ealphai1,E]
+  simp only [Set.singleton_subset_iff, Set.mem_setOf_eq]
+  have lemma2 : ⟦ EnumerateEalpha h α i⟧ = α := EalphaUnionEalphai_aux2 h α
+  nth_rewrite 1 [← lemma2]
+  apply equiv_aux
+  rw[isLinearCombination]
+  set l : ℕ →₀ ℤ := {
+    support := {j},
+    toFun := λ i => if i = j then -1 else 0,
+    mem_support_toFun := by
+      intro j1
+      constructor
+      intro hj
+      simp only [Int.reduceNeg, ne_eq, ite_eq_right_iff, neg_eq_zero, one_ne_zero, imp_false,
+        Decidable.not_not]
+      simp only [Finset.mem_singleton] at hj
+      assumption
+      simp only [Int.reduceNeg, ne_eq, ite_eq_right_iff, neg_eq_zero, one_ne_zero, imp_false,
+        Decidable.not_not, Finset.mem_singleton, imp_self]
+  } with hl
+  use l
+  simp only [sub_add_cancel_left, zsmul_eq_mul, Finset.sum_singleton]
+  have lem : ↑(l j) = -1 := by
+    rw[hl]
+    simp only [Int.reduceNeg, Finsupp.coe_mk, ↓reduceIte]
+  rw[lem]
+  ring
+
 /-Let Rᵅₘ = Eᵅₘ \ ⋃ⱼ Eᵅⱼ where j ∈ {1,2..m-1} if m ≥ 2  and Rᵅ₁ = Eᵅ₁.-/
+def Ralpha (α : Quotient (SR h))(m : ℕ) : Set ℝ :=  match m with
+  | 0 => Ealphai h α 0
+  | i + 1 => Ealphai h α (i + 1) \( ⋃  j ∈ Finset.range (i+1), Ealphai h α j)
+
+/-Prove that there exists some N₀ st. xᵅₘ  + hₙ ∈ Rᵅₘ ∀ n ≥ N₀ -/
+/-Proof Sketch :- consider an open interval I st. xᵅⱼ ∉ I for j ≤ m-1 (If m = 1, our case is already satisfied). -/
+def I (α : Quotient (SR h))(m : ℕ) : Set ℝ := by
+  let p := EnumerateEalpha h α m
+  have h(n : ℕ)(hn : n ∈ Finset.range (m)) :  ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Set.Ioo (p - ε) (p + ε))) := by
+    by_contra lem
+    let d := |(EnumerateEalpha h α n) - p|/2
+    have hd : d > 0 := by
+
+      sorry
+    sorry
+  sorry
+
+/- Then choose N₁ st.  Aⱼ = {xᵅⱼ + hₙ, n ≥ N₁} where j≤m and I∩Aⱼ = ∅ ∀ j≤m-1 and Aₘ ⊆ I .-/
+/-This implies Aₘ ∩ Aⱼ = ∅ ∀ j ≤ m-1  -/
+
+/-Then remove all  the finite points from
+  Aₘ that come from Bⱼ = {xᵅⱼ + hₙ, n ≤  N₁} where j≤m, call it A-/
+/-A contains a set Cₘ st. ∃ ℕ₂ C = {xᵅⱼ + hₙ, n ≥ ℕ₂}. Then C ⊆ Rᵅₘ  -/
+/-Thus ∀ n ≥ N₂
+F(xₘᵅ +hₙ) - F(xₘᵅ) / hₙ  = (F(xₘᵅ) + (xᵅₘ + hₙ - xₘᵅ)f(xₘᵅ) - F(xₘᵅ))/hₙ  = f(xᵅₘ)ₙ-/
+
+lemma Ralphanonemptyexistence (α : Quotient (SR h))(m : ℕ) : ∀ᶠ (n:ℕ) in atTop, EnumerateEalpha h α m + h n ∈ Ralpha h α m := by
+
+  sorry
+
+
 
 /- Prove that Eᵅ = ⋃ₘ Rᵅₘ. make this an indexed partition -/
 
@@ -161,15 +277,7 @@ theorem EalphaCountable (α : Quotient (SR h)) : ((E h) α).Countable := by
 /-If x ∈ ℝ → ∃ n,α st. x = xᵅₘ -/
 
 /-Prove that there exists some N₀ st. xᵅₘ  + hₙ ∈ Rᵅₘ ∀ n ≥ N₀ -/
-/-Proof Sketch :- consider an open interval I st. xᵅⱼ ∉ I for j ≤ m-1 (If m = 1, our case is already satisfied). -/
-/- Then choose N₁ st.  Aⱼ = {xᵅⱼ + hₙ, n ≥ N₁} where j≤m and I∩Aⱼ = ∅ ∀ j≤m-1 and Aₘ ⊆ I .-/
-/-This implies Aₘ ∩ Aⱼ = ∅ ∀ j ≤ m-1  -/
 
-/-Then remove all  the finite points from
-  Aₘ that come from Bⱼ = {xᵅⱼ + hₙ, n ≤  N₁} where j≤m, call it A-/
-/-A contains a set Cₘ st. ∃ ℕ₂ C = {xᵅⱼ + hₙ, n ≥ ℕ₂}. Then C ⊆ Rᵅₘ  -/
-/-Thus ∀ n ≥ N₂
-F(xₘᵅ +hₙ) - F(xₘᵅ) / hₙ  = (F(xₘᵅ) + (xᵅₘ + hₙ - xₘᵅ)f(xₘᵅ) - F(xₘᵅ))/hₙ  = f(xᵅₘ)ₙ-/
 
 end CounterExample1
 
