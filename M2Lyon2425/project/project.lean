@@ -358,7 +358,7 @@ theorem lines_inter (L L' : Set (ℝ × ℝ)) (hL : ∃ a b c, L = Line a b c)
 /- Starting from a sequence A₀ which satisfies the conditions (I), (P), (D), we build
 a new sequence A of subsets of the plane which satisfies (I). We build this new sequence
 by replacing an element of A₀ (at a specific rank) with the empty set. -/
-theorem card_A_le_two (ξ : ordinals_lt c) (δ : ordinals_le ξ) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+theorem I_true (ξ : ordinals_lt c) (δ : ordinals_le ξ) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
     (hA₀ : ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
     (A : ordinals_lt c → Set (ℝ × ℝ)) (A_def : A = fun α ↦ if hα : α = ξ then ∅ else A₀ α) :
     Cardinal.mk (A ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩) ≤ 2 := by
@@ -376,6 +376,41 @@ theorem card_A_le_two (ξ : ordinals_lt c) (δ : ordinals_le ξ) (A₀ : ordinal
       simp only [dite_eq_ite, Subtype.coe_eta, eq_of_le_of_not_lt δ.2.out hδ, ↓reduceIte]
     rw [hA, Cardinal.mk_emptyCollection]
     exact Cardinal.zero_le 2
+
+theorem P_true_for_lt (ξ : ordinals_lt c) (δ : ordinals_le ξ) (hδ : δ.1 < ξ)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (hA₀ : ∀ (ζ : ordinals_lt ξ.1), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (A : ordinals_lt c → Set (ℝ × ℝ))
+    (A_def : A = fun α ↦ if hα : α = ξ then ∅ else A₀ α) :
+    fae_NoThreeColinearPoints (union_le_fae A ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩) := by
+  have hunion : union_le_fae A ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ =
+      union_le_fae A₀ ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ := by
+    rw [union_le_fae, union_le_fae]
+    ext x
+    refine ⟨?_, ?_⟩
+    intro hx
+    simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+    obtain ⟨i, hi, hi₂⟩ := hx
+    refine ⟨i, hi, ?_⟩
+    rw [A_def] at hi₂
+    dsimp at hi₂
+    have := (ne_of_lt (lt_of_le_of_lt hi hδ))
+    have : ⟨i, lt_of_le_of_lt (le_trans hi δ.2.out) ξ.2.out⟩ ≠ ξ := by
+      exact Subtype.coe_ne_coe.1 this
+    simp only [this, ↓reduceIte] at hi₂
+    exact hi₂
+    intro hx
+    simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+    obtain ⟨i, hi, hi₂⟩ := hx
+    refine ⟨i, hi, ?_⟩
+    rw [A_def]
+    have := (ne_of_lt (lt_of_le_of_lt hi hδ))
+    have : ⟨i, lt_of_le_of_lt (le_trans hi δ.2.out) ξ.2.out⟩ ≠ ξ := by
+      exact Subtype.coe_ne_coe.1 this
+    simp only [this]
+    exact hi₂
+  rw [hunion]
+  exact (hA₀ ⟨δ.1, hδ⟩).2.1
 
 theorem fae (ξ : ordinals_lt c)
   (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
@@ -397,36 +432,9 @@ theorem fae (ξ : ordinals_lt c)
       exact Aξ
       exact A₀ α with A_def
     refine ⟨A, fun δ ↦ ⟨?_, ?_, ?_⟩⟩
-    · exact card_A_le_two ξ δ A₀ hA₀ A A_def
+    · exact I_true ξ δ A₀ hA₀ A A_def
     · by_cases hδ : δ.1 < ξ
-      · have hunion : union_le_fae A ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ =
-            union_le_fae A₀ ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ := by
-          rw [union_le_fae, union_le_fae]
-          ext x
-          refine ⟨?_, ?_⟩
-          intro hx
-          simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
-          obtain ⟨i, hi, hi₂⟩ := hx
-          refine ⟨i, hi, ?_⟩
-          rw [A_def] at hi₂
-          dsimp at hi₂
-          have := (ne_of_lt (lt_of_le_of_lt hi hδ))
-          have : ⟨i, lt_of_le_of_lt (le_trans hi δ.2.out) ξ.2.out⟩ ≠ ξ := by
-            exact Subtype.coe_ne_coe.1 this
-          simp only [this, ↓reduceIte] at hi₂
-          exact hi₂
-          intro hx
-          simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
-          obtain ⟨i, hi, hi₂⟩ := hx
-          refine ⟨i, hi, ?_⟩
-          rw [A_def]
-          have := (ne_of_lt (lt_of_le_of_lt hi hδ))
-          have : ⟨i, lt_of_le_of_lt (le_trans hi δ.2.out) ξ.2.out⟩ ≠ ξ := by
-            exact Subtype.coe_ne_coe.1 this
-          simp only [this]
-          exact hi₂
-        rw [hunion]
-        exact (hA₀ ⟨δ.1, hδ⟩).2.1
+      · exact P_true_for_lt ξ δ hδ A₀ hA₀ A A_def
       · have := δ.2.out
         have heq := eq_of_le_of_not_lt this hδ
         have res : fae_NoThreeColinearPoints (⋃ (b : ordinals_lt ξ), A₀ ⟨b, lt_trans b.2.out ξ.2⟩) := by
