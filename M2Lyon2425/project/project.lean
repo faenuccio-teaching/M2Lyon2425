@@ -377,6 +377,33 @@ theorem I_true (ξ : ordinals_lt c) (δ : ordinals_le ξ) (A₀ : ordinals_lt c 
     rw [hA, Cardinal.mk_emptyCollection]
     exact Cardinal.zero_le 2
 
+/- The sequence A is defined as above. By definition, the union of A (up to a rank δ < ξ < c)
+is equal the union of A₀ up to that rank. -/
+theorem ulf_eq_ulf (ξ : ordinals_lt c) (δ : ordinals_le ξ) (hδ : δ.1 < ξ)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (A : ordinals_lt c → Set (ℝ × ℝ))
+    (A_def : A = fun α ↦ if α = ξ then ∅ else A₀ α) :
+    union_le_fae A ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ =
+    union_le_fae A₀ ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ := by
+  simp only [union_le_fae]
+  ext
+  refine ⟨fun hx ↦ ?_, fun hx ↦ ?_⟩
+  · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+    obtain ⟨i, hi, hi₂⟩ := hx
+    refine ⟨i, hi, ?_⟩
+    rw [A_def] at hi₂
+    have : ⟨i, lt_of_le_of_lt (hi.trans δ.2.out) ξ.2⟩ ≠ ξ :=
+      Subtype.coe_ne_coe.1 (ne_of_lt (lt_of_le_of_lt hi hδ))
+    simp only [this, ↓reduceIte] at hi₂
+    exact hi₂
+  · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+    obtain ⟨i, hi, hi₂⟩ := hx
+    refine ⟨i, hi, ?_⟩
+    rw [A_def]
+    have : ⟨i, lt_of_le_of_lt (hi.trans δ.2.out) ξ.2⟩ ≠ ξ :=
+      Subtype.coe_ne_coe.1 (ne_of_lt (lt_of_le_of_lt hi hδ))
+    simp only [this, ↓reduceIte]
+    exact hi₂
+
 /- Starting from a sequence A₀ which satisfies the conditions (I), (P), (D), we build
 a new sequence A of subsets of the plane which satisfies (P) (For this, we do a proof by cases.
 The first case is below.). As above, we build the new sequence by replacing an element of A₀
@@ -387,29 +414,104 @@ theorem P_true_for_lt (ξ : ordinals_lt c) (δ : ordinals_le ξ) (hδ : δ.1 < �
     (A : ordinals_lt c → Set (ℝ × ℝ))
     (A_def : A = fun α ↦ if α = ξ then ∅ else A₀ α) :
     fae_NoThreeColinearPoints (union_le_fae A ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩) := by
-  have hunion : union_le_fae A ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ =
-      union_le_fae A₀ ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ := by
-    simp only [union_le_fae]
-    ext
-    refine ⟨fun hx ↦ ?_, fun hx ↦ ?_⟩
-    · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
-      obtain ⟨i, hi, hi₂⟩ := hx
-      refine ⟨i, hi, ?_⟩
-      rw [A_def] at hi₂
-      have : ⟨i, lt_of_le_of_lt (hi.trans δ.2.out) ξ.2⟩ ≠ ξ :=
-        Subtype.coe_ne_coe.1 (ne_of_lt (lt_of_le_of_lt hi hδ))
-      simp only [this, ↓reduceIte] at hi₂
-      exact hi₂
-    · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
-      obtain ⟨i, hi, hi₂⟩ := hx
-      refine ⟨i, hi, ?_⟩
-      rw [A_def]
-      have : ⟨i, lt_of_le_of_lt (hi.trans δ.2.out) ξ.2⟩ ≠ ξ :=
-        Subtype.coe_ne_coe.1 (ne_of_lt (lt_of_le_of_lt hi hδ))
-      simp only [this, ↓reduceIte]
-      exact hi₂
-  rw [hunion]
+  rw [ulf_eq_ulf ξ δ hδ A₀ A A_def]
   exact (hA₀ ⟨δ.1, hδ⟩).2.1
+
+/- Let ξ be an ordinal less than c. If the union of A₀ up to an ordinal ζ < ξ has no more
+than two colinear points, then the union of all the elements of A₀ (indexed by ordinals
+less than ξ) has no more than two colinear points. Otherwise, there would exist a union
+of elements of A₀ (up to a specific rank) which would contain at least three colinear points
+and we would get a contradiction. -/
+theorem union_NoThreeColinearPoints (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (hA₀ : ∀ (ζ : ordinals_lt ξ.1), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
+    fae_NoThreeColinearPoints (⋃ (b : ordinals_lt ξ), A₀ ⟨b, b.2.out.trans ξ.2⟩) := by
+  intro h
+  obtain ⟨a, b, c, ha, hb, hc, h⟩ := h
+  simp only [Set.iUnion_coe_set, Set.mem_iUnion] at ha hb hc
+  obtain ⟨ia, hia, ha⟩ := ha
+  obtain ⟨ib, hib, hb⟩ := hb
+  obtain ⟨ic, hic, hc⟩ := hc
+  let ζ := max ia (max ib ic)
+  have hζ : ζ ∈ ordinals_lt ξ := by
+    change max ia (max ib ic) < ξ.1
+    simp only [max_lt_iff]
+    exact ⟨hia, hib, hic⟩
+  apply (hA₀ ⟨ζ, hζ⟩).2.1
+  refine ⟨a, b, c, ?_, ?_, ?_, h⟩
+  · rw [union_le_fae]
+    simp only [Set.iUnion_coe_set, Set.mem_iUnion]
+    refine ⟨ia, ?_, ha⟩
+    change ia ≤ max ia (max ib ic)
+    simp only [le_max_iff, le_refl, true_or]
+  · rw [union_le_fae]
+    simp only [Set.iUnion_coe_set, Set.mem_iUnion]
+    refine ⟨ib, ?_, hb⟩
+    change ib ≤ max ia (max ib ic)
+    simp only [le_max_iff, le_refl, true_or, or_true]
+  · rw [union_le_fae]
+    simp only [Set.iUnion_coe_set, Set.mem_iUnion]
+    refine ⟨ic, ?_, hc⟩
+    change ic ≤ max ia (max ib ic)
+    simp only [le_max_iff, le_refl, or_true]
+
+/- If we build a new sequence A as above, taking the union of elements of A (up to a rank ξ < c)
+is the same as taking the union of elements of A₀ (indexed by ordinals less than ξ). This is
+because we defined the element of A (at the rank ξ) to be the empty set. -/
+theorem union_eq (ξ : ordinals_lt c) (δ : ordinals_le ξ) (heq : δ = ξ.1)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (A : ordinals_lt c → Set (ℝ × ℝ))
+    (A_def : A = fun α ↦ if α = ξ then ∅ else A₀ α) :
+    ⋃ (b : ordinals_le δ), A ⟨b, lt_of_le_of_lt b.2.out (lt_of_le_of_lt δ.2 ξ.2)⟩ =
+    ⋃ (b : ordinals_lt ξ), A₀ ⟨b, b.2.out.trans ξ.2⟩ := by
+  ext
+  refine ⟨fun hx ↦ ?_, fun hx ↦ ?_⟩
+  · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+    obtain ⟨i, hi, hi₂⟩ := hx
+    by_cases hi₃ : i < ξ
+    · refine ⟨i, hi₃, ?_⟩
+      rw [A_def] at hi₂
+      have : ⟨i, hi₃.trans ξ.2⟩ ≠ ξ := Subtype.coe_ne_coe.1 (ne_of_lt hi₃)
+      simp only [this] at hi₂
+      exact hi₂
+    · exfalso
+      rw [A_def] at hi₂
+      have : i = ξ.1 := eq_of_le_of_not_lt (hi.out.trans δ.2) hi₃
+      simp only [this] at hi₂
+      exact Set.not_mem_empty _ hi₂
+  · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+    obtain ⟨i, hi, hi₂⟩ := hx
+    refine ⟨i, ?_, ?_⟩
+    · rw [heq]
+      exact le_of_lt hi.out
+    · rw [A_def]
+      have : ⟨i, hi.out.trans ξ.2⟩ ≠ ξ := Subtype.coe_ne_coe.1 (ne_of_lt hi)
+      simp only [this, ↓reduceDIte]
+      exact hi₂
+
+theorem card_union_all (ξ : ordinals_lt c) (δ : ordinals_le ξ)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ)) :
+    Nat.card ((⋃ (b : ordinals_lt ξ), A₀ ⟨b, b.2.out.trans ξ.2⟩) ∩
+    (Lines ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩) : Set (ℝ × ℝ)) = 2 := by
+  by_contra h
+  have := Nat.lt_or_gt_of_ne h
+  cases' this with this₁ this₂
+  · sorry
+  · have := exists_of_two_lt_card this₂
+    obtain ⟨a, b, c, hab, hbc, hac, ⟨ha₁, ha₂⟩, ⟨hb₁, hb₂⟩, ⟨hc₁, hc₂⟩⟩ := this
+    simp only [Set.iUnion_coe_set, Set.mem_iUnion] at ha₁ hb₁ hc₁
+    sorry
+
+theorem D_true (ξ : ordinals_lt c) (δ : ordinals_le ξ)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (hA₀ : ∀ (ζ : ordinals_lt ξ.1), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (A : ordinals_lt c → Set (ℝ × ℝ))
+    (A_def : A = fun α ↦ if α = ξ then ∅ else A₀ α) :
+    Nat.card ((union_le_fae A ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩) ∩
+    Lines ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩ : Set (ℝ × ℝ)) = 2 := by
+  by_cases hδ : δ.1 < ξ
+  · rw [ulf_eq_ulf ξ δ hδ A₀ A A_def]
+    exact (hA₀ ⟨δ.1, hδ⟩).2.2
+  · rw [union_le_fae, union_eq ξ δ (eq_of_le_of_not_lt δ.2.out hδ) A₀ A A_def]
+    exact card_union_all ξ δ A₀
 
 theorem fae (ξ : ordinals_lt c)
   (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
@@ -424,38 +526,16 @@ theorem fae (ξ : ordinals_lt c)
   have byP : n ≤ 2 ∧ Set.Finite (B ∩ (Lines ξ)) := ⟨card_inter_line_le_two ξ A₀ hA₀,
     inter_Finite ξ A₀ hA₀⟩
   by_cases hn : n = 2
-  · let Aξ : Set (ℝ × ℝ) := ∅
+  · set Aξ : Set (ℝ × ℝ) := ∅
     set A : ordinals_lt c → Set (ℝ × ℝ) := by
       intro α
       by_cases hα : α = ξ
       exact Aξ
       exact A₀ α with A_def
-    refine ⟨A, fun δ ↦ ⟨?_, ?_, ?_⟩⟩
-    · exact I_true ξ δ A₀ hA₀ A A_def
-    · by_cases hδ : δ.1 < ξ
-      · exact P_true_for_lt ξ δ hδ A₀ hA₀ A A_def
-      · have := δ.2.out
-        have heq := eq_of_le_of_not_lt this hδ
-        have res : fae_NoThreeColinearPoints (⋃ (b : ordinals_lt ξ), A₀ ⟨b, lt_trans b.2.out ξ.2⟩) := by
-          rw [fae_NoThreeColinearPoints]
-          intro h
-          obtain ⟨a, b, c, ha, hb, hc, h⟩ := h
-          simp only [Set.iUnion_coe_set, Set.mem_iUnion] at ha
-          obtain ⟨ia, hia, ha⟩ := ha
-          simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hb
-          obtain ⟨ib, hib, hb⟩ := hb
-          simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hc
-          obtain ⟨ic, hic, hc⟩ := hc
-          let ζ := max ia (max ib ic)
-          have hζ : ζ ∈ ordinals_lt ξ := sorry
-          have := (hA₀ ⟨ζ, hζ⟩).2.1
-          sorry
-        rw [union_le_fae]
-        have : ⋃ (b : ordinals_le δ), A ⟨b, lt_of_le_of_lt b.2.out (lt_of_le_of_lt δ.2.out ξ.2)⟩ =
-            ⋃ (b : ordinals_lt ξ), A₀ ⟨b, lt_trans b.2.out ξ.2⟩ := sorry
-        rw [this]
-        exact res
-    · sorry
+    refine ⟨A, fun δ ↦ ⟨I_true ξ δ A₀ hA₀ A A_def, if hδ : δ.1 < ξ
+      then P_true_for_lt ξ δ hδ A₀ hA₀ A A_def else ?_, D_true ξ δ A₀ hA₀ A A_def⟩⟩
+    rw [union_le_fae, union_eq ξ δ (eq_of_le_of_not_lt δ.2.out hδ) A₀ A A_def]
+    exact union_NoThreeColinearPoints ξ A₀ hA₀
   · have hn₀ : ∃ (x y : ℝ × ℝ), x ∈ (Lines ξ).1 \ (⋃₀ 𝒢) ∧ y ∈ (Lines ξ).1 \ (⋃₀ 𝒢)
       ∧ x ≠ y := by
       have hninter : (Lines ξ).1 ∉ 𝒢 := by
