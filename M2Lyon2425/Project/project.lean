@@ -37,14 +37,14 @@ theorem van_kampen
         FreeGroup.lift (Sum.elim
           (induced_map_pi1 (inclusion (subset_union_left A B)))
           (induced_map_pi1 (inclusion (subset_union_right A B))));
-      j₁ : π₁A →* FreeGroup (π₁A ⊕ π₁B) := FreeGroup.of ∘ Sum.inl,
-      j₂ : π₁B →* FreeGroup (π₁A ⊕ π₁B) := FreeGroup.of ∘ Sum.inr,
-      i₁ : π₁AB →* π₁A := FundamentalGroup.map (Set.inclusion (Set.InterSubsetLeft A B)),
-      i₂ : π₁AB →* π₁B := FundamentalGroup.map (Set.inclusion (Set.InterSubsetRight A B)) in
+  let j₁ : π₁A →* FreeGroup (π₁A ⊕ π₁B) := FreeGroup.of ∘ Sum.inl;
+  let j₂ : π₁B →* FreeGroup (π₁A ⊕ π₁B) := FreeGroup.of ∘ Sum.inr;
+  let i₁ : π₁AB →* π₁A := induced_map_pi1 (Set.inclusion (inter_subset_left A B));
+  let i₂ : π₁AB →* π₁B := induced_map_pi1 (Set.inclusion (inter_subset_right A B));
   Function.Surjective φ ∧
   ∀ α : π₁AB, j₁ (i₁ α) * j₂ (i₂ α)⁻¹ ∈ φ.ker := by
 
-  sorry -- The detailed proof depends on the structure of π₁ and FreeGroup in Mathlib.
+  sorry
 
 
   lemma path_open_covering {X ι : Type*} [TopologicalSpace X] 
