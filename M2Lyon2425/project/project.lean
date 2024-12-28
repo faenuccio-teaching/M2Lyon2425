@@ -487,35 +487,30 @@ theorem union_eq (ξ : ordinals_lt c) (δ : ordinals_le ξ) (heq : δ = ξ.1)
       simp only [this, ↓reduceDIte]
       exact hi₂
 
-theorem card_union_all (ξ : ordinals_lt c) (δ : ordinals_le ξ)
-    (A₀ : ordinals_lt c → Set (ℝ × ℝ)) :
-    Nat.card ((⋃ (b : ordinals_lt ξ), A₀ ⟨b, b.2.out.trans ξ.2⟩) ∩
-    (Lines ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩) : Set (ℝ × ℝ)) = 2 := by
-  by_contra h
-  have := Nat.lt_or_gt_of_ne h
-  cases' this with this₁ this₂
-  · sorry
-  · have := exists_of_two_lt_card this₂
-    obtain ⟨a, b, c, hab, hbc, hac, ⟨ha₁, ha₂⟩, ⟨hb₁, hb₂⟩, ⟨hc₁, hc₂⟩⟩ := this
-    simp only [Set.iUnion_coe_set, Set.mem_iUnion] at ha₁ hb₁ hc₁
-    obtain ⟨ia, hia, ha⟩ := ha₁
-    obtain ⟨ib, hib, hb⟩ := hb₁
-    obtain ⟨ic, hic, hc⟩ := hc₁
-    let ζ := max ia (max ib ic)
-    sorry
-
+/- If we build a new sequence A as above, A satisfies the condition (D).
+We do a proof by cases and contrarily to before (when we proved (I) and (P) were satisfied),
+we need the hypothesis hn from "fae" (i.e. the union of A₀ up to a rank ξ < c intersects
+the line indexed by ξ in exactly two points). -/
 theorem D_true (ξ : ordinals_lt c) (δ : ordinals_le ξ)
     (A₀ : ordinals_lt c → Set (ℝ × ℝ))
     (hA₀ : ∀ (ζ : ordinals_lt ξ.1), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
     (A : ordinals_lt c → Set (ℝ × ℝ))
-    (A_def : A = fun α ↦ if α = ξ then ∅ else A₀ α) :
+    (A_def : A = fun α ↦ if α = ξ then ∅ else A₀ α)
+    (hn : Nat.card ((⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    ∩ (Lines ξ) : Set (ℝ × ℝ)) = 2) :
     Nat.card ((union_le_fae A ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩) ∩
     Lines ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩ : Set (ℝ × ℝ)) = 2 := by
   by_cases hδ : δ.1 < ξ
   · rw [ulf_eq_ulf ξ δ hδ A₀ A A_def]
     exact (hA₀ ⟨δ.1, hδ⟩).2.2
-  · rw [union_le_fae, union_eq ξ δ (eq_of_le_of_not_lt δ.2.out hδ) A₀ A A_def]
-    exact card_union_all ξ δ A₀
+  · have heq := eq_of_le_of_not_lt δ.2.out hδ
+    have this : union_le_fae A ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩ =
+        ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩ := by
+      rw [union_le_fae, union_eq ξ δ heq A₀ A A_def]
+      rfl
+    rw [this]
+    simp only [heq]
+    exact hn
 
 theorem fae (ξ : ordinals_lt c)
   (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
@@ -537,7 +532,7 @@ theorem fae (ξ : ordinals_lt c)
       exact Aξ
       exact A₀ α with A_def
     refine ⟨A, fun δ ↦ ⟨I_true ξ δ A₀ hA₀ A A_def, if hδ : δ.1 < ξ
-      then P_true_for_lt ξ δ hδ A₀ hA₀ A A_def else ?_, D_true ξ δ A₀ hA₀ A A_def⟩⟩
+      then P_true_for_lt ξ δ hδ A₀ hA₀ A A_def else ?_, D_true ξ δ A₀ hA₀ A A_def hn⟩⟩
     rw [union_le_fae, union_eq ξ δ (eq_of_le_of_not_lt δ.2.out hδ) A₀ A A_def]
     exact union_NoThreeColinearPoints ξ A₀ hA₀
   · have hn₀ : ∃ (x y : ℝ × ℝ), x ∈ (Lines ξ).1 \ (⋃₀ 𝒢) ∧ y ∈ (Lines ξ).1 \ (⋃₀ 𝒢)
