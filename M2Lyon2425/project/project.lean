@@ -498,6 +498,10 @@ theorem card_union_all (ξ : ordinals_lt c) (δ : ordinals_le ξ)
   · have := exists_of_two_lt_card this₂
     obtain ⟨a, b, c, hab, hbc, hac, ⟨ha₁, ha₂⟩, ⟨hb₁, hb₂⟩, ⟨hc₁, hc₂⟩⟩ := this
     simp only [Set.iUnion_coe_set, Set.mem_iUnion] at ha₁ hb₁ hc₁
+    obtain ⟨ia, hia, ha⟩ := ha₁
+    obtain ⟨ib, hib, hb⟩ := hb₁
+    obtain ⟨ic, hic, hc⟩ := hc₁
+    let ζ := max ia (max ib ic)
     sorry
 
 theorem D_true (ξ : ordinals_lt c) (δ : ordinals_le ξ)
