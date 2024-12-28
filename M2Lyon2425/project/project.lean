@@ -377,38 +377,37 @@ theorem I_true (ξ : ordinals_lt c) (δ : ordinals_le ξ) (A₀ : ordinals_lt c 
     rw [hA, Cardinal.mk_emptyCollection]
     exact Cardinal.zero_le 2
 
+/- Starting from a sequence A₀ which satisfies the conditions (I), (P), (D), we build
+a new sequence A of subsets of the plane which satisfies (P) (For this, we do a proof by cases.
+The first case is below.). As above, we build the new sequence by replacing an element of A₀
+(at a specific rank) with the empty set. -/
 theorem P_true_for_lt (ξ : ordinals_lt c) (δ : ordinals_le ξ) (hδ : δ.1 < ξ)
     (A₀ : ordinals_lt c → Set (ℝ × ℝ))
     (hA₀ : ∀ (ζ : ordinals_lt ξ.1), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
     (A : ordinals_lt c → Set (ℝ × ℝ))
-    (A_def : A = fun α ↦ if hα : α = ξ then ∅ else A₀ α) :
+    (A_def : A = fun α ↦ if α = ξ then ∅ else A₀ α) :
     fae_NoThreeColinearPoints (union_le_fae A ⟨δ, lt_of_le_of_lt δ.2.out ξ.2⟩) := by
-  have hunion : union_le_fae A ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ =
-      union_le_fae A₀ ⟨δ.1, lt_of_le_of_lt (Membership.mem.out δ.property) ξ.property⟩ := by
-    rw [union_le_fae, union_le_fae]
-    ext x
-    refine ⟨?_, ?_⟩
-    intro hx
-    simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
-    obtain ⟨i, hi, hi₂⟩ := hx
-    refine ⟨i, hi, ?_⟩
-    rw [A_def] at hi₂
-    dsimp at hi₂
-    have := (ne_of_lt (lt_of_le_of_lt hi hδ))
-    have : ⟨i, lt_of_le_of_lt (le_trans hi δ.2.out) ξ.2.out⟩ ≠ ξ := by
-      exact Subtype.coe_ne_coe.1 this
-    simp only [this, ↓reduceIte] at hi₂
-    exact hi₂
-    intro hx
-    simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
-    obtain ⟨i, hi, hi₂⟩ := hx
-    refine ⟨i, hi, ?_⟩
-    rw [A_def]
-    have := (ne_of_lt (lt_of_le_of_lt hi hδ))
-    have : ⟨i, lt_of_le_of_lt (le_trans hi δ.2.out) ξ.2.out⟩ ≠ ξ := by
-      exact Subtype.coe_ne_coe.1 this
-    simp only [this]
-    exact hi₂
+  have hunion : union_le_fae A ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ =
+      union_le_fae A₀ ⟨δ.1, lt_of_le_of_lt δ.2.out ξ.2⟩ := by
+    simp only [union_le_fae]
+    ext
+    refine ⟨fun hx ↦ ?_, fun hx ↦ ?_⟩
+    · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+      obtain ⟨i, hi, hi₂⟩ := hx
+      refine ⟨i, hi, ?_⟩
+      rw [A_def] at hi₂
+      have : ⟨i, lt_of_le_of_lt (hi.trans δ.2.out) ξ.2⟩ ≠ ξ :=
+        Subtype.coe_ne_coe.1 (ne_of_lt (lt_of_le_of_lt hi hδ))
+      simp only [this, ↓reduceIte] at hi₂
+      exact hi₂
+    · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+      obtain ⟨i, hi, hi₂⟩ := hx
+      refine ⟨i, hi, ?_⟩
+      rw [A_def]
+      have : ⟨i, lt_of_le_of_lt (hi.trans δ.2.out) ξ.2⟩ ≠ ξ :=
+        Subtype.coe_ne_coe.1 (ne_of_lt (lt_of_le_of_lt hi hδ))
+      simp only [this, ↓reduceIte]
+      exact hi₂
   rw [hunion]
   exact (hA₀ ⟨δ.1, hδ⟩).2.1
 
