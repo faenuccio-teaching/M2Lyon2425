@@ -15,7 +15,7 @@ F : ℝ → ℝ such that
 lim{n → ∞} [F(x + hₙ) - F(x)]/hₙ = f(x). -/
 
 /-Defining the sequence which tends to 0-/
-variable (h : ℕ → ℝ) (h1 : Filter.Tendsto h atTop (nhds 0))(f : ℝ → ℝ)
+variable (h : ℕ → ℝ) (h1 : Filter.Tendsto h Filter.atTop (nhds 0))(f : ℝ → ℝ)
 
 /-First define the equivalence relation-/
 def isLinearCombination(a1 : ℝ)(a2 : ℝ) : Prop :=
@@ -240,8 +240,7 @@ lemma EalphaUnionEalphai (α : Quotient (SR h)) : (E h α) = ⋃ i, Ealphai h α
 
 
 /-Prove that there exists some N₀ st. xᵅₘ  + hₙ ∈ Rᵅₘ ∀ n ≥ N₀ -/
-lemma I_constructor (α : Quotient (SR h))(m : ℕ)(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.ball (EnumerateEalpha h α m) ε)) := by
-  set p := EnumerateEalpha h α m with hp
+lemma I_constructor (α : Quotient (SR h))(m : ℕ)(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.closedBall (EnumerateEalpha h α m) ε)) := by
   set p := EnumerateEalpha h α m with hp
   by_contra lem
   set d := |(EnumerateEalpha h α n) - p|/2 with hd1
@@ -257,14 +256,14 @@ lemma I_constructor (α : Quotient (SR h))(m : ℕ)(n : ℕ)(hn : n ∈ Finset.r
     rw[h4] at hn
     simp only [Finset.mem_range, lt_self_iff_false] at hn
   specialize lem d hd
-  rw[Real.ball_eq_Ioo] at lem
-  rw[Set.Ioo,hd1] at lem
+  rw[Real.closedBall_eq_Icc] at lem
+  rw[Set.Icc,hd1] at lem
   simp only [Set.mem_setOf_eq] at lem
   have lem1 := lem.1
   have lem2 := lem.2
-  have lem3 : p - EnumerateEalpha h α n < |(EnumerateEalpha h α n) - p|/2 := by
+  have lem3 : p - EnumerateEalpha h α n ≤  |(EnumerateEalpha h α n) - p|/2 := by
     linarith
-  have lem4 : EnumerateEalpha h α n - p < |(EnumerateEalpha h α n) - p|/2 := by
+  have lem4 : EnumerateEalpha h α n - p ≤  |(EnumerateEalpha h α n) - p|/2 := by
     linarith
   have lem5 : p ≤ (EnumerateEalpha h α n) ∨  (EnumerateEalpha h α n) < p := le_or_lt p (EnumerateEalpha h α n)
   cases lem5
@@ -279,8 +278,8 @@ lemma I_constructor (α : Quotient (SR h))(m : ℕ)(n : ℕ)(hn : n ∈ Finset.r
       linarith
     linarith
 
-def fconst(α : Quotient (SR h))(m : ℕ)(x : ℕ)(hx : x ∈ Finset.range m) : {y : ℝ // y > 0 ∧ (EnumerateEalpha h α x) ∉ (Metric.ball (EnumerateEalpha h α m) y)}  := by
-  have main(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.ball (EnumerateEalpha h α m) ε)) := by
+def fconst(α : Quotient (SR h))(m : ℕ)(x : ℕ)(hx : x ∈ Finset.range m) : {y : ℝ // y > 0 ∧ (EnumerateEalpha h α x) ∉ (Metric.closedBall (EnumerateEalpha h α m) y)}  := by
+  have main(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.closedBall (EnumerateEalpha h α m) ε)) := by
     apply I_constructor
     exact hn
   push_neg at main
@@ -333,7 +332,7 @@ lemma elist_length(α : Quotient (SR h))(m : ℕ)(n : ℕ)(hn : n ∈ Finset.ran
     apply elist_length
     exact hm1
 
-lemma I_constructor_aux3(r : ℝ)(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(p : ℝ)(hp : p = EnumerateEalpha h α m)(n : ℕ)(hn : n ∈ Finset.range (m))(m1 : ℕ)(hnm1 : m1 ≥ n)(hm1 : m1 ∈ Finset.range m)(hr : r = (elist h α m m1 hm1)[m1 - n]!): r ≤ dist (EnumerateEalpha h α n) p:= by
+lemma I_constructor_aux3(r : ℝ)(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(p : ℝ)(hp : p = EnumerateEalpha h α m)(n : ℕ)(hn : n ∈ Finset.range (m))(m1 : ℕ)(hnm1 : m1 ≥ n)(hm1 : m1 ∈ Finset.range m)(hr : r = (elist h α m m1 hm1)[m1 - n]!): r < dist (EnumerateEalpha h α n) p:= by
   rw[elist.eq_def] at hr
   match m1 with
   | 0 =>
@@ -341,10 +340,10 @@ lemma I_constructor_aux3(r : ℝ)(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(p :
       linarith
     simp only [hn1, List.getElem!_cons_zero] at hr
     rw[hn1]
-    have hp1 : EnumerateEalpha h α 0 ∉ Metric.ball p r:= by
+    have hp1 : EnumerateEalpha h α 0 ∉ Metric.closedBall p r:= by
       simp_rw[hp,hr]
       apply (fconst h α m 0 hm1).2.2
-    simp only [Metric.mem_ball, not_lt] at hp1
+    simp only [Metric.mem_closedBall, not_lt,not_le] at hp1
     assumption
   | x + 1 =>
     have triv : x + 1 ≠ 0 := by simp only [ne_eq, AddLeftCancelMonoid.add_eq_zero, one_ne_zero,
@@ -354,10 +353,10 @@ lemma I_constructor_aux3(r : ℝ)(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(p :
     rw[hn1] at hr
     simp at hr
     rw[hn1]
-    have hp1 : EnumerateEalpha h α (x+1) ∉ Metric.ball p r:= by
+    have hp1 : EnumerateEalpha h α (x+1) ∉ Metric.closedBall p r:= by
       simp_rw[hp,hr]
       apply (fconst h α m (x+1) hm1).2.2
-    simp only [Metric.mem_ball, not_lt] at hp1
+    simp only [Metric.mem_closedBall, not_lt,not_le] at hp1
     assumption
     have triv2 :  n ≤ x := by
       apply Nat.le_of_lt_succ
@@ -375,7 +374,7 @@ lemma I_constructor_aux3(r : ℝ)(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(p :
 
 
 
-lemma I_constructor_aux2(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(p : ℝ)(hp : p = EnumerateEalpha h α m)(n : ℕ)(hn : n ∈ Finset.range (m))(hm1 : m -1 ∈ Finset.range m): ∃ r ∈  elist h α m (m-1) hm1, r ≤ dist (EnumerateEalpha h α n) p:= by
+lemma I_constructor_aux2(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(p : ℝ)(hp : p = EnumerateEalpha h α m)(n : ℕ)(hn : n ∈ Finset.range (m))(hm1 : m -1 ∈ Finset.range m): ∃ r ∈  elist h α m (m-1) hm1, r < dist (EnumerateEalpha h α n) p:= by
   have hr'' : (elist h α m (m-1) hm1).length > (m-1)-n := by
     have hr' : (elist h α m (m-1) hm1).length > (m-1) := by
       apply elist_length
@@ -448,9 +447,9 @@ lemma eset_min_form(α : Quotient (SR h))(m : ℕ)(x : ℕ)(hm : m > 0)(hx : x �
 
 #check Nat.eq_iff_le_and_ge
 
-lemma I_constructor_aux(α : Quotient (SR h))(m : ℕ)(hm : m > 0): ∃ ε₀ > 0 , ∀ n ∈ Finset.range (m), (EnumerateEalpha h α n) ∉  (Metric.ball (EnumerateEalpha h α m) ε₀) := by
+lemma I_constructor_aux(α : Quotient (SR h))(m : ℕ)(hm : m > 0): ∃ ε₀ > 0 , ∀ n ∈ Finset.range (m), (EnumerateEalpha h α n) ∉  (Metric.closedBall (EnumerateEalpha h α m) ε₀) := by
   set p := EnumerateEalpha h α m with hp
-  have main(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.ball (EnumerateEalpha h α m) ε)) := by
+  have main(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.closedBall (EnumerateEalpha h α m) ε)) := by
     apply I_constructor
     exact hn
   push_neg at main
@@ -472,30 +471,104 @@ lemma I_constructor_aux(α : Quotient (SR h))(m : ℕ)(hm : m > 0): ∃ ε₀ > 
   rw[hy2]
   exact ((fconst h α m y hy1).2).1
   intro n hn
-  simp only [Metric.mem_ball, not_lt]
-  trans
+  simp only [Metric.mem_closedBall, not_lt,not_le]
   rw[hε₀,elist_min]
-  have some_lem : ∃ r ∈ elist h α m m1 lem, r ≤ dist (EnumerateEalpha h α n) p:= by
+  have some_lem : ∃ r ∈ elist h α m m1 lem, r < dist (EnumerateEalpha h α n) p:= by
     apply I_constructor_aux2 h α m hm p hp n hn lem
-  trans
-  any_goals exact some_lem.choose
-  any_goals exact (some_lem.choose_spec).2
+  apply LE.le.trans_lt
+  any_goals exact some_lem.choose_spec.2
   apply List.minimum_of_length_pos_le_of_mem
   exact some_lem.choose_spec.1
+
 
 
 /-Proof Sketch :- consider an open interval I st. xᵅⱼ ∉ I for j ≤ m-1 (If m = 1, our case is already satisfied). -/
 def I (α : Quotient (SR h))(m : ℕ)(hm : m > 0) : Set ℝ := by
   set p := EnumerateEalpha h α m with hp
   set ε₀ := (I_constructor_aux h α m hm).choose with hε₀
-  exact Metric.ball p ε₀
+  exact Metric.closedBall p ε₀
 
 lemma I_nonempty(α : Quotient (SR h))(m : ℕ)(hm : m > 0) : (I h α m hm).Nonempty := by
+  rw[I,Metric.nonempty_closedBall]
+  apply le_of_lt
+  exact (I_constructor_aux h α m hm).choose_spec.1
+
+lemma I_property(α : Quotient (SR h))(m : ℕ)(hm : m > 0) : ∀ n ∈ Finset.range (m), (EnumerateEalpha h α n) ∉  (I h α m hm) := by
+  intro n hn
   rw[I]
-  simp only [gt_iff_lt, Finset.mem_range, not_lt, Metric.nonempty_ball]
-  rw[←gt_iff_lt]
-  sorry
-  -- apply  ((I_constructor_aux h α m hm).choose_spec).1
+  exact (I_constructor_aux h α m hm).choose_spec.2 n hn
+
+/--Property describing membership of elements in I -/
+def p (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m)(x : ℕ ) : Prop := by
+  match n with
+  | 0 =>
+    exact EnumerateEalpha h α 0 + h x ∉ I h α m hm
+  | y + 1 =>
+    have hy : y ∈ Finset.range m := by
+      simp only [Finset.mem_range] at *
+      linarith
+    exact EnumerateEalpha h α (y+1) + h x ∉ I h α m hm ∧ p α m hm y hy x
+
+
+
+include h1
+lemma distance_equiv : ∀ ε > 0, ∃ N, ∀ n ≥ N, |h n| < ε := by
+  rw[Filter.HasBasis.tendsto_iff Filter.atTop_basis (nhds_basis_Ioo_pos 0)] at h1
+  simp only [Set.mem_Ici, zero_sub, zero_add] at h1
+  intros e he
+  specialize h1 e he
+  obtain ⟨N,hN⟩ := h1
+  use N
+  simp only [Set.mem_Ioo, true_and] at hN
+  intros n hnN
+  specialize hN n hnN
+  rw[abs_lt]
+  assumption
+
+
+include h1
+lemma I_eventually_property(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : ∀ᶠ n1 in Filter.atTop  , EnumerateEalpha h α n + h n1 ∉ I h α m hm  := by
+  rw[Filter.eventually_atTop,I,Metric.closedBall]
+  set ε₀ := (I_constructor_aux h α m hm).choose with hε₀
+  simp only [ge_iff_le, gt_iff_lt, Finset.mem_range, not_lt, Set.mem_setOf_eq,dist,Metric.mem_closedBall, not_le]
+  have he1 : ε₀ > 0 := by
+    rw[hε₀]
+    exact (I_constructor_aux h α m hm).choose_spec.1
+  have he : (EnumerateEalpha h α n) ∉  (Metric.closedBall (EnumerateEalpha h α m) ε₀) := by
+    exact (I_constructor_aux h α m hm).choose_spec.2 n hn
+  have he2 : ε₀ < |EnumerateEalpha h α n - EnumerateEalpha h α m| := by
+    simp only [Metric.mem_closedBall, not_le,dist] at he
+    exact he
+  set s := |EnumerateEalpha h α n - EnumerateEalpha h α m| with hs
+  set t := (s - ε₀)/2 with ht
+  have ht1 : t > 0 := by
+    rw[ht]
+    linarith
+  have traingle(b : ℕ) : |EnumerateEalpha h α n - EnumerateEalpha h α m| - |h b| ≤  |(EnumerateEalpha h α n - EnumerateEalpha h α m) + h b| := by
+    rw[← abs_neg (h b)]
+    trans
+    apply abs_sub_abs_le_abs_sub
+    simp only [sub_neg_eq_add, le_refl]
+  have ht2 : ε₀ < s - t := by
+    rw[ht,hs]
+    linarith
+  obtain ⟨N,hN1⟩ := distance_equiv h h1 t ht1
+  use N
+  intros b hb
+  specialize hN1 b hb
+  specialize traingle b
+  have hst : s - t < s - |h b| := by
+    linarith
+  rw[← hs] at traingle
+  trans
+  exact ht2
+  apply lt_of_lt_of_le
+  exact hst
+  trans
+  exact traingle
+  ring_nf
+  simp only [le_refl]
+
 
 /- Then choose N₁ st.  Aⱼ = {xᵅⱼ + hₙ, n ≥ N₁} where j≤m and I∩Aⱼ = ∅ ∀ j≤m-1 and Aₘ ⊆ I .-/
 /-This implies Aₘ ∩ Aⱼ = ∅ ∀ j ≤ m-1  -/
@@ -510,6 +583,10 @@ F(xₘᵅ +hₙ) - F(xₘᵅ) / hₙ  = (F(xₘᵅ) + (xᵅₘ + hₙ - xₘᵅ)
 def Ralpha (α : Quotient (SR h))(m : ℕ) : Set ℝ :=  match m with
   | 0 => Ealphai h α 0
   | i + 1 => Ealphai h α (i + 1) \( ⋃  j ∈ Finset.range (i+1), Ealphai h α j)
+
+lemma RalphaUnionEalphai_aux (α : Quotient (SR h))(m : ℕ) :⋃ (j : ℕ), Ralpha h α j = ⋃ (i : ℕ ), Ealphai h α i  := by
+
+  sorry
 
 lemma Ralphanonemptyexistence (α : Quotient (SR h))(m : ℕ) : ∀ᶠ (n:ℕ) in atTop, EnumerateEalpha h α m + h n ∈ Ralpha h α m := by
   match m with
