@@ -82,53 +82,53 @@ lemma distance_F1_F2_eq_zero : distance F1 F2 = 0 :=
 def IsClosedDisk (D : Set (ℝ × ℝ)) (h k r : ℝ) (_ : 0 < r) : Prop :=
     ∀ x ∈ D, (x.1 - h)^2 + (x.2 - k)^2 ≤ r^2
 
-def MinimumClosedDisk (A D : Set (ℝ × ℝ)) {h k r : ℝ} {hr : 0 < r} (_ : IsClosedDisk D h k r hr ∧ A ⊆ D)  : Prop :=
-    ∀ (D' : Set (ℝ × ℝ)) (_ : (∃ (h' k' r' : ℝ) (hr' : 0 < r'), IsClosedDisk D' h' k' r' hr') ∧ A ⊆ D'), D ⊆ D'
+/- Given a bounded subset A of the Euclidean plane, a minimum closed disk for A
+is a closed disk containing A and contained in all closed disks containing A. -/
+def IsMinimumClosedDisk {A D : Set (ℝ × ℝ)} {h k r : ℝ} {hr : 0 < r}
+    (_ : IsClosedDisk D h k r hr ∧ A ⊆ D) : Prop :=
+    ∀ D', ∃ h' k' r', (hr' : 0 < r') → IsClosedDisk D' h' k' r' hr' ∧ A ⊆ D' → D ⊆ D'
 
 def Line (a b c : ℝ) : Set (ℝ × ℝ) := setOf (fun x ↦ a*x.1 + b*x.2 = c)
 
+/- A two-point set is a subset of the Euclidean plane which intersects
+every line in exactly two points. -/
 def IsTwoPointSet (S : Set (ℝ × ℝ)) : Prop :=
-  ∀ (a b c : ℝ), Cardinal.mk (Subtype (· ∈ Line a b c ∩ S)) = 2
+  ∀ (a b c : ℝ), Cardinal.mk (Line a b c ∩ S : Set (ℝ × ℝ)) = 2
 
-example (S : Set (ℝ × ℝ)) (hS : IsTwoPointSet S) :
-    ¬(∃ (D : Set (ℝ × ℝ)) (h k r : ℝ) (hr : 0 < r) (hD : IsClosedDisk D h k r hr ∧ S ⊆ D),
-    MinimumClosedDisk S D hD) := by
+/- Given a closed disk D, we find a line which doesn't intersect it. -/
+lemma line_inter_disk {D : Set (ℝ × ℝ)} {h k r : ℝ} {hr : 0 < r}
+    (hD : IsClosedDisk D h k r hr) :
+    Line 1 0 (h + r + 1) ∩ D = ∅ := by
+  ext w
+  refine ⟨fun ⟨hw, hw₂⟩ ↦ ?_, fun hx ↦ ?_⟩
+  · replace hw := hw.out
+    rw [one_mul, zero_mul, add_zero] at hw
+    specialize hD w hw₂
+    rw [hw, add_sub_right_comm, add_sub_right_comm, sub_self, zero_add] at hD
+    have : r ^ 2 < (r + 1) ^ 2 + (w.2 - k) ^ 2 := by
+      rw [add_comm]
+      exact lt_add_of_nonneg_of_lt (sq_nonneg (w.2 - k)) (by linarith)
+    exact not_lt.2 hD this
+  · exfalso
+    exact hx
+
+example {S : Set (ℝ × ℝ)} (hS : IsTwoPointSet S) :
+    ¬(∃ D h k r, ∃ (hr : 0 < r) (hD : IsClosedDisk D h k r hr ∧ S ⊆ D),
+    IsMinimumClosedDisk hD) := by
   intro h
   obtain ⟨D, h, k, r, hr, ⟨hD, hD₂⟩, hD₃⟩ := h
-  let L := Line 1 0 (h + r + 1)
-  have : L ∩ D = ∅ := by
-    by_contra h₂
-    rw [Set.ext_iff] at h₂
-    push_neg at h₂
-    obtain ⟨w, hw⟩ := h₂
-    cases hw with
-    | inl h₃ =>
-        obtain ⟨⟨hw, hw₂⟩, hw₃⟩ := h₃
-        rw [IsClosedDisk] at hD
-        specialize hD w hw₂
-        change 1*w.1 + 0*w.2 = (h + r + 1) at hw
-        rw [one_mul, zero_mul, add_zero] at hw
-        rw [hw, add_sub_right_comm, add_sub_right_comm, sub_self, zero_add] at hD
-        have : r ^ 2 < (r + 1) ^ 2 := by
-          linarith
-        have : r ^ 2 < (r + 1) ^ 2 + (w.2 - k) ^ 2 := by
-          rw [add_comm]
-          exact lt_add_of_nonneg_of_lt (even_two.pow_nonneg (w.2 - k)) this
-        exact not_lt.2 hD this
-    | inr h₃ => exact h₃.2
-  have : L ∩ S = ∅ := by
+  have := line_inter_disk hD
+  have : Line 1 0 (h + r + 1) ∩ S = ∅ := by
     ext x
     refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
     · rw [Set.ext_iff] at this
       exact (this x).1 ⟨h'.1, hD₂ h'.2⟩
     · exfalso
       exact h'
-  unfold IsTwoPointSet at hS
   specialize hS 1 0 (h + r + 1)
   apply_fun Cardinal.mk at this
-  simp only [Cardinal.mk_eq_zero] at this
-  rw [this] at hS
-  exact two_ne_zero hS.symm
+  rw [hS, Cardinal.mk_eq_zero] at this
+  exact two_ne_zero this
 
 -- Construction of the two-point set
 
