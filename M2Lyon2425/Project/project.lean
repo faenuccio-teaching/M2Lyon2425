@@ -238,54 +238,264 @@ lemma EalphaUnionEalphai (α : Quotient (SR h)) : (E h α) = ⋃ i, Ealphai h α
   rw[lem]
   ring
 
-/-Let Rᵅₘ = Eᵅₘ \ ⋃ⱼ Eᵅⱼ where j ∈ {1,2..m-1} if m ≥ 2  and Rᵅ₁ = Eᵅ₁.-/
-def Ralpha (α : Quotient (SR h))(m : ℕ) : Set ℝ :=  match m with
-  | 0 => Ealphai h α 0
-  | i + 1 => Ealphai h α (i + 1) \( ⋃  j ∈ Finset.range (i+1), Ealphai h α j)
 
 /-Prove that there exists some N₀ st. xᵅₘ  + hₙ ∈ Rᵅₘ ∀ n ≥ N₀ -/
-/-Proof Sketch :- consider an open interval I st. xᵅⱼ ∉ I for j ≤ m-1 (If m = 1, our case is already satisfied). -/
-def I (α : Quotient (SR h))(m : ℕ) : Set ℝ := by
+lemma I_constructor (α : Quotient (SR h))(m : ℕ)(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.ball (EnumerateEalpha h α m) ε)) := by
   set p := EnumerateEalpha h α m with hp
-  have main(n : ℕ)(hn : n ∈ Finset.range (m)) :  ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.ball p ε)) := by
-    by_contra lem
-    set d := |(EnumerateEalpha h α n) - p|/2 with hd1
-    have hd : d > 0 := by
-      rw[hd1,hp]
-      simp only [gt_iff_lt, Nat.ofNat_pos, div_pos_iff_of_pos_right, abs_pos, ne_eq]
-      intros h2
-      have h3 : EnumerateEalpha h α n = EnumerateEalpha h α m := by
-        linarith
-      have h4 : n =m := by
-        apply EnumerateEalpha_injective
-        rw[h3]
-      rw[h4] at hn
-      simp only [Finset.mem_range, lt_self_iff_false] at hn
-    specialize lem d hd
-    rw[Real.ball_eq_Ioo] at lem
-    rw[Set.Ioo,hd1] at lem
-    simp only [Set.mem_setOf_eq] at lem
-    have lem1 := lem.1
-    have lem2 := lem.2
-    have lem3 : p - EnumerateEalpha h α n < |(EnumerateEalpha h α n) - p|/2 := by
+  set p := EnumerateEalpha h α m with hp
+  by_contra lem
+  set d := |(EnumerateEalpha h α n) - p|/2 with hd1
+  have hd : d > 0 := by
+    rw[hd1,hp]
+    simp only [gt_iff_lt, Nat.ofNat_pos, div_pos_iff_of_pos_right, abs_pos, ne_eq]
+    intros h2
+    have h3 : EnumerateEalpha h α n = EnumerateEalpha h α m := by
       linarith
-    have lem4 : EnumerateEalpha h α n - p < |(EnumerateEalpha h α n) - p|/2 := by
+    have h4 : n =m := by
+      apply EnumerateEalpha_injective
+      rw[h3]
+    rw[h4] at hn
+    simp only [Finset.mem_range, lt_self_iff_false] at hn
+  specialize lem d hd
+  rw[Real.ball_eq_Ioo] at lem
+  rw[Set.Ioo,hd1] at lem
+  simp only [Set.mem_setOf_eq] at lem
+  have lem1 := lem.1
+  have lem2 := lem.2
+  have lem3 : p - EnumerateEalpha h α n < |(EnumerateEalpha h α n) - p|/2 := by
+    linarith
+  have lem4 : EnumerateEalpha h α n - p < |(EnumerateEalpha h α n) - p|/2 := by
+    linarith
+  have lem5 : p ≤ (EnumerateEalpha h α n) ∨  (EnumerateEalpha h α n) < p := le_or_lt p (EnumerateEalpha h α n)
+  cases lem5
+  case inl hp1 =>
+    have lem6 : |(EnumerateEalpha h α n) - p| = (EnumerateEalpha h α n) - p := by
+      rw[abs_eq_self]
       linarith
-    have lem5 : p ≤ (EnumerateEalpha h α n) ∨  (EnumerateEalpha h α n) < p := le_or_lt p (EnumerateEalpha h α n)
-    cases lem5
-    case inl hp1 =>
-      have lem6 : |(EnumerateEalpha h α n) - p| = (EnumerateEalpha h α n) - p := by
-        rw[abs_eq_self]
-        linarith
+    linarith
+  case inr hp1 =>
+    have lem6 : |(EnumerateEalpha h α n) - p| =  -((EnumerateEalpha h α n) - p) := by
+      rw[abs_eq_neg_self]
       linarith
-    case inr hp1 =>
-      have lem6 : |(EnumerateEalpha h α n) - p| =  -((EnumerateEalpha h α n) - p) := by
-        rw[abs_eq_neg_self]
-        linarith
-      linarith
-  push_neg at main
+    linarith
 
+def fconst(α : Quotient (SR h))(m : ℕ)(x : ℕ)(hx : x ∈ Finset.range m) : {y : ℝ // y > 0 ∧ (EnumerateEalpha h α x) ∉ (Metric.ball (EnumerateEalpha h α m) y)}  := by
+  have main(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.ball (EnumerateEalpha h α m) ε)) := by
+    apply I_constructor
+    exact hn
+  push_neg at main
+  specialize main x hx
+  constructor
+  exact main.choose_spec
+
+def fconst' (α : Quotient (SR h))(m : ℕ)(x : ℕ) : ℝ := by
+  if x ∈ Finset.range m then
+   rename_i hx
+   exact (fconst h α m x hx).1
+  else
+    exact 0
+
+def elist(α : Quotient (SR h))(m : ℕ)(x : ℕ)(hx : x ∈ Finset.range m): List ℝ :=
+  match x with
+  | 0 => [(fconst h α m (0) hx).1]
+  | y + 1 => by
+    have hy : y ∈ Finset.range (m) := by
+      simp only [Finset.mem_range] at *
+      linarith
+    exact (fconst h α m (y+1) hx).1 :: (elist α m y hy)
+
+lemma elist_nonempty(α : Quotient (SR h))(m : ℕ)(x : ℕ)(hx : x ∈ Finset.range m)  : 0 < (elist h α m x hx).length := by
+  rw[List.length_pos]
+  simp only [ne_eq]
+  by_contra h1
+  rw[elist.eq_def] at h1
+  simp at h1
+  match x with
+  | 0 =>
+    simp only [List.cons_ne_self] at h1
+  |y + 1 =>
+    simp only [reduceCtorEq] at h1
+
+def elist_min(α : Quotient (SR h))(m : ℕ)(x : ℕ)(hx : x ∈ Finset.range m) : ℝ := List.minimum_of_length_pos (elist_nonempty h α m x hx )
+
+
+lemma elist_min_mem(α : Quotient (SR h))(m : ℕ)(x : ℕ)(hx : x ∈ Finset.range m) : elist_min h α m x hx ∈ elist h α m x hx := by
+  apply List.minimum_of_length_pos_mem
+
+lemma elist_length(α : Quotient (SR h))(m : ℕ)(n : ℕ)(hn : n ∈ Finset.range m)(hm1 : m -1 ∈ Finset.range m) : (elist h α m n hn).length > n := by
+  match n with
+  | 0 =>
+    rw[elist]
+    simp only [List.length_singleton, gt_iff_lt, zero_lt_one]
+  | x + 1 =>
+    rw[elist]
+    simp only [List.length_cons, gt_iff_lt, add_lt_add_iff_right]
+    apply elist_length
+    exact hm1
+
+lemma I_constructor_aux3(r : ℝ)(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(p : ℝ)(hp : p = EnumerateEalpha h α m)(n : ℕ)(hn : n ∈ Finset.range (m))(m1 : ℕ)(hnm1 : m1 ≥ n)(hm1 : m1 ∈ Finset.range m)(hr : r = (elist h α m m1 hm1)[m1 - n]!): r ≤ dist (EnumerateEalpha h α n) p:= by
+  rw[elist.eq_def] at hr
+  match m1 with
+  | 0 =>
+    have hn1 : n = 0 := by
+      linarith
+    simp only [hn1, List.getElem!_cons_zero] at hr
+    rw[hn1]
+    have hp1 : EnumerateEalpha h α 0 ∉ Metric.ball p r:= by
+      simp_rw[hp,hr]
+      apply (fconst h α m 0 hm1).2.2
+    simp only [Metric.mem_ball, not_lt] at hp1
+    assumption
+  | x + 1 =>
+    have triv : x + 1 ≠ 0 := by simp only [ne_eq, AddLeftCancelMonoid.add_eq_zero, one_ne_zero,
+      and_false, not_false_eq_true]
+    simp[triv] at hr
+    by_cases hn1 : n = x + 1
+    rw[hn1] at hr
+    simp at hr
+    rw[hn1]
+    have hp1 : EnumerateEalpha h α (x+1) ∉ Metric.ball p r:= by
+      simp_rw[hp,hr]
+      apply (fconst h α m (x+1) hm1).2.2
+    simp only [Metric.mem_ball, not_lt] at hp1
+    assumption
+    have triv2 :  n ≤ x := by
+      apply Nat.le_of_lt_succ
+      rw[Nat.lt_iff_le_and_ne]
+      constructor
+      all_goals assumption
+    have triv1 : (x +1) - n = (x - n) + 1 := by
+      rw[Nat.succ_sub]
+      assumption
+    rw[triv1] at hr
+    rw[List.getElem!_cons_succ] at hr
+    apply I_constructor_aux3 r
+    repeat assumption
+
+
+
+
+lemma I_constructor_aux2(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(p : ℝ)(hp : p = EnumerateEalpha h α m)(n : ℕ)(hn : n ∈ Finset.range (m))(hm1 : m -1 ∈ Finset.range m): ∃ r ∈  elist h α m (m-1) hm1, r ≤ dist (EnumerateEalpha h α n) p:= by
+  have hr'' : (elist h α m (m-1) hm1).length > (m-1)-n := by
+    have hr' : (elist h α m (m-1) hm1).length > (m-1) := by
+      apply elist_length
+      assumption
+    apply lt_of_lt_of_le'
+    exact hr'
+    simp only [tsub_le_iff_right, le_add_iff_nonneg_right, zero_le]
+  set r := (elist h α m (m-1) hm1)[m-1 -n]! with hr
+  use r
+  constructor
+  rw[hr,getElem!_pos]
+  apply List.getElem_mem
+  apply hr''
+  apply I_constructor_aux3 h r α m hm p hp n hn (m-1)
+  simp only [Finset.mem_range] at hn
+  apply Nat.le_pred_of_lt
+  assumption
+  assumption
+
+
+
+lemma eset_min_form(α : Quotient (SR h))(m : ℕ)(x : ℕ)(hm : m > 0)(hx : x ∈ Finset.range m) :∃ y, y ∈ Finset.range m ∧  elist_min h α m x hx = (fconst' h α m y) := by
+  have eset_min_mem1 := elist_min_mem h α m x hx
+  rw[elist.eq_def] at eset_min_mem1
+  match x with
+  | 0 =>
+    simp only [List.mem_singleton] at eset_min_mem1
+    use 0
+    constructor
+    simp only [Finset.mem_range]
+    assumption
+    rw[fconst']
+    simp only [hx, ↓reduceDIte]
+    assumption
+  | x + 1 =>
+    simp only [List.mem_cons] at eset_min_mem1
+    by_cases h1 : elist_min h α m (x+1) hx = (fconst h α m (x+1) hx).1
+    use x + 1
+    constructor
+    assumption
+    rw[fconst']
+    simp only [hx, ↓reduceDIte]
+    assumption
+    simp only [h1, false_or] at eset_min_mem1
+    have hx1 : x ∈ Finset.range m := by
+      simp only [Finset.mem_range] at hx
+      simp only [Finset.mem_range]
+      linarith
+    have elist_min_eq : elist_min h α m x hx1 = elist_min h α m (x+1) hx := by
+      rw[eq_iff_le_not_lt]
+      constructor
+      rw[elist_min]
+      apply List.minimum_of_length_pos_le_of_mem
+      assumption
+      simp only [not_lt]
+      rw[elist_min]
+      apply List.minimum_of_length_pos_le_of_mem
+      rw[elist.eq_def]
+      have hx2 : x + 1 ≠ 0 := by
+        simp only [ne_eq, AddLeftCancelMonoid.add_eq_zero, one_ne_zero, and_false,
+          not_false_eq_true]
+      simp only [List.mem_cons]
+      right
+      exact elist_min_mem h α m (x) hx1
+    rw[← elist_min_eq]
+    apply eset_min_form
+    assumption
+
+
+
+#check Nat.eq_iff_le_and_ge
+
+lemma I_constructor_aux(α : Quotient (SR h))(m : ℕ)(hm : m > 0): ∃ ε₀ > 0 , ∀ n ∈ Finset.range (m), (EnumerateEalpha h α n) ∉  (Metric.ball (EnumerateEalpha h α m) ε₀) := by
+  set p := EnumerateEalpha h α m with hp
+  have main(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.ball (EnumerateEalpha h α m) ε)) := by
+    apply I_constructor
+    exact hn
+  push_neg at main
+  have lem : m -1 ∈ Finset.range m := by
+    simp only [Finset.mem_range]
+    simp only [tsub_lt_self_iff, zero_lt_one, and_true]
+    assumption
+  set m1 := m -1 with hm1
+  set ε₀ := elist_min h α m m1 lem with hε₀
+  use ε₀
+  constructor
+  have hε₀1 : ∃ y, y ∈ Finset.range m ∧  ε₀ = (fconst' h α m y) := by
+    rw[hε₀]
+    apply eset_min_form
+    assumption
+  obtain ⟨y,hy1,hy2⟩ := hε₀1
+  rw[fconst'] at hy2
+  simp only [hy1, ↓reduceDIte] at hy2
+  rw[hy2]
+  exact ((fconst h α m y hy1).2).1
+  intro n hn
+  simp only [Metric.mem_ball, not_lt]
+  trans
+  rw[hε₀,elist_min]
+  have some_lem : ∃ r ∈ elist h α m m1 lem, r ≤ dist (EnumerateEalpha h α n) p:= by
+    apply I_constructor_aux2 h α m hm p hp n hn lem
+  trans
+  any_goals exact some_lem.choose
+  any_goals exact (some_lem.choose_spec).2
+  apply List.minimum_of_length_pos_le_of_mem
+  exact some_lem.choose_spec.1
+
+
+/-Proof Sketch :- consider an open interval I st. xᵅⱼ ∉ I for j ≤ m-1 (If m = 1, our case is already satisfied). -/
+def I (α : Quotient (SR h))(m : ℕ)(hm : m > 0) : Set ℝ := by
+  set p := EnumerateEalpha h α m with hp
+  set ε₀ := (I_constructor_aux h α m hm).choose with hε₀
+  exact Metric.ball p ε₀
+
+lemma I_nonempty(α : Quotient (SR h))(m : ℕ)(hm : m > 0) : (I h α m hm).Nonempty := by
+  rw[I]
+  simp only [gt_iff_lt, Finset.mem_range, not_lt, Metric.nonempty_ball]
+  rw[←gt_iff_lt]
   sorry
+  -- apply  ((I_constructor_aux h α m hm).choose_spec).1
 
 /- Then choose N₁ st.  Aⱼ = {xᵅⱼ + hₙ, n ≥ N₁} where j≤m and I∩Aⱼ = ∅ ∀ j≤m-1 and Aₘ ⊆ I .-/
 /-This implies Aₘ ∩ Aⱼ = ∅ ∀ j ≤ m-1  -/
@@ -296,9 +506,16 @@ def I (α : Quotient (SR h))(m : ℕ) : Set ℝ := by
 /-Thus ∀ n ≥ N₂
 F(xₘᵅ +hₙ) - F(xₘᵅ) / hₙ  = (F(xₘᵅ) + (xᵅₘ + hₙ - xₘᵅ)f(xₘᵅ) - F(xₘᵅ))/hₙ  = f(xᵅₘ)ₙ-/
 
-lemma Ralphanonemptyexistence (α : Quotient (SR h))(m : ℕ) : ∀ᶠ (n:ℕ) in atTop, EnumerateEalpha h α m + h n ∈ Ralpha h α m := by
+/-Let Rᵅₘ = Eᵅₘ \ ⋃ⱼ Eᵅⱼ where j ∈ {1,2..m-1} if m ≥ 2  and Rᵅ₁ = Eᵅ₁.-/
+def Ralpha (α : Quotient (SR h))(m : ℕ) : Set ℝ :=  match m with
+  | 0 => Ealphai h α 0
+  | i + 1 => Ealphai h α (i + 1) \( ⋃  j ∈ Finset.range (i+1), Ealphai h α j)
 
-  sorry
+lemma Ralphanonemptyexistence (α : Quotient (SR h))(m : ℕ) : ∀ᶠ (n:ℕ) in atTop, EnumerateEalpha h α m + h n ∈ Ralpha h α m := by
+  match m with
+  | 0 => sorry
+  | i + 1 => sorry
+
 
 
 
@@ -333,7 +550,7 @@ namespace CounterExample2
 /-((g(x + hₘ) - g(x))/hₘ - Pₖ) < 1/n. holds except for points that have lebesgue measure < 1/n. -/
 /-Let S = C[a,b] \ A -/
 /-Sₙₖ be subsets of S that contain elements g which satisfy ∀ m > n:--/
-/-((g(x + hₘ) - g(x))/hₘ - Pₖ) ≥ 1/n holds on some set having lebesgue lebesgue measure > 1/n -/
+/-((g(x + hₘ) - g(x))/hₘ - Pₖ) ≥ 1/n holds on some set having lebesgue  measure > 1/n -/
 /-Prove that S = ∪Sₙₖ ∀ k,n -/
 /-Now show Sₙₖ is nowhere dense in C[a,b] by showing it is closed and C[a,b]\Sₙₖ is dense in C[a,b] for all positive integers n and k.  -/
 /-If Sₙₖ is empty then the result is already true. Say, Sₙₖ is non-empty and there exists a sequence of functions {gₘ} in Sₙₖ that converge to g. We prove that g ∈ Sₙₖ.-/
