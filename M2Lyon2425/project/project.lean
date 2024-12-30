@@ -512,6 +512,45 @@ theorem D_true (ξ : ordinals_lt c) (δ : ordinals_le ξ)
     simp only [heq]
     exact hn
 
+theorem rw_inter_sUnion (ξ : ordinals_lt c) (𝒢 : Set (Set (ℝ × ℝ))) :
+    (Lines ξ).1 ∩ ⋃₀ 𝒢 = ⋃ ℒ, ⋃ (_ : ℒ ∈ 𝒢), (Lines ξ).1 ∩ ℒ := by
+  ext
+  refine ⟨fun hx ↦ ?_, fun hx ↦ ?_⟩
+  · simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_sUnion] at hx
+    simp only [Set.mem_setOf_eq, Set.iUnion_coe_set, Set.mem_iUnion, Set.mem_inter_iff,
+      exists_and_left, exists_prop]
+    exact hx
+  · rw [Set.mem_iUnion₂] at hx
+    obtain ⟨i, hi, hi₂, hi₃⟩ := hx
+    simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_sUnion]
+    exact ⟨hi₂, i, hi, hi₃⟩
+
+/- In the following proof, we start by rewriting the intersection (Lines ξ).1 ∩ ⋃₀ 𝒢
+using the previous statement. It becomes a union. We can then bound it. -/
+theorem card_bounded (ξ : ordinals_lt c) (𝒢 : Set (Set (ℝ × ℝ))) (B : Set (ℝ × ℝ))
+    (𝒢_def : 𝒢 = {S | (2 ≤ Nat.card (S ∩ B : Set (ℝ × ℝ)) ∨ ¬(S ∩ B).Finite)
+    ∧ ∃ a b c, S = Line a b c}) :
+    Cardinal.mk ((Lines ξ).1 ∩ ⋃₀ 𝒢 : Set (ℝ × ℝ)) ≤ Cardinal.mk 𝒢 := by
+  rw [rw_inter_sUnion]
+  have : ⨆ (x : 𝒢), Cardinal.mk ((Lines ξ).1 ∩ x : Set (ℝ × ℝ)) ≤ 1 := by
+    have hninter : ∀ ℒ ∈ 𝒢, Cardinal.mk ((Lines ξ).1 ∩ ℒ : Set (ℝ × ℝ)) ≤ 1 := by
+      intros ℒ hℒ
+      simp only [𝒢_def] at hℒ
+      exact lines_inter (Lines ξ).1 ℒ (Lines ξ).2 hℒ.2
+    have : Cardinal.lift.{0, 0} (iSup fun (x : 𝒢) ↦
+        Cardinal.mk ((Lines ξ).1 ∩ x : Set (ℝ × ℝ))) ≤ 1 := by
+        refine Cardinal.lift_iSup_le ?_ (fun ℒ ↦ ?_)
+        · rw [bddAbove_def]
+          refine ⟨1, fun y ⟨ℒ, hℒ⟩ ↦ ?_⟩
+          rw [← hℒ]
+          exact hninter ℒ ℒ.2
+        · rw [Cardinal.lift_le_one_iff]
+          exact (hninter ℒ ℒ.2)
+    rwa [Cardinal.lift_le_one_iff] at this
+  have := mul_le_mul_left' this (Cardinal.mk 𝒢)
+  rw [mul_one] at this
+  exact le_trans (Cardinal.mk_biUnion_le (fun ℒ ↦ (Lines ξ).1 ∩ ℒ) 𝒢) this
+
 theorem fae (ξ : ordinals_lt c)
   (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
     ∃ A : ordinals_lt c → Set (ℝ × ℝ),
@@ -520,12 +559,14 @@ theorem fae (ξ : ordinals_lt c)
   set B := ⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) with hB
   have hB_le : Cardinal.mk B < Cardinal.continuum := Cardinal.mk_sUnion_lt_continuum ξ A₀ hA₀
   let 𝒢 := {S | (2 ≤ Nat.card ↑(S ∩ B) ∨ ¬(Set.Finite ↑(S ∩ B))) ∧ ∃ a b c, S = Line a b c}
-  have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := sorry-- or directly `< Cardinal.continuum
+  have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := sorry
+  have h𝒢_le₂ : Cardinal.mk 𝒢 < Cardinal.continuum := sorry -- or directly < Cardinal.continuum
+  --(instead of proving h𝒢_le first)
   set n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ)) with ndef -- Nat.card or Cardinal.mk?
   have byP : n ≤ 2 ∧ Set.Finite (B ∩ (Lines ξ)) := ⟨card_inter_line_le_two ξ A₀ hA₀,
     inter_Finite ξ A₀ hA₀⟩
   by_cases hn : n = 2
-  · set Aξ : Set (ℝ × ℝ) := ∅
+  · let Aξ : Set (ℝ × ℝ) := ∅
     set A : ordinals_lt c → Set (ℝ × ℝ) := by
       intro α
       by_cases hα : α = ξ
@@ -535,66 +576,13 @@ theorem fae (ξ : ordinals_lt c)
       then P_true_for_lt ξ δ hδ A₀ hA₀ A A_def else ?_, D_true ξ δ A₀ hA₀ A A_def hn⟩⟩
     rw [union_le_fae, union_eq ξ δ (eq_of_le_of_not_lt δ.2.out hδ) A₀ A A_def]
     exact union_NoThreeColinearPoints ξ A₀ hA₀
-  · have hn₀ : ∃ (x y : ℝ × ℝ), x ∈ (Lines ξ).1 \ (⋃₀ 𝒢) ∧ y ∈ (Lines ξ).1 \ (⋃₀ 𝒢)
-      ∧ x ≠ y := by
-      have hninter : (Lines ξ).1 ∉ 𝒢 := by
-        intro hinter
-        replace hinter := hinter.out.1
-        have hlt := byP.1
-        have := lt_of_le_of_ne hlt hn
-        cases' hinter with hinter₁ hinter₂
-        · rw [Set.inter_comm, ← ndef] at hinter₁
-          exact not_le_of_lt this hinter₁
-        · rw [Set.inter_comm] at hinter₂
-          exact hinter₂ byP.2
-      have hninter₂ : ∀ ℒ ∈ 𝒢, Cardinal.mk ((Lines ξ).1 ∩ ℒ : Set (ℝ × ℝ)) ≤ 1 := by
-        intros ℒ hℒ
-        exact lines_inter (Lines ξ).1 ℒ (Lines ξ).2 hℒ.2
-      have hninter₃ : Cardinal.mk ((Lines ξ).1 ∩ ⋃₀ 𝒢 : Set (ℝ × ℝ)) ≤ Cardinal.mk 𝒢 := by
-        have : (Lines ξ).1 ∩ ⋃₀ 𝒢 = ⋃₀ {S | ∃ ℒ ∈ 𝒢, S = (Lines ξ).1 ∩ ℒ} := by
-          ext x
-          refine ⟨?_, ?_⟩
-          · intro hx
-            simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_sUnion] at hx
-            obtain ⟨hx₁, t, ht⟩ := hx
-            simp only [Set.mem_setOf_eq, Set.mem_sUnion]
-            exact ⟨(Lines ξ).1 ∩ t, ⟨t, ht.1, by rfl⟩, ⟨hx₁, ht.2⟩⟩
-          · intro hx
-            simp only [Set.mem_setOf_eq, Set.mem_sUnion] at hx
-            obtain ⟨t, ⟨ℒ, hℒ, hx⟩, ht⟩ := hx
-            simp only [Set.mem_setOf_eq, Set.mem_inter_iff, Set.mem_sUnion]
-            rw [hx] at ht
-            exact ⟨ht.1, ⟨ℒ, hℒ, ht.2⟩⟩
-        rw [this]
-        have := Cardinal.mk_sUnion_le {S | ∃ ℒ ∈ 𝒢, S = (Lines ξ).1 ∩ ℒ}
-        have this₂ : Cardinal.mk ↑{S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ} ≤ Cardinal.mk 𝒢 := by
-          refine Function.Embedding.cardinal_le ⟨?_, ?_⟩
-          · intro S
-            have hS := S.2.out
-            exact ⟨hS.choose, hS.choose_spec.1⟩
-          · rw [Function.Injective]
-            intros a₁ a₂
-            dsimp
-            intro ha
-            simp only [Subtype.mk.injEq] at ha
-            rw [← Subtype.val_inj]
-            have this₁ := @Exists.choose_spec (Set (ℝ × ℝ)) (fun ℒ ↦ ℒ ∈ 𝒢 ∧ ↑a₁ = ↑(Lines ξ) ∩ ℒ)
-            have this₂ := @Exists.choose_spec (Set (ℝ × ℝ)) (fun ℒ ↦ ℒ ∈ 𝒢 ∧ ↑a₂ = ↑(Lines ξ) ∩ ℒ)
-            replace this₁ := (this₁ a₁.2).2
-            replace this₂ := (this₂ a₂.2).2
-            rw [this₁, this₂, ha]
-        have this₃ : ⨆ (s : {S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ}), Cardinal.mk ↑↑s = 1 := by
-          sorry
-        rw [this₃, mul_one] at this
-        exact
-          Preorder.le_trans (Cardinal.mk ↑(⋃₀ {S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ}))
-            (Cardinal.mk ↑{S | ∃ ℒ ∈ 𝒢, S = ↑(Lines ξ) ∩ ℒ}) (Cardinal.mk ↑𝒢) this this₂
-      have hninter₄ : Cardinal.mk ((Lines ξ).1 ∩ ⋃₀ 𝒢 : Set (ℝ × ℝ)) < Cardinal.mk (Lines ξ).1 := by
-        sorry
-      have hninter₅ : Cardinal.mk ((Lines ξ).1 \ ⋃₀ 𝒢 : Set (ℝ × ℝ)) ≥ 2 := by
-        sorry
+  · have hn_ne_two : ∃ x y, x ∈ (Lines ξ).1 \ ⋃₀ 𝒢 ∧ y ∈ (Lines ξ).1 \ ⋃₀ 𝒢
+        ∧ x ≠ y := by
+      have hninter : Cardinal.mk ((Lines ξ).1 ∩ ⋃₀ 𝒢 : Set (ℝ × ℝ)) < Cardinal.continuum :=
+        lt_of_le_of_lt (card_bounded ξ 𝒢 B (by rfl)) h𝒢_le₂
+      have hninter₂ : Cardinal.mk ((Lines ξ).1 \ ⋃₀ 𝒢 : Set (ℝ × ℝ)) ≥ 2 := sorry
       sorry
-    obtain ⟨x, y, hn₀⟩ := hn₀
+    obtain ⟨x, y, hn_ne_two⟩ := hn_ne_two
     by_cases hn₁ : n = 1
     · let Aξ : Set (ℝ × ℝ) := {x}
       sorry
