@@ -551,6 +551,19 @@ theorem card_bounded (ξ : ordinals_lt c) (𝒢 : Set (Set (ℝ × ℝ))) (B : S
   rw [mul_one] at this
   exact le_trans (Cardinal.mk_biUnion_le (fun ℒ ↦ (Lines ξ).1 ∩ ℒ) 𝒢) this
 
+theorem zero_or_one {α : Type*} {S : Set α} (hS : Cardinal.mk S < 2) :
+    Cardinal.mk S = 0 ∨ Cardinal.mk S = 1 := by
+  obtain ⟨m, hm, hm₂⟩ := Cardinal.exists_nat_eq_of_le_nat (le_of_lt hS)
+  have : m = 0 ∨ m = 1 := by
+    cases' (Nat.le_iff_lt_or_eq.1 hm) with hm hm'
+    · exact Nat.le_one_iff_eq_zero_or_eq_one.1 (Nat.lt_succ_iff.1 hm)
+    · rw [hm'] at hm₂
+      rw [hm₂] at hS
+      exfalso
+      exact (not_lt_of_gt hS) hS
+  rwa [← Nat.cast_inj (R := Cardinal), ← Nat.cast_inj (R := Cardinal),
+    Nat.cast_zero, Nat.cast_one, ← hm₂] at this
+
 theorem fae (ξ : ordinals_lt c)
   (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
     ∃ A : ordinals_lt c → Set (ℝ × ℝ),
@@ -580,7 +593,20 @@ theorem fae (ξ : ordinals_lt c)
         ∧ x ≠ y := by
       have hninter : Cardinal.mk ((Lines ξ).1 ∩ ⋃₀ 𝒢 : Set (ℝ × ℝ)) < Cardinal.continuum :=
         lt_of_le_of_lt (card_bounded ξ 𝒢 B (by rfl)) h𝒢_le₂
-      have hninter₂ : Cardinal.mk ((Lines ξ).1 \ ⋃₀ 𝒢 : Set (ℝ × ℝ)) ≥ 2 := sorry
+      have hninter₂ : Cardinal.mk ((Lines ξ).1 \ ⋃₀ 𝒢 : Set (ℝ × ℝ)) ≥ 2 := by
+        by_contra h
+        push_neg at h
+        cases' (zero_or_one h) with this₁ this₂
+        · have := Set.inter_eq_self_of_subset_left (Set.diff_eq_empty.1
+              (Set.isEmpty_coe_sort.1 (Cardinal.mk_eq_zero_iff.1 this₁)))
+          apply_fun Cardinal.mk at this
+          rw [this] at hninter
+          have : Cardinal.mk (Lines ξ).1 = Cardinal.continuum := sorry
+          exact ne_of_lt hninter this
+        · have := Cardinal.le_mk_diff_add_mk (Lines ξ).1 (⋃₀ 𝒢)
+          rw [this₂] at this
+          have := Cardinal.mk_sUnion_le 𝒢
+          sorry
       sorry
     obtain ⟨x, y, hn_ne_two⟩ := hn_ne_two
     by_cases hn₁ : n = 1
