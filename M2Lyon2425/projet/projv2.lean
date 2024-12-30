@@ -460,3 +460,19 @@ def q : (D F)ˣ →* Fˣ := {
     intros x y
     ext
     simp only [Units.val_mul, Subtype.coe_mk, coe_mul, Matrix.det_mul]}
+
+
+#check q
+
+variable {p: Nat  }
+variable [Fintype F][CharP F >2]
+
+def A  (F : Type*) [Field F ] [Fintype F ] (CharP F > 2) := {a^2 | a: F}
+
+
+theorem number_of_squares (F : Type*) [Field F ] [Fintype F ] [CharP F > 2] : card.{}
+
+theorem q_surj (F : Type*) [Field F ] [Fintype F ] : Function.Surjective (q : (D F)ˣ →* Fˣ) := by
+
+
+  sorry
