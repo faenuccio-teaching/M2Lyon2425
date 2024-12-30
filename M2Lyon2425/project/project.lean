@@ -132,7 +132,7 @@ example {S : Set (ℝ × ℝ)} (hS : IsTwoPointSet S) :
 
 -- Construction of the two-point set
 
--- This is proved in mathlib4.
+-- This is proven in mathlib4.
 universe v u
 
 theorem Cardinal.mk_iUnion_Ordinal_lift_le_of_le {β : Type v} {o : Ordinal.{u}} {c : Cardinal.{v}}
