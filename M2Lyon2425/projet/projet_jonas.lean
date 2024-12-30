@@ -394,12 +394,7 @@ def uni := Set.univ (α:=(F×F))
 #check uni
 
 
-def g ( a : F× F):=  Matrix.of (fun (i:Fin 2) ↦ (fun (j : Fin 2) ↦  match i,j with
-  |0, 0 => a.1
-  |0,1 => -a.2
-  |1, 0 => a.2
-  |1,1 => a.1
- ))
+def g ( a : F× F):=  !![a.1, -a.2 ; a.2,a.1]
 #check g
 
 def g' := fun ( a : F× F) ↦   Matrix.of (fun (i:Fin 2) ↦ (fun (j : Fin 2) ↦  match i,j with
@@ -411,6 +406,9 @@ def g' := fun ( a : F× F) ↦   Matrix.of (fun (i:Fin 2) ↦ (fun (j : Fin 2) �
 
 
 def C := Set.range (g : F × F → Matrix (Fin 2) (Fin 2) F)
+def C' (F : Type*) [Field F] := {A : Matrix (Fin 2) (Fin 2) F // A 0 0 = A 1 1 ∧ A 1 0 = -A 0 1}
+
+
 
 #print C
 #check C
@@ -434,7 +432,15 @@ def caree := { (a, b) : F × F | a^2+ b^2 =1 }
 open Polynomial
 
 
-def E:= F[X]⧸Ideal.span ({Polynomial.X^2+1}: Set F[X])
+def E := F[X]⧸Ideal.span ({Polynomial.X^2+1}: Set F[X])
+
+
+
+instance : Monoid E := by
+  refine Function.Injective.monoid (Quotient.mk)
+
+
+def p' := fun (A : C' F) ↦ C (A.val 0 0) + (C (A.val 0 1) * X) : F[X]
 
 def p := fun ( A : C ) ↦  C.{u_1} ( A.1 0 0 )  + ( ( A.1 0 1 ) * X ) : F[X]
 
