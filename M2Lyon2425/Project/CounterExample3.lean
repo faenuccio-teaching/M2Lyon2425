@@ -12,3 +12,12 @@
 /-μ(I∩A) > 0  -/
 /- μ(A∩I) = μ(A∩I∖N) + μ(A∩I∩N) = μ(A∩I\N) ≤ μ(A\N)-/
 /-So, g is discontinuous at all the points (A∪N)ᶜ-/
+import Mathlib
+variable (h : ℕ → ℝ)
+
+open Set Submodule
+
+/-We specify that each equivalence class is countable -/
+theorem EalphaCountable (α : ℝ ⧸ span ℤ (range h)) : (Submodule.Quotient.mk ⁻¹' {α}).Countable := by
+
+   sorry

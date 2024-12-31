@@ -15,7 +15,83 @@ F : ℝ → ℝ such that
 lim{n → ∞} [F(x + hₙ) - F(x)]/hₙ = f(x). -/
 
 /-Defining the sequence which tends to 0-/
-variable (h : ℕ → ℝ) (h1 : Filter.Tendsto h Filter.atTop (nhds 0))(f : ℝ → ℝ)
+variable (h : ℕ → ℝ) (h1 : Filter.Tendsto h Filter.atTop (nhds 0))(h2 : h.Injective)(f : ℝ → ℝ)
+/-Some Preliminary Lemmas -/
+
+def T (g : ℕ → ℝ)(S : Set ℝ )(hS :  ∀ (a : ℕ), ∃ b ≥ a, g b ∈ S) : Set ℕ := {c |  ∃(a : ℕ), c = (hS a).choose }
+
+
+lemma T_property(g : ℕ → ℝ)(S : Set ℝ )(hS :  ∀ (a : ℕ), ∃ b ≥ a, g b ∈ S) : ∀ (a : ℕ), ∃ b ≥ a, b ∈ T g S hS:= by
+  intro a
+  set b := (hS a).choose with hb
+  obtain ⟨hb1, hb2⟩ := (hS a).choose_spec
+  rw[←hb] at hb1 hb2
+  use b
+  constructor
+  exact hb1
+  rw[T]
+  rw [Set.mem_setOf_eq]
+  use a
+
+lemma T_infinitehx(g : ℕ → ℝ)(S : Set ℝ )(hS :  ∀ (a : ℕ), ∃ b ≥ a, g b ∈ S) : (T g S hS).Infinite := by
+  have hx := T_property g S hS
+  apply Set.infinite_of_not_bddAbove
+  unfold BddAbove upperBounds Set.Nonempty
+  push_neg
+  intros x hx1
+  simp at hx1
+  specialize hx (x + 1)
+  obtain ⟨b, hb1, hb2⟩ := hx
+  specialize hx1 hb2
+  linarith
+
+
+lemma fT_sub(g : ℕ → ℝ)(S : Set ℝ )(hS :  ∀ (a : ℕ), ∃ b ≥ a, g b ∈ S) :  g '' (T g S hS) ⊆ S:= by
+  intros y hy
+  simp at hy
+  obtain ⟨x, hx1, hx2⟩ := hy
+  rw[T,Set.mem_setOf_eq] at hx1
+  obtain ⟨a, ha⟩ := hx1
+  obtain ⟨hb1, hb2⟩ := (hS a).choose_spec
+  rw[←ha] at hb1 hb2
+  rw[hx2] at hb2
+  assumption
+
+def T1 (g : ℕ → ℝ)(N : ℕ) : Set ℕ := {c |  ∃ x < N, x = c }
+
+lemma T1_finite (g : ℕ → ℝ)(N : ℕ) : (T1 g N).Finite := by
+  rw[T1]
+  apply BddAbove.finite
+  unfold BddAbove upperBounds Set.Nonempty
+  use N
+  simp only [exists_eq_right, Set.mem_setOf_eq]
+  intros x hx
+  linarith
+
+lemma T1_image(g : ℕ → ℝ)(N : ℕ) :  g '' (T1 g N) = {c| ∃ x < N , g x = c }:= by
+  ext y
+  constructor
+  intro hy
+  simp only [Set.mem_image] at hy
+  obtain ⟨x, hx, hgx⟩ := hy
+  simp only [Set.mem_setOf_eq]
+  rw[T1] at hx
+  simp at hx
+  use x
+  intro hy
+  simp only [Set.mem_setOf_eq] at hy
+  obtain ⟨x,hx, hgx⟩ := hy
+  rw[T1]
+  simp only [exists_eq_right, Set.mem_image, Set.mem_setOf_eq]
+  use x
+
+
+lemma S_Finite (g : ℕ → ℝ)(N : ℕ) : {c| ∃ x < N , g x = c }.Finite := by
+  rw[← T1_image]
+  apply Set.Finite.image
+  apply T1_finite
+
+
 
 /-First define the equivalence relation-/
 def isLinearCombination(a1 : ℝ)(a2 : ℝ) : Prop :=
@@ -238,6 +314,9 @@ lemma EalphaUnionEalphai (α : Quotient (SR h)) : (E h α) = ⋃ i, Ealphai h α
   rw[lem]
   ring
 
+def Ralpha (α : Quotient (SR h))(m : ℕ) : Set ℝ :=  match m with
+  | 0 => Ealphai h α 0
+  | i + 1 => Ealphai h α (i + 1) \( ⋃  j ∈ (Finset.range (i+1)).toSet, Ealphai h α j)
 
 /-Prove that there exists some N₀ st. xᵅₘ  + hₙ ∈ Rᵅₘ ∀ n ≥ N₀ -/
 lemma I_constructor (α : Quotient (SR h))(m : ℕ)(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.closedBall (EnumerateEalpha h α m) ε)) := by
@@ -444,9 +523,6 @@ lemma eset_min_form(α : Quotient (SR h))(m : ℕ)(x : ℕ)(hm : m > 0)(hx : x �
     assumption
 
 
-
-#check Nat.eq_iff_le_and_ge
-
 lemma I_constructor_aux(α : Quotient (SR h))(m : ℕ)(hm : m > 0): ∃ ε₀ > 0 , ∀ n ∈ Finset.range (m), (EnumerateEalpha h α n) ∉  (Metric.closedBall (EnumerateEalpha h α m) ε₀) := by
   set p := EnumerateEalpha h α m with hp
   have main(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.closedBall (EnumerateEalpha h α m) ε)) := by
@@ -509,6 +585,7 @@ def p (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.rang
       linarith
     exact EnumerateEalpha h α (y+1) + h x ∉ I h α m hm ∧ p α m hm y hy x
 
+def q(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(x : ℕ) : Prop := EnumerateEalpha h α m + h x ∈  I h α m hm
 
 
 include h1
@@ -526,8 +603,8 @@ lemma distance_equiv : ∀ ε > 0, ∃ N, ∀ n ≥ N, |h n| < ε := by
   assumption
 
 
-include h1
-lemma I_eventually_property(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : ∀ᶠ n1 in Filter.atTop  , EnumerateEalpha h α n + h n1 ∉ I h α m hm  := by
+
+lemma I_eventually_property(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : ∀ᶠ x in Filter.atTop  , EnumerateEalpha h α n + h x ∉ I h α m hm  := by
   rw[Filter.eventually_atTop,I,Metric.closedBall]
   set ε₀ := (I_constructor_aux h α m hm).choose with hε₀
   simp only [ge_iff_le, gt_iff_lt, Finset.mem_range, not_lt, Set.mem_setOf_eq,dist,Metric.mem_closedBall, not_le]
@@ -569,6 +646,352 @@ lemma I_eventually_property(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(
   ring_nf
   simp only [le_refl]
 
+include h1
+lemma q_true_eventually (α: Quotient (SR h))(m : ℕ)(hm : m > 0) : ∀ᶠ x in Filter.atTop , q h α m hm x := by
+  unfold q
+  rw[Filter.eventually_atTop,I,Metric.closedBall]
+  set ε₀ := (I_constructor_aux h α m hm).choose with hε₀
+  simp only [ge_iff_le, Set.mem_setOf_eq, dist_self_add_left, Real.norm_eq_abs]
+  obtain ⟨N,hN⟩ := distance_equiv h h1 ε₀ (I_constructor_aux h α m hm).choose_spec.1
+  use N
+  intros n hn
+  specialize hN n hn
+  linarith
+
+lemma p_true_eventually(α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : ∀ᶠ x in Filter.atTop  ,p h α m hm n hn x := by
+  match n with
+  | 0 =>
+    apply I_eventually_property
+    repeat assumption
+  | y + 1 =>
+    unfold p
+    simp only [ ge_iff_le]
+    apply Filter.Eventually.and
+    apply I_eventually_property
+    repeat assumption
+    have hy : y ∈ Finset.range m := by
+      simp only [Finset.mem_range] at *
+      linarith
+    apply p_true_eventually
+
+lemma pq_true_eventually(α: Quotient (SR h))(m : ℕ)(hm : m > 0)(hn : (m-1) ∈ Finset.range m)  : ∀ᶠ x in Filter.atTop  ,  p h α m hm (m-1) hn x ∧ q h α m hm x := by
+  apply Filter.Eventually.and
+  apply p_true_eventually
+  assumption
+  apply q_true_eventually
+  assumption
+
+omit h1
+lemma A_constructor_aux(α : Quotient (SR h))(m : ℕ)(m1 : ℕ)(hm : m > 0)(hm2 : m1 ∈ Finset.range m)(n : ℕ)(hn1 :  n ≤ m1)(b : ℕ)(hN1 : p h α m hm m1 hm2 b) : EnumerateEalpha h α n + h b ∉ I h α m hm := by
+  have triv : m1 = 0 ∨ ∃ (y : ℕ), m1 = y + 1 := by
+    by_cases h1m : m1 = 0
+    left
+    assumption
+    right
+    simp at h1m
+    use m1.pred
+    rw[← Nat.succ_eq_add_one,Nat.succ_pred]
+    assumption
+  cases triv with
+  | inl hm1eq0 =>
+    simp_rw[hm1eq0] at hN1
+    unfold p at hN1
+    have hn0 : n = 0 := by
+      linarith
+    rw[hn0]
+    exact hN1
+  | inr hm1eq1 =>
+    obtain ⟨y,hy⟩ := hm1eq1
+    simp_rw[hy] at hN1
+    unfold p at hN1
+    simp at hN1
+    by_cases hny : n = y + 1
+    rw[hny]
+    exact hN1.1
+    have hN2 := hN1.2
+    have lem : n ≤ y := by
+      apply Nat.le_of_lt_succ
+      rw[Nat.lt_iff_le_and_ne]
+      constructor
+      linarith
+      assumption
+    apply A_constructor_aux
+    exact lem
+    assumption
+
+
+include h1
+lemma A_constructor(α : Quotient (SR h))(m : ℕ)(hm : m > 0) : ∃ N , ∀ n ∈ Finset.range (m),∀ x ≥ N , EnumerateEalpha h α n + h x ∉ I h α m hm ∧ EnumerateEalpha h α m + h x ∈ I h α m hm := by
+  set m1 := m -1 with hm1
+  have hm2 : m1 ∈ Finset.range m := by
+    simp only [Finset.mem_range,hm1]
+    apply Nat.sub_one_lt
+    linarith
+  have lem : ∀ᶠ x in Filter.atTop  ,  p h α m hm (m-1) hm2 x ∧ q h α m hm x := by
+    apply pq_true_eventually
+    assumption
+  rw[Filter.eventually_atTop] at lem
+  obtain ⟨N,hN⟩ := lem
+  use N
+  intros n hn b hNb
+  specialize hN b hNb
+  have hN1 := hN.1
+  have hN2 := hN.2
+  unfold q at hN2
+  constructor
+  any_goals assumption
+  have lem : n ≤ m-1 := by
+    apply Nat.le_pred_of_lt
+    simp only [Finset.mem_range] at hn
+    assumption
+  apply A_constructor_aux
+  exact lem
+  assumption
+
+def A (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : Set ℝ := { EnumerateEalpha h α n + h x | x ≥ (A_constructor h h1 α m hm).choose}
+
+def B (α: Quotient (SR h))(m : ℕ)(hm : m > 0): Set ℝ := { EnumerateEalpha h α m + h x | x ≥ (A_constructor h h1 α m hm).choose}
+
+
+include h h1 h2
+def g(α : Quotient (SR h))(m : ℕ)(x : ℕ) : ℝ := EnumerateEalpha h α m + h x
+
+omit h1
+lemma g_injective (α : Quotient (SR h))(m : ℕ) : (g h α m).Injective := by
+  intros x y hx
+  simp only [g, add_right_inj] at hx
+  rw[Function.Injective.eq_iff h2] at hx
+  exact hx
+omit h2
+include h1
+lemma B_subset_I (α: Quotient (SR h))(m : ℕ)(hm : m > 0): B h h1 α m hm ⊆ I h α m hm := by
+  intros x hx
+  rw[B,Set.mem_setOf_eq] at hx
+  obtain ⟨N1,hN11,hN12⟩ := hx
+  have hn : 0 ∈ Finset.range m := by
+    simp only [Finset.mem_range]
+    assumption
+  rw[←hN12]
+  exact ((A_constructor h h1 α m hm).choose_spec 0 hn N1 hN11).2
+omit h h1
+lemma S_infinite (g : ℕ → ℝ)(hg : g.Injective)(S : Set ℝ )(hS :  ∀ (a : ℕ), ∃ b ≥ a, g b ∈ S) : S.Infinite := by
+  have hx := T_infinitehx g S hS
+  have gT :  (g '' (T g S hS)).Infinite := by
+    apply Set.Infinite.image
+    apply Set.injOn_of_injective hg
+    exact hx
+  apply Set.Infinite.mono
+  apply fT_sub g S hS
+  exact gT
+include h h1
+lemma A_inter_I_empty (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : A h h1 α m hm n hn ∩ I h α m hm = ∅ := by
+  rw[←Set.disjoint_iff_inter_eq_empty,Set.disjoint_left]
+  intros x hx
+  rw[A,Set.mem_setOf_eq] at hx
+  obtain ⟨N1,hN11,hN12⟩ := hx
+  rw[←hN12]
+  exact ((A_constructor h h1 α m hm).choose_spec n hn N1 hN11).1
+
+lemma A_inter_B_empty (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : A h h1 α m hm n hn ∩ B h h1 α m hm = ∅ := by
+  rw[←Set.disjoint_iff_inter_eq_empty]
+  apply Set.disjoint_of_subset_right
+  apply B_subset_I
+  rw[Set.disjoint_iff_inter_eq_empty]
+  apply A_inter_I_empty
+
+def fngenerator (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ) : ℕ := (A_constructor h h1 α m hm).choose
+
+def C (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : Set ℝ := {EnumerateEalpha h α n} ∪  { EnumerateEalpha h α n + h x | x < (A_constructor h h1 α m hm).choose}
+
+lemma C_union_A_eq_Ealphai (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m)  :  C h h1 α m hm n hn ∪ A h h1 α m hm n hn = Ealphai h α n:= by
+  rw[A,C,Ealphai,Ealpha0,Set.union_assoc]
+  set N := (A_constructor h h1 α m hm).choose with hN
+  apply Set.union_congr_left
+  apply Set.subset_union_of_subset_right
+  unfold Ealphai1
+  intro x hx
+  simp at hx
+  cases hx
+  rename_i lem
+  simp only [Set.iUnion_singleton_eq_range, Set.mem_range]
+  obtain ⟨N1,hN11,hN12⟩ := lem
+  use N1
+  rename_i lem
+  simp only [Set.iUnion_singleton_eq_range, Set.mem_range]
+  obtain ⟨N2,hN21,hN22⟩ := lem
+  use N2
+  intros x hx
+  simp at hx
+  unfold Ealphai1 at hx
+  obtain ⟨y,hy⟩ := hx
+  by_cases hx : y < N
+  simp only [ge_iff_le, Set.singleton_union, Set.mem_insert_iff, Set.mem_union, Set.mem_setOf_eq]
+  right
+  left
+  use y
+  simp at hy
+  exact ⟨hx,hy.symm⟩
+  simp at hx
+  simp only [ge_iff_le, Set.singleton_union, Set.mem_insert_iff, Set.mem_union, Set.mem_setOf_eq]
+  right
+  right
+  use y
+  simp at hy
+  exact ⟨hx,hy.symm⟩
+
+lemma C_inter_A_empty (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m)(D : Set ℝ)(hd : D ⊆ B h h1 α m hm ) : D \ Ealphai h α n = D \ C h h1 α m hm n hn  := by
+  rw[← C_union_A_eq_Ealphai h h1 α m hm n hn]
+  rw[Set.diff_eq_compl_inter,Set.compl_union,Set.inter_assoc,←Set.diff_eq_compl_inter, ]
+  have lem : (A h h1 α m hm n hn)ᶜ ∩ D = D  := by
+    simp only [Set.inter_eq_right]
+    apply Set.disjoint_compl_right_iff_subset.mp
+    simp only [compl_compl]
+    apply Set.disjoint_of_subset_left hd
+    simp only [Set.disjoint_iff_inter_eq_empty,Set.inter_comm]
+    apply A_inter_B_empty
+  rw[lem]
+
+lemma B_in_eventually (α: Quotient (SR h))(m : ℕ)(hm : m > 0) : ∀ᶠ x in Filter.atTop, EnumerateEalpha h α m + h x ∈ B h h1 α m hm := by
+  rw[Filter.eventually_atTop]
+  rw[B]
+  set N := (A_constructor h h1 α m hm).choose with hN
+  use N
+  intros y hy
+  simp only [ge_iff_le, Set.mem_setOf_eq, add_right_inj]
+  use y
+
+
+
+omit h1
+include h h2
+lemma Finite_set_eventually (α : Quotient (SR h))(m : ℕ)(S: Set ℝ)(hs : S.Finite) : ∀ᶠ x in Filter.atTop, EnumerateEalpha h α m + h x ∈  Sᶜ  := by
+  rw[Filter.eventually_atTop]
+  by_contra hx
+  push_neg at hx
+  have lem : S.Infinite := by
+    apply S_infinite
+    apply g_injective h h2 α m
+    simp_rw[g]
+    simp_rw[Set.not_mem_compl_iff] at hx
+    exact hx
+  exact lem hs
+
+omit h2
+include h1
+lemma C_finite (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : (C h h1 α m hm n hn).Finite := by
+  rw[C,Set.finite_union]
+  constructor
+  apply Set.finite_singleton
+  set N := (A_constructor h h1 α m hm).choose with hN
+  apply S_Finite
+
+
+
+include h2
+lemma B_minus_Ealpahi_eventually (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : ∀ᶠ x in Filter.atTop , EnumerateEalpha h α m + h x ∈ B h h1 α m hm \ Ealphai h α n := by
+  rw[C_inter_A_empty h h1 α m hm n hn]
+  rw[Set.diff_eq_compl_inter]
+  simp_rw[Set.mem_inter_iff]
+  apply Filter.Eventually.and
+  apply Finite_set_eventually h h2
+  apply C_finite
+  apply B_in_eventually
+  simp only [subset_refl]
+
+lemma B_minus_all_Ealphai_eventually_aux (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ) (hn : n ∈ Finset.range m) : ∀ᶠ x in Filter.atTop , EnumerateEalpha h α m + h x ∈ B h h1 α m hm \ ⋃ (i ∈ (Finset.range (n + 1)).toSet), Ealphai h α i := by
+  match n with
+  | 0 =>
+    have lem :⋃ (i ∈ (Finset.range (0 + 1)).toSet), Ealphai h α i = Ealphai h α 0 := by
+      simp only [zero_add, Finset.range_one, Finset.coe_singleton, Set.mem_singleton_iff,
+        Set.iUnion_iUnion_eq_left]
+    rw[lem]
+    apply B_minus_Ealpahi_eventually
+    repeat assumption
+  | y + 1 =>
+    have lem: ⋃ i ∈ (Finset.range (y + 1 + 1)).toSet, Ealphai h α i = (⋃ i ∈ (Finset.range (y + 1)).toSet, Ealphai h α i ) ∪ Ealphai h α (y+1):= by
+      apply superset_antisymm
+      apply Set.union_subset
+      apply Set.biUnion_subset_biUnion_left
+      simp only [Finset.coe_range, Set.Iio_subset_Iio_iff, le_add_iff_nonneg_right, zero_le]
+      apply Set.subset_biUnion_of_mem
+      simp only [Finset.coe_range, Set.mem_Iio, lt_add_iff_pos_right, zero_lt_one]
+      intros x hx
+      simp only [Finset.coe_range, Set.mem_Iio, Set.mem_iUnion, exists_prop] at hx
+      obtain ⟨i,hx1,hx2⟩ := hx
+      simp only [Finset.coe_range, Set.mem_Iio, Set.mem_union, Set.mem_iUnion, exists_prop]
+      by_cases hi : i = y + 1
+      right
+      rw[← hi]
+      assumption
+      push_neg at hi
+      have triv : i < y + 1 := by
+        rw[Nat.lt_succ]  at hx1
+        rw[lt_iff_le_and_ne]
+        exact ⟨hx1,hi⟩
+      left
+      use i
+    have triv(A B C : Set ℝ ) : A \ (B ∪ C ) = (A \ B) ∩ (A \ C) := by
+      rw[Set.diff_eq_compl_inter,Set.diff_eq_compl_inter,Set.diff_eq_compl_inter,Set.compl_union]
+      rw[← Set.inter_assoc ,Set.inter_assoc Bᶜ A Cᶜ,Set.inter_comm A, Set.inter_assoc Bᶜ (Cᶜ ∩ A),Set.inter_assoc Cᶜ ]
+      simp only [Set.inter_self,Set.inter_assoc]
+    rw[lem,triv]
+    simp only [ Set.mem_inter_iff,
+      exists_prop, not_exists, not_and, ge_iff_le]
+    apply Filter.Eventually.and
+    apply B_minus_all_Ealphai_eventually_aux
+    simp at hn ⊢
+    linarith
+    apply B_minus_Ealpahi_eventually
+    repeat assumption
+
+omit h2
+lemma B_subset_Ealphaim (α: Quotient (SR h))(m : ℕ)(hm : m > 0) : B h h1 α m hm ⊆ Ealphai h α m := by
+  intros x hx
+  rw[B] at hx
+  set N := (A_constructor h h1 α m hm).choose with hN
+  simp only [ge_iff_le, Set.mem_setOf_eq] at hx
+  obtain ⟨N1,hN1,hN2⟩ := hx
+  rw[Ealphai,Ealpha0]
+  simp only [Set.singleton_union, Set.mem_insert_iff, Set.mem_iUnion]
+  right
+  simp_rw[Ealphai1,Set.mem_singleton_iff]
+  use N1
+  exact hN2.symm
+
+include h2
+
+lemma Ralphanonemptyexistence (α : Quotient (SR h))(m : ℕ) : ∀ᶠ x in Filter.atTop, EnumerateEalpha h α m + h x ∈ Ralpha h α m := by
+  match m with
+  | 0 =>
+    rw[Ralpha]
+    apply Filter.Eventually.of_forall
+    intros x
+    rw[Ealphai,Ealpha0,Set.singleton_union,Set.mem_insert_iff,Set.mem_iUnion]
+    right
+    use x
+    rw[Ealphai1]
+    simp only [Set.mem_singleton_iff]
+  | i + 1 =>
+    rw[Ralpha]
+    have hm : i + 1 > 0 := by
+      linarith
+    have hn : i ∈ Finset.range (i + 1) := by
+      simp only [Finset.mem_range]
+      linarith
+    let p(x : ℕ) := EnumerateEalpha h α (i + 1) + h x ∈ B h h1 α (i+1) hm \ ⋃ j ∈ ↑(Finset.range (i + 1)), Ealphai h α j
+    have lem : ∀ᶠ x in Filter.atTop, p x := by
+      apply B_minus_all_Ealphai_eventually_aux h h1 h2 α (i + 1) hm i hn
+    apply Filter.Eventually.mono lem
+    intro x
+    simp_rw[p]
+    apply Set.mem_of_subset_of_mem
+    apply Set.diff_subset_diff_left
+    apply B_subset_Ealphaim
+
+
+lemma RalphaUnionEalphai_aux (α : Quotient (SR h)):⋃ (j : ℕ), Ralpha h α j = ⋃ (i : ℕ ), Ealphai h α i  := by
+   sorry
+
 
 /- Then choose N₁ st.  Aⱼ = {xᵅⱼ + hₙ, n ≥ N₁} where j≤m and I∩Aⱼ = ∅ ∀ j≤m-1 and Aₘ ⊆ I .-/
 /-This implies Aₘ ∩ Aⱼ = ∅ ∀ j ≤ m-1  -/
@@ -580,18 +1003,11 @@ lemma I_eventually_property(α : Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(
 F(xₘᵅ +hₙ) - F(xₘᵅ) / hₙ  = (F(xₘᵅ) + (xᵅₘ + hₙ - xₘᵅ)f(xₘᵅ) - F(xₘᵅ))/hₙ  = f(xᵅₘ)ₙ-/
 
 /-Let Rᵅₘ = Eᵅₘ \ ⋃ⱼ Eᵅⱼ where j ∈ {1,2..m-1} if m ≥ 2  and Rᵅ₁ = Eᵅ₁.-/
-def Ralpha (α : Quotient (SR h))(m : ℕ) : Set ℝ :=  match m with
-  | 0 => Ealphai h α 0
-  | i + 1 => Ealphai h α (i + 1) \( ⋃  j ∈ Finset.range (i+1), Ealphai h α j)
 
-lemma RalphaUnionEalphai_aux (α : Quotient (SR h))(m : ℕ) :⋃ (j : ℕ), Ralpha h α j = ⋃ (i : ℕ ), Ealphai h α i  := by
 
-  sorry
 
-lemma Ralphanonemptyexistence (α : Quotient (SR h))(m : ℕ) : ∀ᶠ (n:ℕ) in atTop, EnumerateEalpha h α m + h n ∈ Ralpha h α m := by
-  match m with
-  | 0 => sorry
-  | i + 1 => sorry
+
+
 
 
 

@@ -33,3 +33,39 @@
 /-Then show ‖ h(x) - g(x) ‖ ≤  ε  -/
 /-Thus C[a,b]\Sₙₖ in C[a,b], Sₙₖ is nowhere dense in C[a,b]. Here C[a,b] is a complete normed space , so it is a baire space.  -/
 /-Thus S is nowhere dense, and C[a,b]\S is non-empty,and we are done.-/
+
+import Mathlib
+
+def T1 (g : ℕ → ℝ)(N : ℕ) : Set ℕ := {c |  ∃ x < N, x = c }
+
+lemma T1_finite (g : ℕ → ℝ)(N : ℕ) : (T1 g N).Finite := by
+  rw[T1]
+  apply BddAbove.finite
+  unfold BddAbove upperBounds Set.Nonempty
+  use N
+  simp only [exists_eq_right, Set.mem_setOf_eq]
+  intros x hx
+  linarith
+
+lemma T1_image(g : ℕ → ℝ)(N : ℕ) :  g '' (T1 g N) = {c| ∃ x < N , g x = c }:= by
+  ext y
+  constructor
+  intro hy
+  simp only [Set.mem_image] at hy
+  obtain ⟨x, hx, hgx⟩ := hy
+  simp only [Set.mem_setOf_eq]
+  rw[T1] at hx
+  simp at hx
+  use x
+  intro hy
+  simp only [Set.mem_setOf_eq] at hy
+  obtain ⟨x,hx, hgx⟩ := hy
+  rw[T1]
+  simp only [exists_eq_right, Set.mem_image, Set.mem_setOf_eq]
+  use x
+
+
+lemma S_Finite (g : ℕ → ℝ)(N : ℕ) : {c| ∃ x < N , g x = c }.Finite := by
+  rw[← T1_image]
+  apply Set.Finite.image
+  apply T1_finite
