@@ -252,28 +252,28 @@ theorem auto_inv_char2 (h : CharP F 2) (A : SO(2, F)) : A= (A⁻¹) := by
 def f (A:SO(2,F)) := A.1 0 0
 
 
-variable {F_2n : Type*} [Field F_2n][Fintype F_2n][char2 :CharP F_2n 2]
+variable {F_2_exp_n : Type*} [Field F_2_exp_n][Fintype F_2_exp_n][char2 :CharP F_2_exp_n 2]
 
-noncomputable def m := Nat.card F_2n
+noncomputable def m := Nat.card F_2_exp_n
 
-theorem auto_inv_char2'  (A : SO(2, F_2n)) : A= (A⁻¹) := by
+theorem auto_inv_char2'  (A : SO(2, F_2_exp_n)) : A= (A⁻¹) := by
   have := auto_inv_char2 (char2) (A)
   exact this
 
 
-instance commGroup : CommGroup (SO(2,F_2n))  where
+instance commGroup : CommGroup (SO(2,F_2_exp_n))  where
 
-  mul_comm (a:SO(2,F_2n)) b := by
+  mul_comm (a:SO(2,F_2_exp_n)) b := by
     rw [ auto_inv_char2' (a*b)]
     simp
     nth_rewrite 2 [auto_inv_char2' b]
     nth_rewrite 2 [auto_inv_char2' a]
     rfl
-#check Additive SO(2,F_2n)
+#check Additive SO(2,F_2_exp_n)
 
--- AddCommGroup.equiv_directSum_zmod_of_fintype (Additive SO(2,F_2n))
+-- AddCommGroup.equiv_directSum_zmod_of_fintype (Additive SO(2,F_2_exp_n))
 
-theorem card_so2_char2  : (Nat.card SO(2,F_2n) = Nat.card F_2n) := by
+theorem card_so2_char2  : (Nat.card SO(2,F_2_exp_n) = Nat.card F_2_exp_n) := by
 refine Nat.card_eq_of_bijective f ?_
 constructor
 · intro A B h
@@ -290,7 +290,7 @@ constructor
     rw[zero_add] at h2
     rw[add_comm]
     exact h2
-  have  : A.1 1 0^2  =(frobenius F_2n 2) (A.1 1 0)  := by
+  have  : A.1 1 0^2  =(frobenius F_2_exp_n 2) (A.1 1 0)  := by
     rfl
   rw[this] at h1A
   have h1B : B.1 1 0 ^2 = 1+ B.1 0 0^2 :=  by
@@ -301,7 +301,7 @@ constructor
     rw[zero_add] at h2
     rw[add_comm]
     exact h2
-  have  : B.1 1 0^2  =(frobenius F_2n 2) (B.1 1 0)  := by
+  have  : B.1 1 0^2  =(frobenius F_2_exp_n 2) (B.1 1 0)  := by
     rfl
   rw[this] at h1B
   have h11 := h
@@ -310,7 +310,7 @@ constructor
   rw[← h1B] at h1A
 
   have h10 : A.1 1 0 = B.1 1 0 := by
-    apply injective_frobenius F_2n 2
+    apply injective_frobenius F_2_exp_n 2
     exact h1A
 
   have h01 :  A.1 0 1 = B.1 0 1 := by
@@ -335,7 +335,7 @@ constructor
   |1,1 =>  exact h11
 
 · intro a
-  have b:= bijective_frobenius F_2n 2
+  have b:= bijective_frobenius F_2_exp_n 2
   have c := b.right
   specialize c (-a^2+1)
   obtain ⟨ b0, hb⟩ := c
@@ -348,7 +348,7 @@ constructor
       change a * a - (-b0) * b0 = 1
       simp
       repeat rw[← pow_two]
-      change a^2 + (frobenius F_2n 2) b0 = 1
+      change a^2 + (frobenius F_2_exp_n 2) b0 = 1
       rw[hb]
       simp
     · have h : a^2 + b0^2 = 1 := by
@@ -378,12 +378,12 @@ constructor
   rfl
 
 
-theorem structure_char2' : ((SO(2,F_2n)) ≃* ZMod (Nat.card F_2n) ) := by
+theorem structure_char2' : ((SO(2,F_2_exp_n)) ≃* ZMod (Nat.card F_2_exp_n) ) := by
 
   sorry
 
 
-theorem structure_char2 : ((Additive SO(2,F_2n)) ≃+ ZMod (Nat.card F_2n) ) := by
+theorem structure_char2 : ((Additive SO(2,F_2_exp_n)) ≃+ ZMod (Nat.card F_2_exp_n) ) := by
   sorry
 
 end  Char2
