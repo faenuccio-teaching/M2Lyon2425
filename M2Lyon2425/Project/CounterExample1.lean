@@ -15,7 +15,7 @@ F : ℝ → ℝ such that
 lim{n → ∞} [F(x + hₙ) - F(x)]/hₙ = f(x). -/
 
 /-Defining the sequence which tends to 0-/
-variable (h : ℕ → ℝ) (h1 : Filter.Tendsto h Filter.atTop (nhds 0))(h2 : h.Injective)(f : ℝ → ℝ)
+variable (h : ℕ → ℝ) (h1 : Filter.Tendsto h Filter.atTop (nhds 0))(h2 : h.Injective)(h3 : ∀ n , h n ≠ 0)(f : ℝ → ℝ)
 /-Some Preliminary Lemmas -/
 
 def T (g : ℕ → ℝ)(S : Set ℝ )(hS :  ∀ (a : ℕ), ∃ b ≥ a, g b ∈ S) : Set ℕ := {c |  ∃(a : ℕ), c = (hS a).choose }
@@ -254,7 +254,6 @@ lemma EalphaUnionEalphai_aux1 (α : Quotient (SR h)) : Set.range (EnumerateEalph
 
 lemma EnumerateEalpha_injective (α : Quotient (SR h)) : Function.Injective (EnumerateEalpha h α) := by
   rw[EnumerateEalpha]
-
   sorry
 
 lemma EalphaUnionEalphai_aux2(α : Quotient (SR h)) : ⟦ EnumerateEalpha h α i ⟧ = α := by
@@ -824,6 +823,7 @@ lemma A_inter_B_empty (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n
 
 def fngenerator (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ) : ℕ := (A_constructor h h1 α m hm).choose
 
+
 def C (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m) : Set ℝ := {EnumerateEalpha h α n} ∪  { EnumerateEalpha h α n + h x | x < (A_constructor h h1 α m hm).choose}
 
 lemma C_union_A_eq_Ealphai (α: Quotient (SR h))(m : ℕ)(hm : m > 0)(n : ℕ)(hn : n ∈ Finset.range m)  :  C h h1 α m hm n hn ∪ A h h1 α m hm n hn = Ealphai h α n:= by
@@ -1108,33 +1108,42 @@ lemma EalphaNumerate_eq_x(x : ℝ) : ∃ m, x = EnumerateEalpha h ((IndexedParti
   use m
   exact hm.symm
 
-def F_Ralpha (α : Quotient (SR h))(x : ℝ){m : ℕ}(hm : x ∈ Ralpha h α m) : ℝ := by
-  if  main : EnumerateEalpha h α m ∈ Ralpha h α m then
-    exact (x - EnumerateEalpha h α m) * f (EnumerateEalpha h α m)
-  else
-    have lem := EnumerateEalpha_mem h α m
-    rw[Set.mem_iUnion] at lem
-    simp at lem
-    have hi1 := lem.choose_spec.1
-    have hi2 := lem.choose_spec.2
-    set i := lem.choose with hi
-    have h4 := Nat.le_of_lt_add_one hi1
-    have h5 : i ≠ m := by
-      by_contra h
-      rw[h] at hi2
-      exact main hi2
-    have h6 : i < m := by
-      rw[Nat.lt_iff_le_and_ne]
-      exact ⟨h4,h5⟩
-    set p := F_Ralpha α (EnumerateEalpha h α m) hi2  with hp
-    exact p + (x - EnumerateEalpha h α m) * f (EnumerateEalpha h α m)
+lemma F_Constructor(α : Quotient (SR h))(m : ℕ)(hm : EnumerateEalpha h α m ∉ Ralpha h α m
+) : ∃i , EnumerateEalpha h α m ∈ Ralpha h α i ∧ i < m := by
+  have lem := EnumerateEalpha_mem h α m
+  rw[Set.mem_iUnion] at lem
+  simp at lem
+  have hi1 := lem.choose_spec.1
+  have hi2 := lem.choose_spec.2
+  set i := lem.choose with hi
+  have h4 := Nat.le_of_lt_add_one hi1
+  have h5 : i ≠ m := by
+    by_contra h
+    rw[h] at hi2
+    exact hm hi2
+  have h6 : i < m := by
+    rw[Nat.lt_iff_le_and_ne]
+    exact ⟨h4,h5⟩
+  use i
 
-def F (x : ℝ) : ℝ := F_Ralpha h f ((IndexedPartiononℝ h).index x) x (Index_out_Ralpha_exists h x).choose_spec.1
+
+def F_Ralpha (m: ℕ)(α : Quotient (SR h))(x : ℝ) : ℝ := by
+  by_cases main : EnumerateEalpha h α m ∈ Ralpha h α m
+  exact (x - EnumerateEalpha h α m) * f (EnumerateEalpha h α m)
+  exact F_Ralpha (F_Constructor h α m main).choose α (EnumerateEalpha h α m)  + (x - EnumerateEalpha h α m) * f (EnumerateEalpha h α m)
+termination_by m
+decreasing_by
+apply (F_Constructor h α m main).choose_spec.2
+
+
+
+
+def F (x : ℝ) : ℝ := F_Ralpha h f (Index_out_Ralpha_exists h x).choose ((IndexedPartiononℝ h).index x) x
 
 def Ft (x : ℝ )(n : ℕ) : ℝ := (F h f ((x + (h n))) - F h f x)/(h n)
 
 include h1 h2
-lemma Main_aux(hm : EnumerateEalpha h α m ∉ Ralpha h α m ) :∀ᶠ x in Filter.atTop, F h f (EnumerateEalpha h α m + h x) = F h f (EnumerateEalpha h α m) + (h x) * f (EnumerateEalpha h α m) := by
+lemma Main_aux1(hm : EnumerateEalpha h α m ∉ Ralpha h α m ) :∀ᶠ x in Filter.atTop, F h f (EnumerateEalpha h α m + h x) = F h f (EnumerateEalpha h α m) + (h x) * f (EnumerateEalpha h α m) := by
   have lem := Ralphanonemptyexistence h h1 h2 α m
   simp at lem
   obtain ⟨N,hN⟩ := lem
@@ -1142,26 +1151,131 @@ lemma Main_aux(hm : EnumerateEalpha h α m ∉ Ralpha h α m ) :∀ᶠ x in Filt
   use N
   intros b hb
   specialize hN b hb
-  have lemα1 : α = (IndexedPartiononℝ h).index (EnumerateEalpha h α m + h b) := by
-
-    sorry
+  have lemα: α = (IndexedPartiononℝ h).index (EnumerateEalpha h α m + h b) := by
+    have lem1 : EnumerateEalpha h α m + h b ∈ E h α := by
+      apply Set.mem_of_subset_of_mem
+      apply RalphasubsetE _ _ m
+      exact hN
+    rw[IndexedPartition.mem_iff_index_eq] at lem1
+    exact lem1.symm
   have lem : m = (Index_out_Ralpha_exists h (EnumerateEalpha h α m + h b)).choose := by
     have h1m1 := (Index_out_Ralpha_exists h (EnumerateEalpha h α m + h b)).choose_spec
     obtain ⟨h1,h2⟩ := h1m1
     set m1 := (Index_out_Ralpha_exists h (EnumerateEalpha h α m + h b)).choose with hm1
-
-    sorry
+    rw[← lemα] at h2
+    specialize h2 m hN
+    assumption
   rw[F,F_Ralpha]
+  rw[←lem,← lemα]
+  simp only [hm, ↓reduceDIte, add_sub_cancel_left, add_left_inj]
+  rw[F.eq_def]
+  set c := (F_Constructor h α m (of_eq_false (eq_false hm))).choose with hc
+  have hb1 : EnumerateEalpha h α m ∈ Ralpha h α c := by
+    apply (F_Constructor h α m (of_eq_false (eq_false hm))).choose_spec.1
+  have ha2 := (Index_out_Ralpha_exists h (EnumerateEalpha h α m )).choose_spec.2
+  specialize ha2 c
+  have lemα1 : (IndexedPartiononℝ h).index (EnumerateEalpha h α m) = α  := by
+    have lem1 : EnumerateEalpha h α m ∈ E h α := by
+      rw[← EalphaUnionEalphai_aux1]
+      simp only [Set.mem_range, exists_apply_eq_apply]
+    rw[IndexedPartition.mem_iff_index_eq] at lem1
+    exact lem1
+  nth_rewrite 1[← lemα1] at hb1
+  specialize ha2 hb1
+  rw[lemα1] at hb1
+  set a := (Index_out_Ralpha_exists h (EnumerateEalpha h α m )).choose with ha
+  rw[lemα1]
+  rw[ha2]
 
-  sorry
+lemma Main_aux2(hm : EnumerateEalpha h α m ∈ Ralpha h α m) : ∀ᶠ x in Filter.atTop, F h f (EnumerateEalpha h α m + h x) = F h f (EnumerateEalpha h α m) + (h x) * f (EnumerateEalpha h α m) := by
+  have lem := Ralphanonemptyexistence h h1 h2 α m
+  simp at lem
+  obtain ⟨N,hN⟩ := lem
+  rw[Filter.eventually_atTop]
+  use N
+  intros b hb
+  specialize hN b hb
+  have lemα: α = (IndexedPartiononℝ h).index (EnumerateEalpha h α m + h b) := by
+    have lem1 : EnumerateEalpha h α m + h b ∈ E h α := by
+      apply Set.mem_of_subset_of_mem
+      apply RalphasubsetE _ _ m
+      exact hN
+    rw[IndexedPartition.mem_iff_index_eq] at lem1
+    exact lem1.symm
+  have lem : m = (Index_out_Ralpha_exists h (EnumerateEalpha h α m + h b)).choose := by
+    have h1m1 := (Index_out_Ralpha_exists h (EnumerateEalpha h α m + h b)).choose_spec
+    obtain ⟨h1,h2⟩ := h1m1
+    set m1 := (Index_out_Ralpha_exists h (EnumerateEalpha h α m + h b)).choose with hm1
+    rw[← lemα] at h2
+    specialize h2 m hN
+    assumption
+  rw[F,F_Ralpha]
+  rw[←lem,← lemα]
+  simp only [hm, ↓reduceDIte, add_sub_cancel_left, self_eq_add_left]
+  have lemα1 : (IndexedPartiononℝ h).index (EnumerateEalpha h α m) = α  := by
+    have lem1 : EnumerateEalpha h α m ∈ E h α := by
+      rw[← EalphaUnionEalphai_aux1]
+      simp only [Set.mem_range, exists_apply_eq_apply]
+    rw[IndexedPartition.mem_iff_index_eq] at lem1
+    exact lem1
+  have lem2 : (Index_out_Ralpha_exists h (EnumerateEalpha h α m)).choose = m := by
+    have h1m1 := (Index_out_Ralpha_exists h (EnumerateEalpha h α m )).choose_spec
+    obtain ⟨h1,h2⟩ := h1m1
+    set m1 := (Index_out_Ralpha_exists h (EnumerateEalpha h α m )).choose with hm1
+    specialize h2 m
+    rw[lemα1] at h2
+    specialize h2 hm
+    exact h2.symm
+  rw[F]
+  set b := (Index_out_Ralpha_exists h (EnumerateEalpha h α m)).choose with hb
+  rw[lem2]
+  simp_rw[lemα1]
+  rw[F_Ralpha]
+  simp[hm]
 
+lemma helper_aux {u : ℕ → ℝ} {x₀ : ℝ} :
+    Filter.Tendsto u Filter.atTop (nhds x₀) ↔
+    ∀ ε > 0, ∃ N, ∀ n ≥ N, u n ∈ Set.Ioo (x₀ - ε) (x₀ + ε) := by
+  rw[Filter.HasBasis.tendsto_iff Filter.atTop_basis (nhds_basis_Ioo_pos x₀)]
+  simp only [Set.mem_Ici, Set.mem_Ioo, true_and, gt_iff_lt, ge_iff_le]
 
+include h3
 theorem MainCounterExampleTheorem(x : ℝ )  : (Filter.Tendsto (Ft h f x) Filter.atTop (nhds (f x))) := by
+  rw[helper_aux h h1 h2]
+  intros ε hε
   have lem := EalphaNumerate_eq_x h x
   obtain ⟨m,hm⟩ := lem
   rw [hm]
+  set α := (IndexedPartiononℝ h).index x with hα
+  by_cases hm1 : EnumerateEalpha h α m ∈ Ralpha h α m
+  ·   have mlem := Main_aux2 h h1 h2 f hm1
+      simp at mlem
+      obtain ⟨N,hN⟩ := mlem
+      use N
+      intros n hn
+      specialize hN n hn
+      rw[Ft,hN]
+      simp only [add_sub_cancel_left, Set.mem_Ioo]
+      have lem1 : h n * f (EnumerateEalpha h α m) / h n = f (EnumerateEalpha h α m):= by
+        rw[div_eq_mul_inv,mul_assoc,mul_comm _ (h n)⁻¹,← mul_assoc ]
+        simp only [isUnit_iff_ne_zero, ne_eq, h3 n, not_false_eq_true, IsUnit.mul_inv_cancel, one_mul]
+      constructor<;>
+      simp [lem1, hε]
+  ·   have mlem := Main_aux1 h h1 h2 f hm1
+      simp at mlem
+      obtain ⟨N,hN⟩ := mlem
+      use N
+      intros n hn
+      specialize hN n hn
+      rw[Ft,hN]
+      simp only [add_sub_cancel_left, Set.mem_Ioo]
+      have lem1 : h n * f (EnumerateEalpha h α m) / h n = f (EnumerateEalpha h α m):= by
+        rw[div_eq_mul_inv,mul_assoc,mul_comm _ (h n)⁻¹,← mul_assoc ]
+        simp only [isUnit_iff_ne_zero, ne_eq, h3 n, not_false_eq_true, IsUnit.mul_inv_cancel, one_mul]
+      constructor<;>
+      simp [lem1, hε]
 
-  sorry
+
 
 
 
