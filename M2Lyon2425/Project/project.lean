@@ -215,6 +215,7 @@ instance IndexedPartiononℝ : IndexedPartition (E h) where
 
 /-We specify that each equivalence class is countable -/
 theorem EalphaCountable (α : Quotient (SR h)) : ((E h) α).Countable := by
+
   rw[E,←Set.countable_coe_iff,countable_iff_exists_injective]
   sorry
 
@@ -226,7 +227,6 @@ theorem Ealphadefault(α : Quotient (SR h)) : ∃ x : ℝ , ⟦x⟧ = α := by
 
 /-Enumeration of the set-/
 def EnumerateEalpha (α : Quotient (SR h)) : ℕ → ℝ := (Set.enumerateCountable (EalphaCountable h α)  (Ealphadefault h α).choose)
-
 
 /-Now we define the function F on ℝpartition-/
 /-Here, ℝ = ⋃ Eᵅ  where α is chosen from a particular Eᵅ  , which becomes our indexing set-/
@@ -316,7 +316,7 @@ lemma EalphaUnionEalphai (α : Quotient (SR h)) : (E h α) = ⋃ i, Ealphai h α
 
 def Ralpha (α : Quotient (SR h))(m : ℕ) : Set ℝ :=  match m with
   | 0 => Ealphai h α 0
-  | i + 1 => Ealphai h α (i + 1) \( ⋃  j ∈ (Finset.range (i+1)).toSet, Ealphai h α j)
+  | y + 1 => Ealphai h α (y + 1) \( ⋃  i ∈ (Finset.range (y+1)).toSet, Ealphai h α i)
 
 /-Prove that there exists some N₀ st. xᵅₘ  + hₙ ∈ Rᵅₘ ∀ n ≥ N₀ -/
 lemma I_constructor (α : Quotient (SR h))(m : ℕ)(n : ℕ)(hn : n ∈ Finset.range (m)) : ¬ (∀ ε > 0, (EnumerateEalpha h α n) ∈  (Metric.closedBall (EnumerateEalpha h α m) ε)) := by
@@ -762,8 +762,31 @@ lemma g_injective (α : Quotient (SR h))(m : ℕ) : (g h α m).Injective := by
   simp only [g, add_right_inj] at hx
   rw[Function.Injective.eq_iff h2] at hx
   exact hx
-omit h2
-include h1
+omit h2 h
+lemma Finset_rearrangement (A : ℕ → Set ℝ): (⋃ i ∈ (Finset.range (y + 1)).toSet, A i) = (⋃ i ∈ (Finset.range y).toSet, A i) ∪ A y := by
+  apply superset_antisymm
+  apply Set.union_subset
+  apply Set.biUnion_subset_biUnion_left
+  simp only [Finset.coe_range, Set.Iio_subset_Iio_iff, le_add_iff_nonneg_right, zero_le]
+  apply Set.subset_biUnion_of_mem
+  simp only [Finset.coe_range, Set.mem_Iio, lt_add_iff_pos_right, zero_lt_one]
+  intros x hx
+  simp only [Finset.coe_range, Set.mem_Iio, Set.mem_iUnion, exists_prop] at hx
+  obtain ⟨i,hx1,hx2⟩ := hx
+  simp only [Finset.coe_range, Set.mem_Iio, Set.mem_union, Set.mem_iUnion, exists_prop]
+  by_cases hi : i = y
+  right
+  rw[← hi]
+  assumption
+  push_neg at hi
+  have triv : i < y := by
+    rw[Nat.lt_succ]  at hx1
+    rw[lt_iff_le_and_ne]
+    exact ⟨hx1,hi⟩
+  left
+  use i
+
+include h h1
 lemma B_subset_I (α: Quotient (SR h))(m : ℕ)(hm : m > 0): B h h1 α m hm ⊆ I h α m hm := by
   intros x hx
   rw[B,Set.mem_setOf_eq] at hx
@@ -909,27 +932,7 @@ lemma B_minus_all_Ealphai_eventually_aux (α: Quotient (SR h))(m : ℕ)(hm : m >
     repeat assumption
   | y + 1 =>
     have lem: ⋃ i ∈ (Finset.range (y + 1 + 1)).toSet, Ealphai h α i = (⋃ i ∈ (Finset.range (y + 1)).toSet, Ealphai h α i ) ∪ Ealphai h α (y+1):= by
-      apply superset_antisymm
-      apply Set.union_subset
-      apply Set.biUnion_subset_biUnion_left
-      simp only [Finset.coe_range, Set.Iio_subset_Iio_iff, le_add_iff_nonneg_right, zero_le]
-      apply Set.subset_biUnion_of_mem
-      simp only [Finset.coe_range, Set.mem_Iio, lt_add_iff_pos_right, zero_lt_one]
-      intros x hx
-      simp only [Finset.coe_range, Set.mem_Iio, Set.mem_iUnion, exists_prop] at hx
-      obtain ⟨i,hx1,hx2⟩ := hx
-      simp only [Finset.coe_range, Set.mem_Iio, Set.mem_union, Set.mem_iUnion, exists_prop]
-      by_cases hi : i = y + 1
-      right
-      rw[← hi]
-      assumption
-      push_neg at hi
-      have triv : i < y + 1 := by
-        rw[Nat.lt_succ]  at hx1
-        rw[lt_iff_le_and_ne]
-        exact ⟨hx1,hi⟩
-      left
-      use i
+      apply Finset_rearrangement
     have triv(A B C : Set ℝ ) : A \ (B ∪ C ) = (A \ B) ∩ (A \ C) := by
       rw[Set.diff_eq_compl_inter,Set.diff_eq_compl_inter,Set.diff_eq_compl_inter,Set.compl_union]
       rw[← Set.inter_assoc ,Set.inter_assoc Bᶜ A Cᶜ,Set.inter_comm A, Set.inter_assoc Bᶜ (Cᶜ ∩ A),Set.inter_assoc Cᶜ ]
@@ -971,16 +974,16 @@ lemma Ralphanonemptyexistence (α : Quotient (SR h))(m : ℕ) : ∀ᶠ x in Filt
     use x
     rw[Ealphai1]
     simp only [Set.mem_singleton_iff]
-  | i + 1 =>
+  | y + 1 =>
     rw[Ralpha]
-    have hm : i + 1 > 0 := by
+    have hm : y + 1 > 0 := by
       linarith
-    have hn : i ∈ Finset.range (i + 1) := by
+    have hn : y ∈ Finset.range (y + 1) := by
       simp only [Finset.mem_range]
       linarith
-    let p(x : ℕ) := EnumerateEalpha h α (i + 1) + h x ∈ B h h1 α (i+1) hm \ ⋃ j ∈ ↑(Finset.range (i + 1)), Ealphai h α j
+    let p(x : ℕ) := EnumerateEalpha h α (y + 1) + h x ∈ B h h1 α (y+1) hm \ ⋃ i ∈ ↑(Finset.range (y + 1)), Ealphai h α i
     have lem : ∀ᶠ x in Filter.atTop, p x := by
-      apply B_minus_all_Ealphai_eventually_aux h h1 h2 α (i + 1) hm i hn
+      apply B_minus_all_Ealphai_eventually_aux h h1 h2 α (y + 1) hm y hn
     apply Filter.Eventually.mono lem
     intro x
     simp_rw[p]
@@ -989,8 +992,178 @@ lemma Ralphanonemptyexistence (α : Quotient (SR h))(m : ℕ) : ∀ᶠ x in Filt
     apply B_subset_Ealphaim
 
 
-lemma RalphaUnionEalphai_aux (α : Quotient (SR h)):⋃ (j : ℕ), Ralpha h α j = ⋃ (i : ℕ ), Ealphai h α i  := by
-   sorry
+omit h1 h2
+lemma RalphaUnionEalphai_aux (α : Quotient (SR h))(m : ℕ):⋃(i ∈ (Finset.range (m + 1)).toSet), Ralpha h α i = ⋃(i ∈ (Finset.range (m + 1)).toSet),Ealphai h α i  := by
+  match m with
+  | 0 =>
+    simp only [zero_add, Finset.range_one, Finset.coe_singleton, Set.mem_singleton_iff,
+      Set.iUnion_iUnion_eq_left]
+    rw[Ralpha]
+  | y + 1 =>
+    have lem: ⋃ i ∈ (Finset.range (y + 1 + 1)).toSet, Ralpha h α i = (⋃ i ∈ (Finset.range (y + 1)).toSet, Ralpha h α i ) ∪ Ralpha h α (y+1):= by
+      apply Finset_rearrangement
+    rw[lem]
+    have lem1 : (⋃ i ∈ (Finset.range (y + 1)).toSet, Ralpha h α i ) = (⋃ i ∈ (Finset.range (y + 1)).toSet,Ealphai h α i) := by
+      apply RalphaUnionEalphai_aux
+    rw[lem1]
+    rw[Ralpha,Set.union_comm,Set.diff_union_self,Set.union_comm]
+    rw[←Finset_rearrangement]
+
+theorem RalphaUnionEalphai (α : Quotient (SR h)):⋃(i : ℕ ), Ralpha h α i = ⋃(i : ℕ ),Ealphai h α i  := by
+  apply superset_antisymm
+  any_goals rw[Set.iUnion_subset_iff]
+  any_goals intro i
+  any_goals have hi : i ∈ (Finset.range (i + 1)).toSet := by
+              simp only [Finset.coe_range, Set.mem_Iio, lt_add_iff_pos_right, zero_lt_one]
+  any_goals trans
+  any_goals apply Set.subset_biUnion_of_mem hi
+  on_goal 1 => rw[← RalphaUnionEalphai_aux]
+  on_goal 2 => rw[RalphaUnionEalphai_aux]
+  all_goals nth_rewrite 2 [← Set.biUnion_univ]
+  all_goals apply Set.biUnion_subset_biUnion_left
+  any_goals simp only [Finset.coe_range, Set.subset_univ]
+
+lemma RalphasubsetE (α : Quotient (SR h))(m : ℕ): Ralpha h α m ⊆ E h α  := by
+  rw[EalphaUnionEalphai,← RalphaUnionEalphai]
+  apply Set.subset_iUnion
+
+
+lemma RalphasubsetEalphai (α : Quotient (SR h))(m : ℕ): Ralpha h α m ⊆ Ealphai h α m := by
+  match m with
+  | 0 =>
+    rw[Ralpha]
+  | y + 1 =>
+    rw[Ralpha]
+    apply Set.diff_subset
+
+theorem RalphaiDisjoint (α : Quotient (SR h)): Pairwise (Disjoint on (Ralpha h α)):= by
+  intros k j hij
+  rw[Function.onFun]
+  wlog hijk : k < j
+  specialize this h α  hij.symm
+  rw[disjoint_comm]
+  apply this
+  simp at hijk
+  rw[lt_iff_le_and_ne]
+  exact ⟨hijk,hij.symm⟩
+  apply Set.disjoint_of_subset_left
+  apply RalphasubsetEalphai
+  match j with
+  | 0 =>
+    simp only [not_lt_zero'] at hijk
+  | y + 1 =>
+    rw[Ralpha]
+    rw[disjoint_comm]
+    have lem : Ealphai h α k ⊆ ⋃ i ∈ (Finset.range (y + 1)).toSet, Ealphai h α i := by
+      apply Set.subset_biUnion_of_mem
+      simp only [Finset.coe_range, Set.mem_Iio]
+      assumption
+    apply Set.disjoint_of_subset_right
+    apply lem
+    apply Set.disjoint_sdiff_left
+
+lemma Index_out_Ralpha_exists (x : ℝ ) : ∃! (i : ℕ), x ∈ Ralpha h ((IndexedPartiononℝ h).index x) i  := by
+  haveI : IndexedPartition (E h) := IndexedPartiononℝ h
+  have lem : x ∈ E h ((IndexedPartiononℝ h).index x):= by
+    apply (IndexedPartiononℝ h).mem_index x
+  rw[EalphaUnionEalphai,← RalphaUnionEalphai,Set.mem_iUnion] at lem
+  obtain ⟨i,hi1⟩ := lem
+  use i
+  constructor
+  exact hi1
+  by_contra h
+  push_neg at h
+  obtain ⟨j,hj1,hj2⟩ := h
+  have hj3 := Set.mem_inter hi1 hj1
+  have lem1 := Set.Nonempty.not_disjoint (Set.nonempty_of_mem hj3)
+  have lem2 := RalphaiDisjoint h ((IndexedPartiononℝ h).index x) hj2.symm
+  rw[Function.onFun] at lem2
+  apply lem1 lem2
+
+def IR (x : ℝ) : ℕ := (Index_out_Ralpha_exists h x).choose
+
+
+lemma EnumerateEalpha_mem(α : Quotient (SR h))(m : ℕ) : EnumerateEalpha h α m ∈ ⋃(i ∈ (Finset.range (m + 1)).toSet), Ralpha h α i := by
+  rw[RalphaUnionEalphai_aux]
+  simp only [Set.mem_iUnion, exists_prop]
+  use m
+  constructor
+  simp only [Finset.coe_range, Set.mem_Iio, lt_add_iff_pos_right, zero_lt_one]
+  rw[Ealphai]
+  simp only [Set.mem_union, Set.mem_iUnion]
+  left
+  rw[Ealpha0]
+  simp only [Set.mem_singleton_iff]
+
+lemma EalphaNumerate_eq_x(x : ℝ) : ∃ m, x = EnumerateEalpha h ((IndexedPartiononℝ h).index x) m := by
+  set α := (IndexedPartiononℝ h).index x with hα
+  have lem : x ∈ E h ((IndexedPartiononℝ h).index x):= by
+    apply (IndexedPartiononℝ h).mem_index x
+  have lem1 : E h α ⊆ Set.range (EnumerateEalpha h α) := by
+    apply Set.subset_range_enumerate
+  have lem2 : x ∈ Set.range (EnumerateEalpha h α) := by
+    apply lem1 lem
+  simp at lem2
+  obtain ⟨m,hm⟩ := lem2
+  use m
+  exact hm.symm
+
+def F_Ralpha (α : Quotient (SR h))(x : ℝ){m : ℕ}(hm : x ∈ Ralpha h α m) : ℝ := by
+  if  main : EnumerateEalpha h α m ∈ Ralpha h α m then
+    exact (x - EnumerateEalpha h α m) * f (EnumerateEalpha h α m)
+  else
+    have lem := EnumerateEalpha_mem h α m
+    rw[Set.mem_iUnion] at lem
+    simp at lem
+    have hi1 := lem.choose_spec.1
+    have hi2 := lem.choose_spec.2
+    set i := lem.choose with hi
+    have h4 := Nat.le_of_lt_add_one hi1
+    have h5 : i ≠ m := by
+      by_contra h
+      rw[h] at hi2
+      exact main hi2
+    have h6 : i < m := by
+      rw[Nat.lt_iff_le_and_ne]
+      exact ⟨h4,h5⟩
+    set p := F_Ralpha α (EnumerateEalpha h α m) hi2  with hp
+    exact p + (x - EnumerateEalpha h α m) * f (EnumerateEalpha h α m)
+
+def F (x : ℝ) : ℝ := F_Ralpha h f ((IndexedPartiononℝ h).index x) x (Index_out_Ralpha_exists h x).choose_spec.1
+
+def Ft (x : ℝ )(n : ℕ) : ℝ := (F h f ((x + (h n))) - F h f x)/(h n)
+
+include h1 h2
+lemma Main_aux(hm : EnumerateEalpha h α m ∉ Ralpha h α m ) :∀ᶠ x in Filter.atTop, F h f (EnumerateEalpha h α m + h x) = F h f (EnumerateEalpha h α m) + (h x) * f (EnumerateEalpha h α m) := by
+  have lem := Ralphanonemptyexistence h h1 h2 α m
+  simp at lem
+  obtain ⟨N,hN⟩ := lem
+  rw[Filter.eventually_atTop]
+  use N
+  intros b hb
+  specialize hN b hb
+  have lemα1 : α = (IndexedPartiononℝ h).index (EnumerateEalpha h α m + h b) := by
+
+    sorry
+  have lem : m = (Index_out_Ralpha_exists h (EnumerateEalpha h α m + h b)).choose := by
+    have h1m1 := (Index_out_Ralpha_exists h (EnumerateEalpha h α m + h b)).choose_spec
+    obtain ⟨h1,h2⟩ := h1m1
+    set m1 := (Index_out_Ralpha_exists h (EnumerateEalpha h α m + h b)).choose with hm1
+
+    sorry
+  rw[F,F_Ralpha]
+
+  sorry
+
+
+theorem MainCounterExampleTheorem(x : ℝ )  : (Filter.Tendsto (Ft h f x) Filter.atTop (nhds (f x))) := by
+  have lem := EalphaNumerate_eq_x h x
+  obtain ⟨m,hm⟩ := lem
+  rw [hm]
+
+  sorry
+
+
 
 
 /- Then choose N₁ st.  Aⱼ = {xᵅⱼ + hₙ, n ≥ N₁} where j≤m and I∩Aⱼ = ∅ ∀ j≤m-1 and Aₘ ⊆ I .-/
