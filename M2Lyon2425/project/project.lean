@@ -38,6 +38,13 @@ lemma F1_closed : IsClosed F1 :=
 lemma F2_closed : IsClosed F2 :=
   isClosed_eq continuous_snd continuous_zero
 
+lemma F1_Nonempty : F1.Nonempty := by
+    refine ⟨⟨1, 1⟩, ?_⟩
+    change 1*1 = 1
+    rw [mul_one]
+
+lemma F2_Nonempty : F2.Nonempty := ⟨⟨0, 0⟩, by rfl⟩
+
 noncomputable instance : Dist (ℝ × ℝ) where
   dist := fun p q ↦ ((q.1 - p.1)^(2 : ℝ) + (q.2 - p.2)^(2 : ℝ))^(1/(2 : ℝ))
 
@@ -45,13 +52,16 @@ def set_dist (A B : Set (ℝ × ℝ)) : Set ℝ := setOf (∃ p ∈ A, ∃ q ∈
 
 noncomputable def distance (A B : Set (ℝ × ℝ)) := sInf (set_dist A B)
 
-lemma set_dist_nonempty : (set_dist F1 F2).Nonempty := by
-  refine ⟨dist (2, 1/2) ((2 : ℝ), (0 : ℝ)), ⟨(2, 1/2), ⟨?_, ⟨(2,0),
-    ⟨(by rw [Set.mem_def]; rfl), rfl⟩⟩⟩⟩⟩
-  change 2 * (1/2) = 1
-  norm_num
+/- Given two subsets A, B of the Euclidean plane, the set of distances between
+points of A and B is nonempty as long as A and B are nonempty. -/
+lemma set_dist_nonempty {A B : Set (ℝ × ℝ)} (hA : A.Nonempty)
+    (hB : B.Nonempty) : (set_dist A B).Nonempty := by
+  obtain ⟨a, hA⟩ := hA
+  obtain ⟨b, hB⟩ := hB
+  exact ⟨dist a b, a, hA, b, hB, by rfl⟩
 
-lemma dist_on_prod_pos : ∀ d ∈ set_dist F1 F2, 0 ≤ d := by
+/- dist is actually a distance. In particular, it's always positive. -/
+lemma dist_on_prod_pos (A B : Set (ℝ × ℝ)) : ∀ d ∈ set_dist A B, 0 ≤ d := by
   rintro a ⟨p, ⟨_, ⟨q, ⟨_, hdist⟩⟩⟩⟩
   rw [← hdist]
   change 0 ≤ ((q.1 - p.1)^2 + (q.2 - p.2)^2)^(1/2)
@@ -59,7 +69,8 @@ lemma dist_on_prod_pos : ∀ d ∈ set_dist F1 F2, 0 ≤ d := by
   exact Real.sqrt_nonneg _
 
 lemma distance_F1_F2_neg : distance F1 F2 ≤ 0 := by
-  rw [distance, Real.sInf_le_iff ⟨0, dist_on_prod_pos⟩ set_dist_nonempty]
+  rw [distance, Real.sInf_le_iff ⟨0, dist_on_prod_pos F1 F2⟩
+    (set_dist_nonempty F1_Nonempty F2_Nonempty)]
   refine fun ε hε ↦ ⟨dist (2 / ε, ε / 2) (2 / ε, 0), ⟨?_, ?_⟩⟩
   · refine ⟨(2 / ε, ε / 2), ⟨?_, ⟨(2 / ε, 0), ⟨(by rw [Set.mem_def]; rfl), rfl⟩⟩⟩⟩
     change (2/ε) * (ε/2) = 1
@@ -72,10 +83,36 @@ lemma distance_F1_F2_neg : distance F1 F2 ≤ 0 := by
     linarith
 
 lemma distance_F1_F2_pos : 0 ≤ distance F1 F2 :=
-  le_csInf set_dist_nonempty dist_on_prod_pos
+  le_csInf (set_dist_nonempty F1_Nonempty F2_Nonempty) (dist_on_prod_pos F1 F2)
 
 lemma distance_F1_F2_eq_zero : distance F1 F2 = 0 :=
   (LE.le.ge_iff_eq distance_F1_F2_neg).1 distance_F1_F2_pos
+
+/- F1 and F2 are a counterexample for the following statement:
+given A and B two subsets of the Euclidean plane, if their distance
+is zero, then they are disjoint. However, the other implication
+is true and is proven below. -/
+lemma dist_eq_zero_of_inter (A B : Set (ℝ × ℝ)) :
+    (A ∩ B).Nonempty → distance A B = 0 := by
+  intro h
+  obtain ⟨x, hx⟩ := h
+  have : dist x x = 0 := by
+    change ((x.1 - x.1)^(2 : ℝ) + (x.2 - x.2)^(2 : ℝ))^(1/(2 : ℝ)) = 0
+    simp only [sub_self, Real.rpow_two, ne_eq, OfNat.ofNat_ne_zero,
+      not_false_eq_true, zero_pow, add_zero, one_div, inv_eq_zero,
+      Real.zero_rpow]
+  have this₂ : BddBelow (set_dist A B) := by
+    rw [bddBelow_def]
+    exact ⟨0, fun d hd ↦ dist_on_prod_pos A B d hd⟩
+  have dist_neg : distance A B ≤ 0 := by
+    rw [distance, Real.sInf_le_iff this₂ (set_dist_nonempty ⟨x, hx.1⟩ ⟨x, hx.2⟩)]
+    intros ε hε
+    exact ⟨dist x x, ⟨x, hx.1, x, hx.2, by rfl⟩, by rwa [this, zero_add]⟩
+  have dist_pos : 0 ≤ distance A B := by
+    rw [distance]
+    exact le_csInf (set_dist_nonempty ⟨x, hx.1⟩ ⟨x, hx.2⟩)
+      (fun b hb ↦ dist_on_prod_pos A B b hb)
+  exact dist_neg.ge_iff_eq.1 dist_pos
 
 -- Counterexample 2: A bounded plane set contained in no minimum closed disk
 
