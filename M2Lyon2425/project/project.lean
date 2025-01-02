@@ -601,6 +601,58 @@ theorem zero_or_one {α : Type*} {S : Set α} (hS : Cardinal.mk S < 2) :
   rwa [← Nat.cast_inj (R := Cardinal), ← Nat.cast_inj (R := Cardinal),
     Nat.cast_zero, Nat.cast_one, ← hm₂] at this
 
+/- 𝒢 is the set of lines which intersect B at two points at least.
+To bound the cardinality of 𝒢, we build an injective map from 𝒢 to B × B: we send
+each line ℒ of 𝒢 to two points of ℒ ∩ B. It's injective because
+given ℒ₁ and ℒ₂ two lines of 𝒢, if they both intersect B at two
+points x and y, then they are equal. -/
+theorem h𝒢_le (B : Set (ℝ × ℝ)) (𝒢 : Set (Set (ℝ × ℝ)))
+    (𝒢_def : 𝒢 = {S | (2 ≤ Nat.card (S ∩ B : Set (ℝ × ℝ)) ∨ ¬(S ∩ B).Finite)
+    ∧ ∃ a b c, S = Line a b c}) :
+    Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := by
+  rw [pow_two (Cardinal.mk B), Cardinal.mul_def]
+  refine Function.Embedding.cardinal_le ⟨fun ℒ ↦ ?_, ?_⟩
+  · have hℒ := ℒ.2
+    simp only [𝒢_def] at hℒ
+    replace hℒ := hℒ.1
+    by_cases hℒ₁ : 2 ≤ Nat.card (ℒ.1 ∩ B : Set (ℝ × ℝ))
+    · by_cases htwo : 2 = Nat.card (ℒ.1 ∩ B : Set (ℝ × ℝ))
+      · have := htwo.symm
+        rw [Nat.card_eq_two_iff] at this
+        let x := this.choose.1
+        have hx := this.choose.2.2
+        let y := this.choose_spec.choose.1
+        have hy := this.choose_spec.choose.2.2
+        exact ⟨⟨x, hx⟩, ⟨y, hy⟩⟩
+      · have := exists_of_two_lt_card (Nat.lt_of_le_of_ne hℒ₁ htwo)
+        let a := this.choose
+        have ha := this.choose_spec.choose_spec.choose_spec.2.2.2.1.2
+        let b := this.choose_spec.choose
+        have hb := this.choose_spec.choose_spec.choose_spec.2.2.2.2.1.2
+        exact ⟨⟨a, ha⟩, ⟨b, hb⟩⟩
+    · rw [or_iff_right hℒ₁] at hℒ
+      have this := Set.Infinite.exists_subset_card_eq hℒ 3
+      have ht' := this.choose_spec.1
+      have ht₂ : 2 < this.choose.card := by
+        rw [this.choose_spec.2]
+        exact Nat.lt_add_one 2
+      rw [← Nat.card_eq_finsetCard] at ht₂
+      have ht₃ := exists_of_two_lt_card ht₂
+      let a := ht₃.choose
+      have ha := (ht' ht₃.choose_spec.choose_spec.choose_spec.2.2.2.1).2
+      let b := ht₃.choose_spec.choose
+      have hb := (ht' ht₃.choose_spec.choose_spec.choose_spec.2.2.2.2.1).2
+      exact ⟨⟨a, ha⟩, ⟨b, hb⟩⟩
+  · intros a₁ a₂ h
+    by_cases ha₁ : 2 ≤ Nat.card (a₁ ∩ B : Set (ℝ × ℝ))
+    · by_cases htwo : 2 = Nat.card (a₁ ∩ B : Set (ℝ × ℝ))
+      · simp only [ha₁, htwo, le_refl (Nat.card (a₁ ∩ B : Set (ℝ × ℝ)))] at h
+        dsimp at h
+        sorry
+      · sorry
+    · sorry
+
+
 /- To construct a two-point set, we will start by building a sequence {A_ξ | ξ < c}
 of subsets of the Euclidean plane. This sequence will be such that ⋃ δ ≤ ξ, A_δ
 will contain exactly two points of L_ξ (the line indexed by ξ).
@@ -627,7 +679,7 @@ theorem fae (ξ : ordinals_lt c)
   set B := ⋃₀ Set.range (fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, lt_trans ζ.2.out ξ.2⟩) with hB
   have hB_le : Cardinal.mk B < Cardinal.continuum := Cardinal.mk_sUnion_lt_continuum ξ A₀ hA₀
   let 𝒢 := {S | (2 ≤ Nat.card ↑(S ∩ B) ∨ ¬(Set.Finite ↑(S ∩ B))) ∧ ∃ a b c, S = Line a b c}
-  have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := sorry
+  have h𝒢_le : Cardinal.mk 𝒢 ≤ (Cardinal.mk B)^2 := h𝒢_le B 𝒢 (by rfl)
   have h𝒢_le₂ : Cardinal.mk 𝒢 < Cardinal.continuum := sorry -- or directly < Cardinal.continuum
   --(instead of proving h𝒢_le first)
   set n := Nat.card (B ∩ (Lines ξ) : Set (ℝ × ℝ)) with ndef -- Nat.card or Cardinal.mk?
