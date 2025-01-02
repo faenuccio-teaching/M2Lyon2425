@@ -601,6 +601,24 @@ theorem zero_or_one {α : Type*} {S : Set α} (hS : Cardinal.mk S < 2) :
   rwa [← Nat.cast_inj (R := Cardinal), ← Nat.cast_inj (R := Cardinal),
     Nat.cast_zero, Nat.cast_one, ← hm₂] at this
 
+/- To construct a two-point set, we will start by building a sequence {A_ξ | ξ < c}
+of subsets of the Euclidean plane. This sequence will be such that ⋃ δ ≤ ξ, A_δ
+will contain exactly two points of L_ξ (the line indexed by ξ).
+Then, ⋃ ξ < c, A_ξ will contain exactly two points of all lines of the plane.
+
+To construct the sequence, we suppose the sequence {A_ζ | ζ < ξ} has already been
+constructed and we choose A_ξ. There are three cases:
+-L_ξ intersects ⋃ ζ < ξ, A_ζ in exactly 2 points.
+In this case, we pick A_ξ to be the empty set.
+So, ⋃ ζ ≤ ξ, A_ζ will contain exactly 2 points from L_ξ
+-L_ξ intersects ⋃ ζ < ξ, A_ζ in exactly 1 point.
+In this case, A_ξ is a singleton set : we pick the point from L_ξ but it
+shouldn't belong to a line which intersects ⋃ ζ < ξ, A_ζ in two points or more.
+Otherwise, there's a clash with the condition (P).
+-L_ξ doesn't intersect ⋃ ζ < ξ, A_ζ
+In this case, we pick A_ξ = {x, y} where x, y are chosen from L_ξ in the same manner.
+
+"fae" is the construction of the sequence. -/
 theorem fae (ξ : ordinals_lt c)
   (H : ∃ A₀ : ordinals_lt c → Set (ℝ × ℝ), ∀ (ζ : ordinals_lt ξ), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
     ∃ A : ordinals_lt c → Set (ℝ × ℝ),
