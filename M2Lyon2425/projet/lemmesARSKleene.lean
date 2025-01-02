@@ -311,3 +311,24 @@ lemma lubEquiv_contains_kstar {f g : ARS α} : g ≤ f≡ → g∗ ≤ f≡ := b
   intro hyp
   rw [lubEquiv, ← kstar_idem f⇔, ← lubEquiv]
   exact kstar_mono hyp
+
+lemma lubEquiv_contains_BandF {f : ARS α} {a b c : α} (hfab : f∗ a b) (hfac : f∗ a c) :
+  (f≡) b c := by
+    let nab := hfab.choose
+    have hnab := hfab.choose_spec
+    let nac := hfac.choose
+    have hnac := hfac.choose_spec
+    use nab+nac
+    rw [pow_add]
+    use a
+    constructor
+    · have ineq : f⇐ ≤ f⇔ := by simp only [add_eq_sup, le_sup_right]
+      have implication : f⇐ ^ nab ≤ f⇔ ^ nab := topown_mono nab ineq
+      have : (f⇐ ^ nab) b a := by
+        rw [inv_pow_eq_pow_inv, inverse]
+        exact hnab
+      exact ARS.le_iff_imp.mp implication b a this
+    · have ineq : f ≤ f⇔ := by simp only [add_eq_sup, le_sup_left]
+      have implication : f ^ nac ≤ f⇔ ^ nac := topown_mono nac ineq
+      have : (f ^ nac) a c := hnac
+      exact ARS.le_iff_imp.mp implication a c this
