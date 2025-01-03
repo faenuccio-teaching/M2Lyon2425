@@ -14,7 +14,7 @@ import Mathlib.Data.Nat.Prime.Defs
 #check MulAction
 #print Subgroup.subgroupOf
 variable (p:ℕ ) ( hp : Nat.Prime p)
-
+/- j'ai repris des définitions données dans les cours sur les groupes-/
 def conjugate {G : Type*} [Group G] (x : G) (H : Subgroup G) : Subgroup G where
   carrier := {a : G | ∃ h, h ∈ H ∧ a = x * h * x⁻¹}
   one_mem' := by
@@ -34,30 +34,30 @@ def conjugate {G : Type*} [Group G] (x : G) (H : Subgroup G) : Subgroup G where
     obtain ⟨h₂, mem₂, cond₂⟩ := hy
     use h₁ * h₂, H.mul_mem mem₁ mem₂
     rw [cond₁, cond₂]; group
+def Subgroup.Setoid {G : Type*} [Group G](B : Subgroup G) : Setoid G  where
+  r := fun x y ↦ x*y⁻¹ ∈ B
+  iseqv := {
+    refl := by sorry
+    symm := by sorry
+    trans := by sorry
+  }
+/--une définition des sylow sous forme d'une prop-/
 structure IsSylow  (G : Type*)  [Group G] (H : Subgroup G): Prop where
   isPgroup : ∃ k : ℕ , Nat.card H = p^k
   isMaximal : ¬ (p ∣  H.index )
 
-
-#print IsSylow
-
-
-
--- MulAction.mulLeftCosetsCompSubtypeVal (Sylow.toSubgroup S) H
-#check  MulAction.mulLeftCosetsCompSubtypeVal
-theorem stab {G : Type*} [Group G] (H : Subgroup G) (S : Sylow  p G)  (h : H) [MulAction H (G⧸(Sylow.toSubgroup S))]:
-    MulAction.stabilizer H  h  =  Subgroup.subgroupOf (conjugate  (h : G) (Sylow.toSubgroup S)) H := by
-  ext x
-  simp
+/-- dans la prop 2.2 , le fait que le stabilisateurs des point de X sous l'action de H sont de la forme H ∩ gSg⁻¹-/
+theorem stab {G : Type*} [Group G] (H : Subgroup G) (S : Sylow  p G)  (h : H) :
+    MulAction.stabilizer H  (Quotient.mk   (Subgroup.Setoid (Sylow.toSubgroup S)) h)   =  Subgroup.subgroupOf (conjugate  (h : G) (Sylow.toSubgroup S)) H := by sorry
 
 
-#check Nonempty
+/-- prop 2.2-/
 theorem sylow_of_subgroup {G : Type*} [Group G]  (H : Subgroup G) (S : Sylow  p G) :
   ∃ g : G , IsSylow p H ( Subgroup.subgroupOf  (conjugate g (Sylow.toSubgroup S)) H)  := by sorry
 
 
 
-
+/-- tout sous groupe d'un groupe admettant un p-sylow admet lui aussi un p-sylow (corollaire 2.3)-/
 theorem exist_sylow_of_subgroup {G : Type*} [Group G] (H : Subgroup G) ( S : Sylow p G)  : Nonempty (Sylow p H) := by
   obtain ⟨ w , hw ⟩ := sylow_of_subgroup  ( p : ℕ ) (H : Subgroup G) (S : Sylow  p G)
   use Subgroup.subgroupOf  (conjugate w (Sylow.toSubgroup S)) H
