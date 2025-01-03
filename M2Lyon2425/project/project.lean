@@ -7,6 +7,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.SetTheory.Cardinal.Continuum
 import Mathlib.Data.Real.Cardinality
 import Mathlib.Data.Set.Card
+import Mathlib.Analysis.MeanInequalities
 
 /-- Goal of the project: formalize the counterexamples of the chapter 10
 of the book "Counterexamples in Analysis" by Bernard R. Gelbaum and
@@ -46,7 +47,67 @@ lemma F1_Nonempty : F1.Nonempty := by
 lemma F2_Nonempty : F2.Nonempty := ⟨⟨0, 0⟩, by rfl⟩
 
 noncomputable instance : Dist (ℝ × ℝ) where
-  dist := fun p q ↦ ((q.1 - p.1)^(2 : ℝ) + (q.2 - p.2)^(2 : ℝ))^(1/(2 : ℝ))
+  dist := fun p q ↦ ((q.1 - p.1)^(2 : ℕ) + (q.2 - p.2)^(2 : ℕ))^(1/(2 : ℝ))
+
+/- The Euclidean distance is symmetric. -/
+lemma Euclidean_dist_comm : ∀ (p q : ℝ × ℝ), dist p q = dist q p := by
+  intros p q
+  change ((q.1 - p.1)^(2 : ℕ) + (q.2 - p.2)^(2 : ℕ))^(1/(2 : ℝ)) =
+    ((p.1 - q.1)^(2 : ℕ) + (p.2 - q.2)^(2 : ℕ))^(1/(2 : ℝ))
+  rw [← even_two.pow_abs, ← even_two.pow_abs (q.2 - p.2), abs_sub_comm,
+    abs_sub_comm q.2 p.2, even_two.pow_abs, even_two.pow_abs]
+
+/- A special case of Minkowski's inequality. We need it to prove
+the triangle inequality for the Euclidean distance. -/
+lemma minkowski (x y z : ℝ × ℝ) : ((dist z.1 y.1 + dist y.1 x.1) ^ 2
+    + (dist z.2 y.2 + dist y.2 x.2) ^ 2)^(1/(2 : ℝ)) ≤
+    (dist z.1 y.1 ^ 2 + dist z.2 y.2 ^ 2)^(1/(2 : ℝ))
+    + (dist y.1 x.1 ^ 2 + dist y.2 x.2 ^ 2)^(1/(2 : ℝ)) := by
+  set s := ({0,1} : Set ℝ).toFinset with hs
+  set f := fun (t : ℝ) ↦ if t = 0 then dist z.1 y.1 else dist z.2 y.2
+    with f_def
+  set g := fun (t : ℝ) ↦ if t = 0 then dist y.1 x.1 else dist y.2 x.2
+    with g_def
+  have hfg : ∑ i ∈ s, |f i + g i| ^ (2 : ℝ) =
+      (dist z.1 y.1 + dist y.1 x.1) ^ 2 + (dist z.2 y.2 + dist y.2 x.2) ^ 2 := by
+    rw [f_def, g_def, hs]
+    field_simp
+  have hf : ∑ i ∈ s, |f i| ^ (2 : ℝ) = dist z.1 y.1 ^ 2 + dist z.2 y.2 ^ 2 := by
+    rw [f_def, hs]
+    field_simp
+  have hg : ∑ i ∈ s, |g i| ^ (2 : ℝ) = dist y.1 x.1 ^ 2 + dist y.2 x.2 ^ 2 := by
+    rw [g_def, hs]
+    field_simp
+  rw [← hfg, ← hf, ← hg]
+  exact Real.Lp_add_le s f g one_le_two
+
+/- The triangle inequality holds for the Euclidean distance. -/
+lemma Euclidean_dist_triangle :
+    ∀ (x y z : ℝ × ℝ), dist x z ≤ dist x y + dist y z := by
+  intros x y z
+  change ((z.1 - x.1)^(2 : ℕ) + (z.2 - x.2)^(2 : ℕ))^(1/(2 : ℝ)) ≤
+    ((y.1 - x.1)^(2 : ℕ) + (y.2 - x.2)^(2 : ℕ))^(1/(2 : ℝ)) +
+    ((z.1 - y.1)^(2 : ℕ) + (z.2 - y.2)^(2 : ℕ))^(1/(2 : ℝ))
+  rw [← even_two.pow_abs, ← even_two.pow_abs (z.2 - x.2)]
+  have := dist_triangle z.1 y.1 x.1
+  have h : dist z.1 x.1 ^ 2 ≤ (dist z.1 y.1 + dist y.1 x.1) ^ 2 := by
+    rwa [← pow_le_pow_iff_left dist_nonneg
+    (Left.add_nonneg dist_nonneg dist_nonneg)
+    (Nat.zero_ne_add_one 1).symm] at this
+  have := dist_triangle z.2 y.2 x.2
+  have h₂ : dist z.2 x.2 ^ 2 ≤ (dist z.2 y.2 + dist y.2 x.2) ^ 2 := by
+    rwa [← pow_le_pow_iff_left dist_nonneg
+    (Left.add_nonneg dist_nonneg dist_nonneg)
+    (Nat.zero_ne_add_one 1).symm] at this
+  have h₃ : (dist z.1 x.1 ^ 2 + dist z.2 x.2 ^ 2)^(1/(2 : ℝ)) ≤
+      ((dist z.1 y.1 + dist y.1 x.1) ^ 2 + (dist z.2 y.2
+      + dist y.2 x.2) ^ 2)^(1/(2 : ℝ)) := by
+    simp only [← Real.sqrt_eq_rpow]
+    exact Real.sqrt_le_sqrt (add_le_add h h₂)
+  rw [← even_two.pow_abs (y.1 - x.1), ← even_two.pow_abs (y.2 - x.2),
+    ← even_two.pow_abs (z.1 - y.1), ← even_two.pow_abs (z.2 - y.2),
+    add_comm ((|y.1 - x.1| ^ 2 + |y.2 - x.2| ^ 2) ^ (1 / 2)) _]
+  exact h₃.trans (minkowski x y z)
 
 def set_dist (A B : Set (ℝ × ℝ)) : Set ℝ := setOf (∃ p ∈ A, ∃ q ∈ B, dist p q = ·)
 
@@ -77,10 +138,11 @@ lemma distance_F1_F2_neg : distance F1 F2 ≤ 0 := by
     norm_num
     exact div_self (ne_of_gt hε)
   · change ((2/ε - 2/ε)^2 + (0 - ε/2)^2)^(1/2) < 0 + ε
-    rw [zero_add, sub_self, zero_sub, Real.zero_rpow two_ne_zero, zero_add, Real.rpow_two,
-    Even.neg_pow even_two, ← Real.sqrt_eq_rpow, Real.sqrt_sq, half_lt_self_iff]
+    rw [sub_self, zero_pow, zero_add, zero_sub, Even.neg_pow, zero_add, ← Real.sqrt_eq_rpow]
+    field_simp
     exact hε
-    linarith
+    exact Nat.even_iff.2 (by rfl)
+    exact (Nat.zero_ne_add_one 1).symm
 
 lemma distance_F1_F2_pos : 0 ≤ distance F1 F2 :=
   le_csInf (set_dist_nonempty F1_Nonempty F2_Nonempty) (dist_on_prod_pos F1 F2)
@@ -97,10 +159,9 @@ lemma dist_eq_zero_of_inter (A B : Set (ℝ × ℝ)) :
   intro h
   obtain ⟨x, hx⟩ := h
   have : dist x x = 0 := by
-    change ((x.1 - x.1)^(2 : ℝ) + (x.2 - x.2)^(2 : ℝ))^(1/(2 : ℝ)) = 0
-    simp only [sub_self, Real.rpow_two, ne_eq, OfNat.ofNat_ne_zero,
-      not_false_eq_true, zero_pow, add_zero, one_div, inv_eq_zero,
-      Real.zero_rpow]
+    change ((x.1 - x.1)^(2 : ℕ) + (x.2 - x.2)^(2 : ℕ))^(1/(2 : ℝ)) = 0
+    simp only [sub_self, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+      zero_pow, add_zero, one_div, inv_eq_zero, Real.zero_rpow]
   have this₂ : BddBelow (set_dist A B) := by
     rw [bddBelow_def]
     exact ⟨0, fun d hd ↦ dist_on_prod_pos A B d hd⟩
