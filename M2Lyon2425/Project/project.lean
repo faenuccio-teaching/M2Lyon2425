@@ -31,7 +31,6 @@ at `s` on `G → k` and by `α` the projection map from `Aut (F k G)` to the
 <https://math.leidenuniv.nl/scripties/1bachCommelin.pdf>
 -/
 
-
 noncomputable section
 
 open CategoryTheory
@@ -69,12 +68,13 @@ end FinRep
 
 variable (k G)
 
-def Fmon :
-    MonoidalFunctor (FinRep k G) (ModuleCat k) :=
+noncomputable def Fmon : MonoidalFunctor (FinRep k G) (ModuleCat k) :=
   (fullMonoidalSubcategoryInclusion _).comp (Action.forgetMonoidal _ _)
 
 /-- The (monoidal) forgetful functor from `FinRep k G` to `ModuleCat k` -/
 def F := (Fmon k G).toLaxMonoidalFunctor
+
+lemma F_μ {X Y : FinRep k G} : (F k G).μ X Y = 𝟙 _ := rfl
 
 /-- Type of (monoidal) automorphisms of `F k G` -/
 abbrev AutF := Aut (F k G)
@@ -94,60 +94,47 @@ variable {k G}
 namespace AutF
 
 def nat {X Y : FinRep k G} (f : X ⟶ Y) :
-    (η Y).comp f.hom = f.hom.comp (η X) := by
-  rw [← @ModuleCat.comp_def, ← @ModuleCat.comp_def]
-  exact η.hom.naturality f
+    (η Y).comp f.hom = f.hom.comp (η X) := η.hom.naturality f
 
 lemma apply : η X = η.hom.app X := rfl
 
 lemma tensor {X Y : FinRep k G} : η (X ⊗ Y) = (η X) ⊗ (η Y) := by
-  rw [apply, apply, apply]
+  simp only [apply]
   have := η.hom.tensor X Y
-  simp only [Category.id_comp, Category.comp_id] at this
+  simp only [F_μ, Category.id_comp, Category.comp_id] at this
   exact this
 
 end AutF
 
 /-- Definition of `T g : AutF k G` by its components -/
-def Tapp (g : G) (X : FinRep k G) : (F k G).obj X ≅ (F k G).obj X where
-  hom := {
-    toFun := X.ρ g
-    map_add' := fun _ _ ↦ LinearMap.map_add _ _ _
-    map_smul' := fun _ _ ↦ LinearMap.CompatibleSMul.map_smul _ _ _
-  }
-  inv := {
-    toFun := X.ρ g⁻¹
-    map_add' := fun _ _ ↦ LinearMap.map_add _ _ _
-    map_smul' := fun _ _ ↦ LinearMap.CompatibleSMul.map_smul _ _ _
-  }
-  hom_inv_id := ModuleCat.ext _ fun _ ↦ Rep.ρ_inv_self_apply _ _ _
-  inv_hom_id := ModuleCat.ext _ fun _ ↦ Rep.ρ_self_inv_apply _ _
-
-lemma Tapp_hom (g : G) (X : FinRep k G) :
-    (Tapp g X).hom = X.ρ g := rfl
+def T_app (g : G) (X : FinRep k G) : X.V ≅ X.V where
+  hom := X.ρ g
+  inv := X.ρ g⁻¹
+  hom_inv_id := ModuleCat.ext k fun x ↦ Rep.ρ_inv_self_apply X.obj g x
+  inv_hom_id := ModuleCat.ext k fun x ↦ Rep.ρ_self_inv_apply g x
 
 /-- The function defining `T` -/
-def T_app : G → AutF k G := by
+def T_fun : G → AutF k G := by
   intro g
-  apply MonoidalNatIso.ofComponents (Tapp g) ?_
+  apply MonoidalNatIso.ofComponents (T_app g) ?_
   intro _ _ f
-  exact (f.comm _).symm
+  exact (f.comm g).symm
 
 lemma T_apply (g : G) (X : FinRep k G) :
-    (T_app g).hom.app X = X.ρ g := rfl
+    (T_fun g).hom.app X = X.ρ g := rfl
 
 variable (k G) in
 /-- The group homomorphism `G →* AutF k G` involved in the main theorem -/
 def T : G →* AutF k G where
-  toFun := T_app
+  toFun := T_fun
   map_one' := by
     ext
-    simp only [T_apply, Tapp_hom, map_one]
+    simp only [T_apply, map_one]
     exact rfl
   map_mul' := by
     intros
     ext
-    simp only [T_apply, Tapp_hom, map_mul]
+    simp only [T_apply, map_mul]
     exact rfl
 
 end Defs
@@ -203,15 +190,10 @@ lemma e_eq_iff (s t u v : G) : (e s t = (e u v : k)) ↔ (s = t ↔ u = v) := by
     · rw [h', e_self, h.mp h', e_self]
     · rw [e_not_self h', e_not_self (h' ∘ h.mpr)]
 
-lemma e_mul₁_eq_mul₂ [Group G] (s t u : G) :
+lemma e_right_mul [Group G] (s t u : G) :
     e t (u * s) = (e (t * s⁻¹) u : k) := by
   rw [e_eq_iff]
   exact mul_inv_eq_iff_eq_mul.symm
-
-lemma e_mul₁_eq_mul₂' [Group G] (s t u : G) :
-    e t (s⁻¹ * u) = (e (s * t) u : k) := by
-  rw [e_eq_iff]
-  exact eq_inv_mul_iff_mul_eq
 
 lemma e_fun_eq {s t : G} (h : e s = (e t : G → k)) : s = t :=
   (e_eq (congrFun h s) rfl).symm
@@ -237,107 +219,97 @@ def r (s : G) (g : G) : G := g * s
 /-- Multiplication map on `G` on the left -/
 def l (s : G) (g : G) : G := s * g
 /-- `τᵣ` as a function -/
-def τᵣ_app (s : G) (f : G → k) : (G → k) := f ∘ (r s)
+def τᵣ_fun (s : G) (f : G → k) : (G → k) := f ∘ (r s)
 /-- `τₗ` as a function -/
-def τₗ_app (s : G) (f : G → k) : (G → k) := f ∘ (l s⁻¹)
-
-attribute [reducible] r l
+def τₗ_fun (s : G) (f : G → k) : (G → k) := f ∘ (l s⁻¹)
 
 lemma e_r [DecidableEq G] (s t : G) :
     (e s) ∘ (r t) = (e (s * t⁻¹) : G → k) := by
   ext u
   rw [Function.comp_apply]
-  exact e_mul₁_eq_mul₂ t s u
+  exact e_right_mul t s u
 
 /-- `τᵣ` as a `LinearMap` -/
-def τᵣ_applin (s : G) : (G → k) →ₗ[k] (G → k) where
-  toFun := τᵣ_app s
+def τᵣ_linmap (s : G) : (G → k) →ₗ[k] (G → k) where
+  toFun := τᵣ_fun s
   map_add' _ _ := rfl
   map_smul' _ _ := rfl
 
 /-- `τₗ` as a `LinearMap` -/
-def τₗ_applin (s : G) : (G → k) →ₗ[k] (G → k) where
-  toFun := τₗ_app s
+def τₗ_linmap (s : G) : (G → k) →ₗ[k] (G → k) where
+  toFun := τₗ_fun s
   map_add' _ _ := rfl
   map_smul' _ _ := rfl
 
-variable (k G) in
 /-- The representation on `G → k` induced by
 multiplication on the right in `G` -/
 def τᵣ : Representation k G (G → k) where
-  toFun := τᵣ_applin
+  toFun := τᵣ_linmap
   map_one' := by
     ext
     simp only [LinearMap.one_apply, LinearMap.coe_mk, AddHom.coe_mk,
-    τᵣ_app, τᵣ_applin, Function.comp_apply, r, mul_one]
+    τᵣ_fun, τᵣ_linmap, Function.comp_apply, r, mul_one]
   map_mul' _ _ := by
     ext
     simp only [LinearMap.one_apply, LinearMap.coe_mk, AddHom.coe_mk,
-    τᵣ_app, τᵣ_applin, Function.comp_apply, r, LinearMap.mul_apply]
+    τᵣ_fun, τᵣ_linmap, Function.comp_apply, r, LinearMap.mul_apply]
     rw [mul_assoc]
 
 lemma τᵣ_apply (s : G) (f : G → k) (t : G) :
-    ((τᵣ k G) s) f t = f (t * s) := rfl
+    τᵣ s f t = f (t * s) := rfl
 
-lemma τᵣ_e [DecidableEq G] (s t : G) : (τᵣ k G s) (e t) = e (t * s⁻¹) := by
+lemma τᵣ_e [DecidableEq G] (s t : G) : (τᵣ s (e t) : G → k) = e (t * s⁻¹) := by
   ext u
   simp_all only [τᵣ_apply]
-  exact e_mul₁_eq_mul₂ s t u
+  exact e_right_mul s t u
 
-variable (k G) in
 /-- The representation on `G → k` induced by
 multiplication on the left in `G` -/
 def τₗ : Representation k G (G → k) where
-  toFun := τₗ_applin
+  toFun := τₗ_linmap
   map_one' := by
     ext
     simp only [LinearMap.one_apply, LinearMap.coe_mk, AddHom.coe_mk,
-    τₗ_app, τₗ_applin, Function.comp_apply, one_mul, inv_one]
+    τₗ_fun, τₗ_linmap, Function.comp_apply, l, one_mul, inv_one]
   map_mul' _ _ := by
     ext
     simp only [LinearMap.one_apply, LinearMap.coe_mk, AddHom.coe_mk,
-    τₗ_app, τₗ_applin, Function.comp_apply, l, LinearMap.mul_apply]
+    τₗ_fun, τₗ_linmap, Function.comp_apply, l, LinearMap.mul_apply]
     rw [mul_inv_rev, mul_assoc]
 
 lemma τₗ_apply (s : G) (f : G → k) (t : G) :
-    ((τₗ k G) s) f t = f (s⁻¹ * t) := rfl
+    τₗ s f t = f (s⁻¹ * t) := rfl
 
 variable (k G) in
-/-- The representation `(G → k, τᵣ)` induced by multiplication
+/-- The representation `⟨G → k, τᵣ⟩` induced by multiplication
 on the right in `G` as a `Rep k G` -/
 def rep_r : Rep k G where
   V := ModuleCat.mk (G → k)
-  ρ := τᵣ k G
+  ρ := τᵣ
 
 variable [Fintype G]
 
 variable (k G) in
-/-- The representation `(G → k, τᵣ)` induced by multiplication on
+/-- The representation `⟨G → k, τᵣ⟩` induced by multiplication on
 the right in `G` as a `FinRep k G` -/
 def finrep_r : FinRep k G where
   obj := rep_r k G
   property := FiniteDimensional.finiteDimensional_pi k
 
-lemma finrep_r_ρ : (finrep_r k G).ρ = τᵣ k G := rfl
+lemma finrep_r_ρ : (finrep_r k G).ρ = τᵣ := rfl
 
 variable (k G) in
-/-- The representation `(G → k, τₗ)` induced by multiplication on
+/-- The representation `⟨G → k, τₗ⟩` induced by multiplication on
 the left in `G` as a `FinRep k G` -/
 def finrep_l : FinRep k G where
   obj := {
     V := ModuleCat.mk (G → k)
-    ρ := τₗ k G
+    ρ := τₗ
   }
   property := FiniteDimensional.finiteDimensional_pi k
 
-/-- Evaluation function of `η : AutF k G` at `finrep_r k G` -/
-@[reducible]
-def α (η : AutF k G) := η (finrep_r k G)
-
-/-- Evaluation function of `η : AutF k G` at `finrep_r k G` -/
-def α_map (η : AutF k G) : (G → k) → (G → k) := α η
-
-lemma α_map_def (η : AutF k G) : α_map η = α η := rfl
+/-- Component of `η : AutF k G` at `finrep_r k G` as a linear map -/
+def α (η : AutF k G) : (G → k) →ₗ[k] G → k := η (finrep_r k G)
 
 end finrep_r
 
@@ -350,8 +322,7 @@ lemma T_inj : Function.Injective (T k G) := by
   rw [injective_iff_map_eq_one]
   intro s h
   apply_fun α at h
-  simp only [MonoidHom.coe_mk, OneHom.coe_mk, AutF.apply,
-  T_apply, finrep_r_ρ] at h
+  simp only [AutF.apply, α] at h
   replace h : (e 1) (1 * s) = e 1 1 :=
     congrFun (congrFun (congrArg DFunLike.coe h) (e 1)) 1
   rw [e_self, one_mul] at h
@@ -365,19 +336,19 @@ lemma one_eq_sum_e {k G : Type u} [Field k] [DecidableEq G] [Fintype G] :
     ∑ (s : G), e s = (1 : G → k) := by
   ext1 x
   simp_all only [Finset.sum_apply, Finset.sum_ite_eq, Finset.mem_univ,
-  ↓reduceIte, Pi.one_apply]
+    ↓reduceIte, Pi.one_apply]
 
 
 -- *lemma 4.5*
 lemma lem5 {G : Type u} [DecidableEq G] [Fintype G]
     (φ : ((G → k)) →ₐ[k] k) :
     ∃ (s : G), φ = π s := by
-  have h1 : φ 1 = 1 := map_one φ
+  have h1 := map_one φ
   obtain ⟨s, hs⟩ : ∃ (s : G), φ (e s) ≠ 0 := by
     rw [← one_eq_sum_e] at h1
     by_contra
-    simp_all only [map_sum, ne_eq, not_exists, not_not, Finset.sum_const_zero,
-    zero_ne_one]
+    simp_all only [map_sum, ne_eq, not_exists, not_not,
+      Finset.sum_const_zero, zero_ne_one]
   have h2 : φ (1 - (e s)) = 0 := by
     suffices h : ((1 : G → k) - (e s)) * (e s) = 0 by
       apply_fun φ at h
@@ -407,35 +378,34 @@ end lemma5
 section lemma6
 
 /-- The LinearMap induced by multiplication on `G → k` -/
-def μ_lin : TensorProduct k (G → k) (G → k) →ₗ[k] (G → k) := by
-  refine TensorProduct.lift ?_
+def μ_linmap : TensorProduct k (G → k) (G → k) →ₗ[k] (G → k) := by
+  apply TensorProduct.lift
   apply LinearMap.mk₂ k (fun (f g : G → k) ↦ f * g)
-  exact fun m₁ m₂ n ↦ right_distrib m₁ m₂ n
-  exact fun c m n ↦ smul_mul_assoc c m n
-  exact fun m n₁ n₂ ↦ left_distrib m n₁ n₂
-  exact fun c m n ↦ mul_smul_comm c m n
+  exact right_distrib
+  exact smul_mul_assoc
+  exact left_distrib
+  exact mul_smul_comm
 
-lemma μ_def {G : Type u} (f g : G → k) : μ_lin (f ⊗ₜ[k] g) = f * g := rfl
+lemma μ_def {G : Type u} (f g : G → k) : μ_linmap (f ⊗ₜ[k] g) = f * g := rfl
 
 /-- μ is a representation morphism -/
 def μ_rep_hom : rep_r k G ⊗ rep_r k G ⟶ rep_r k G where
-  hom := μ_lin
+  hom := μ_linmap
   comm := by
-    intro s
+    intro (_ : G)
     rw [Action.tensor_rho]
-    ext u
-    change TensorProduct k (G → k) (G → k) at u
+    ext (u : TensorProduct k (G → k) (G → k))
     refine TensorProduct.induction_on u ?_ ?_ ?_
     · exact rfl
-    · exact fun x y ↦ rfl
-    · intro x y hx hy
-      rw [map_add, hx, map_add, hy]
+    · exact fun _ _ ↦ rfl
+    · intro _ _ hx hy
+      simp only [map_add, hx, hy]
 
 /-- The `FinRep k G` morphism induced by multiplication -/
 def μ : finrep_r k G ⊗ finrep_r k G ⟶ finrep_r k G := μ_rep_hom
 
 def lem6_mul (η : AutF k G) :
-    ∀ (x y : G → k), (α η) (x * y) = ((α_map η) x) * ((α_map η) y) := by
+    ∀ (x y : G → k), (α η) (x * y) = ((α η) x) * ((α η) y) := by
   have := η.nat μ
   rw [AutF.tensor] at this
   intro f g
@@ -448,34 +418,33 @@ def lem6_toAlgHom (η : AutF k G) : ((G → k)) →ₐ[k] ((G → k)) := by
   have : NatTrans.app _ _ = (MonoidalNatTrans.id _).app _ :=
     congrFun (congrArg _ (congrArg _ η.inv_hom_id)) (finrep_r k G)
   rw [MonoidalNatTrans.comp_toNatTrans_lax,
-      NatTrans.comp_app,
-      MonoidalNatTrans.id_toNatTrans_app] at this
+      NatTrans.comp_app, MonoidalNatTrans.id_toNatTrans_app] at this
   replace : (α η) (α_inv _) = (1 : G → k) :=
     congrFun (congrArg DFunLike.coe this) (1 : G → k)
   have h := this
-  rwa [← one_mul (α_inv _), lem6_mul, α_map_def, h, mul_one] at this
+  rwa [← one_mul (α_inv _), lem6_mul, h, mul_one] at this
 
 lemma lem6_def {G : Type u} [Group G] [Fintype G] (η : AutF k G) :
-    (lem6_toAlgHom η).toLinearMap = α η := rfl
+    (lem6_toAlgHom η).toLinearMap = α η := AlgHom.toLinearMap_ofLinearMap _ _ _
 
 end lemma6
 
 section lemma7
 
 def τₗ_rep_hom (s : G) : (finrep_r k G) ⟶ (finrep_r k G) where
-  hom := τₗ k G s
+  hom := τₗ s
   comm := by
     intro (t : G)
     ext (f : G → k)
     simp only [@ModuleCat.coe_comp, @Function.comp_apply]
     rw [@Function.funext_iff]
     intro u
-    change (τₗ _ _ s) ((τᵣ _ _ t) f) u = (τᵣ _ _ t) ((τₗ _ _ s) f) u
+    change (τₗ s) ((τᵣ t) f) u = (τᵣ t) ((τₗ s) f) u
     simp only [τₗ_apply, τᵣ_apply, mul_assoc]
 
 -- *lemma 4.7*
 lemma lem7 (η : AutF k G) :
-    ∃ (s : G), α η = (τᵣ k G) s := by
+    ∃ (s : G), α η = τᵣ s := by
   have hnat (t : G) := η.nat (τₗ_rep_hom t)
   let α_hom := lem6_toAlgHom η
   obtain ⟨s, hs⟩ := lem5 ((π (1 : G)).comp α_hom)
@@ -484,28 +453,25 @@ lemma lem7 (η : AutF k G) :
     calc
       _ = α_hom (e u) ((t⁻¹)⁻¹ * 1) := by
         rw [mul_one, inv_inv]
-      _ = τₗ k G t⁻¹ (α_hom (e u)) 1 := rfl
-      _ = α_hom (τₗ k G t⁻¹ (e u)) 1 := by
-        have : ((α η) ∘ₗ _) _ = (_ ∘ₗ (α η)) _ :=
-          congrFun (congrArg DFunLike.coe (hnat t⁻¹)) (e u)
-        rw [LinearMap.comp_apply, LinearMap.comp_apply, ← @lem6_def] at this
-        exact congrFun this.symm 1
-      _ = (π 1).comp α_hom (τₗ k G t⁻¹ (e u)) := rfl
-      _ = π s (τₗ k G t⁻¹ (e u)) :=
+      _ = τₗ t⁻¹ (α_hom (e u)) 1 := rfl
+      _ = α_hom (τₗ t⁻¹ (e u)) 1 :=
+        congrFun (congrFun (congrArg DFunLike.coe (hnat t⁻¹)) (e u)).symm 1
+      _ = (π 1).comp α_hom (τₗ t⁻¹ (e u)) := rfl
+      _ = π s (τₗ t⁻¹ (e u)) :=
         congrFun (congrArg DFunLike.coe hs) _
       _ = _ := by
         rw [π_apply, τₗ_apply, e_eq_iff]
         exact eq_inv_mul_iff_mul_eq
   apply Basis.ext (Pi.basisFun k G)
   intro u
-  rw [Pi.basisFun_apply, ← e_eq_single, Function.funext_iff]
+  simp only [Pi.basisFun_apply, ← e_eq_single, Function.funext_iff]
   intro t
-  change α_hom _ _ = (τᵣ k G) _ _ _
+  change α_hom _ _ = τᵣ _ _ _
   rw [τᵣ_apply, this, e_eq_iff]
   exact inv_mul_eq_iff_eq_mul
 
 lemma lem7_unique (η : AutF k G) :
-    ∃! (s : G), α η = (τᵣ k G) s := by
+    ∃! (s : G), α η = τᵣ s := by
   obtain ⟨s, hs⟩ := lem7 η
   refine ⟨s, hs, ?_⟩
   intro t h
@@ -531,22 +497,20 @@ def φ (X : FinRep k G) (v : X.V) : (G → k) →ₗ[k] X.V where
   toFun := fun f ↦ ∑ s : G, (f s) • (X.ρ s⁻¹ v)
   map_add' := by
     intros
-    simp only
-    conv => lhs; rhs; ext; rw [Pi.add_apply, add_smul]
+    simp only [Pi.add_apply, add_smul]
     rw [Finset.sum_add_distrib]
   map_smul' := by
     intros
-    simp only
-    conv => lhs; rhs; ext; rw [Pi.smul_apply, smul_eq_mul, ← smul_smul]
+    simp only [Pi.smul_apply, smul_eq_mul, ← smul_smul]
     rw [RingHom.id_apply, Finset.smul_sum]
 
 lemma φ_def {G : Type u} [Group G] [Fintype G]
     {X : FinRep k G} {v : X.V} {f : G → k} :
     (φ X v) f = ∑ s : G, (f s) • (X.ρ s⁻¹ v) := rfl
 
-lemma φ_id {X : FinRep k G} {v : X.V} : (φ X v) (e 1) = v := by
+lemma φ_e_one_eq_id {X : FinRep k G} {v : X.V} : (φ X v) (e 1) = v := by
   rw [φ_def]
-  let a (s : G) := (e (1 : G) s : k) • (X.ρ s⁻¹) v
+  let a (s : G) : X.V := (e (1 : G) s : k) • (X.ρ s⁻¹) v
   calc
     _ = (∑ s ∈ {1}ᶜ, a s) + a 1 :=
       Fintype.sum_eq_sum_compl_add _ _
@@ -561,7 +525,7 @@ lemma φ_id {X : FinRep k G} {v : X.V} : (φ X v) (e 1) = v := by
       rw [zero_add]
       change _ • _ = _
       rw [e_self, one_smul]
-      simp_all only [inv_one, map_one, LinearMap.one_apply]
+      simp only [inv_one, map_one, LinearMap.one_apply]
 
 def r_inj (t : G) : G ↪ G where
   toFun := r t
@@ -575,20 +539,15 @@ def φ_rep_mor (X : FinRep k G) (v : X.V) : (finrep_r k G) ⟶ X where
   comm := by
     intro (t : G)
     ext (f : G → k)
-    change (φ X v) (τᵣ k G t f) = X.ρ t (φ X v f)
+    change (φ X v) (τᵣ t f) = X.ρ t (φ X v f)
     simp only [φ_def, map_sum]
-    have := Finset.sum_map Finset.univ (r_inj t⁻¹) (φ_term X v (τᵣ k G t f))
-    rw [Finset.univ_map_embedding] at this
-    conv at this => lhs; rhs; ext; rw [φ_term_def]
+    have := Finset.sum_map Finset.univ (r_inj t⁻¹) (φ_term X v (τᵣ t f))
+    simp only [φ_term_def, Finset.univ_map_embedding] at this
     rw [this]
-    conv =>
-      lhs; rhs; ext;
-      rw [φ_term_def, τᵣ_apply, r_inj_def, mul_assoc,
-          inv_mul_cancel, mul_one, mul_inv_rev, inv_inv]
-    conv =>
-      rhs; rhs; ext s; rw [map_smul]; rhs;
-      change ((X.ρ t) ∘ₗ (X.ρ s⁻¹)) v;
-      rw [← LinearMap.mul_eq_comp, ← map_mul]
+    apply Finset.sum_congr rfl
+    intros
+    simp only [τᵣ_apply, r_inj_def, mul_assoc, inv_mul_cancel, mul_one,
+      mul_inv_rev, inv_inv, map_smul, map_mul, LinearMap.mul_apply]
 
 -- *lemma 4.8*
 lemma lem8 (η₁ η₂ : AutF k G)
@@ -599,7 +558,8 @@ lemma lem8 (η₁ η₂ : AutF k G)
   have h2 : _ ∘ₗ (φ X v) = (φ X v) ∘ₗ (α η₂) := η₂.nat (φ_rep_mor X v)
   rw [← h2] at h1
   replace h1 := congrFun (congrArg DFunLike.coe h1) (e 1)
-  rwa [LinearMap.comp_apply, φ_id, LinearMap.comp_apply, φ_id] at h1
+  rwa [LinearMap.comp_apply, φ_e_one_eq_id,
+       LinearMap.comp_apply, φ_e_one_eq_id] at h1
 
 end lemma8
 
