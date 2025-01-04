@@ -228,6 +228,46 @@ example {S : Set (ℝ × ℝ)} (hS : IsTwoPointSet S) :
   rw [hS, Cardinal.mk_eq_zero] at this
   exact two_ne_zero this
 
+/- Let A ⊆ ℝ × ℝ. A is bounded if ∃ r > 0 such that
+∀ a₁, a₂ ∈ A, dist a₁ a₂ < r. We use this definition
+to define a bornology on ℝ × ℝ. This allows us to later
+use Bornology.IsBounded. -/
+def bornology_plane : Bornology (ℝ × ℝ) :=
+    Bornology.ofDist dist Euclidean_dist_comm Euclidean_dist_triangle
+
+/- A two-point set is a counterexample for the following statement :
+A subset of the Euclidean plane is bounded if and only if it is
+contained in a minimum closed disk. However, one implication of this
+statement is true and is proven below. -/
+lemma bounded_of_exists_MinimumClosedDisk (A : Set (ℝ × ℝ)) : (∃ D h k r hr,
+    ∃ (hD : IsClosedDisk D h k r hr ∧ A ⊆ D), IsMinimumClosedDisk hD) →
+    @Bornology.IsBounded _ bornology_plane A := by
+  intro h
+  rw [Bornology.isBounded_def, Bornology.cobounded, Bornology.cobounded', bornology_plane,
+  Bornology.ofDist, Bornology.ofBounded]
+  simp only [Prod.forall, Set.mem_setOf_eq, Filter.mem_comk, compl_compl]
+  obtain ⟨D, h, k, r, hr, hD, _⟩ := h
+  refine ⟨r*2, fun a b hab c d hcd ↦ ?_⟩
+  by_contra h₂
+  push_neg at h₂
+  have hr₂ := lt_of_lt_of_le h₂ (Euclidean_dist_triangle (a, b) (h, k) (c, d))
+  have hr₃ : (r^2)^(1/(2 : ℝ)) = r := by
+      rw [← Real.sqrt_eq_rpow, pow_two, Real.sqrt_mul_self (le_of_lt hr)]
+  have hab₂ : dist (a, b) (h, k) ≤ r := by
+    rw [Euclidean_dist_comm (a, b) (h, k)]
+    have : (((a, b).1 - h) ^ 2 + ((a, b).2 - k) ^ 2)^(1/(2 : ℝ)) ≤ (r ^ 2)^(1/(2 : ℝ)) := by
+      simp only [← Real.sqrt_eq_rpow]
+      exact Real.sqrt_le_sqrt (hD.1 (a, b) (hD.2 hab))
+    rwa [hr₃] at this
+  have hcd₂ : dist (h, k) (c, d) ≤ r := by
+    have : (((c, d).1 - h) ^ 2 + ((c, d).2 - k) ^ 2)^(1/(2 : ℝ)) ≤ (r ^ 2)^(1/(2 : ℝ)) := by
+      simp only [← Real.sqrt_eq_rpow]
+      exact Real.sqrt_le_sqrt (hD.1 (c, d) (hD.2 hcd))
+    rwa [hr₃] at this
+  have : r * 2 < r + r := by
+    exact lt_add_of_lt_add_right (lt_add_of_lt_add_left hr₂ hcd₂) hab₂
+  exact (lt_self_iff_false (r * 2)).1 (by rwa [(mul_two r).symm] at this)
+
 -- Construction of the two-point set
 
 -- This is proven in mathlib4.
