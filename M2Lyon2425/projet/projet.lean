@@ -1,5 +1,6 @@
 -- pas besoin d'`import Mathlib`, qui est déjà importé par les dépendances
 import M2Lyon2425.projet.lemmesARSKleene
+import M2Lyon2425.projet.minSet
 
 variable {α : Type*}
 
@@ -96,30 +97,17 @@ def isNormalizing (f : ARS α) (a : α) : Prop := ∃ b : NF_of f, f∗ a b
 def isNormalizingRel (f : ARS α) : Prop := ∀ a, isNormalizing f a
 
 /-- Caractérisation des suites *infinies* de réduction (une étape à la fois) -/
-def isInfiniteReductionSequence (f : ARS α) (A : ℕ → α) : Prop := ∀ i, f (A i) (A (i+1))
+def isInfRedSeq (f : ARS α) (A : ℕ → α) : Prop := ∀ i, f (A i) (A (i+1))
 
-def InfiniteReductionSequence (f : ARS α) := Subtype (isInfiniteReductionSequence f)
-
-class FiniteReductionSequence (f : ARS α) :=
-  carrier : ℕ → α
-  longueur : ℕ
-  isReductionSequence : ∀ i, f (carrier i) (carrier (i+1)) ∨ longueur ≤ i
-
-def inhab_FiniteReductionSequence [Inhabited α] (f : ARS α) :
-  Inhabited (FiniteReductionSequence f) where
-   default := {
-    carrier := fun _ ↦ Inhabited.default
-    longueur := 0
-    isReductionSequence := by omega
-  }
+def InfRedSeq (f : ARS α) := Subtype (isInfRedSeq f)
 
 /- Au sens fort du terme -/
 def isTerminating (f : ARS α) (a : α) : Prop :=
-  ¬ (∃ A : ℕ → α, isInfiniteReductionSequence f A ∧ a = A 0)
+  ¬ (∃ A : ℕ → α, isInfRedSeq f A ∧ a = A 0)
 
 def isTerminatingRel (f : ARS α) : Prop := ∀ a, isTerminating f a
 
-def isTerminatingRel' (f : ARS α) : Prop := ¬ ∃ A, isInfiniteReductionSequence f A
+def isTerminatingRel' (f : ARS α) : Prop := ¬ ∃ A, isInfRedSeq f A
 
 /- Équivalence des deux définitions au-dessus -/
 lemma terminatingRelEquiv {f :ARS α} :
@@ -132,7 +120,7 @@ lemma terminatingRelEquiv {f :ARS α} :
       let A := hyp.choose
       have hA := hyp.choose_spec
       intro h₂
-      have h₃ : ∃ B, isInfiniteReductionSequence f B ∧ (A 0) = B 0 := by
+      have h₃ : ∃ B, isInfRedSeq f B ∧ (A 0) = B 0 := by
         use A
       exact h₂ (A 0) h₃
     · intro hyp
@@ -150,7 +138,7 @@ structure RedStep (f : ARS α) :=
   b : α
   red : f a b
 
-noncomputable def infRedSeq_of_nonemptyNF (f : ARS α) (hE : ¬ Nonempty (NF_of f)) (prems : α) (i : ℕ) :
+noncomputable def infRedSeq_of_emptyNF (f : ARS α) (hE : ¬ Nonempty (NF_of f)) (prems : α) (i : ℕ) :
   RedStep f := by
       have h₁ : ∀ b : α, ∃ c, f b c := by
         intro b
@@ -161,83 +149,155 @@ noncomputable def infRedSeq_of_nonemptyNF (f : ARS α) (hE : ¬ Nonempty (NF_of 
         exact this
       let a := match i with
       | 0 => prems
-      | m+1 => (infRedSeq_of_nonemptyNF f hE prems m).b
+      | m+1 => (infRedSeq_of_emptyNF f hE prems m).b
       exact {
           a := a
           b := (h₁ a).choose
           red := (h₁ a).choose_spec
       }
 
-noncomputable def RedSeq (f : ARS α) (hE : ¬ Nonempty (NF_of f)) (prems : α) :
-  InfiniteReductionSequence f := by
-    let T := infRedSeq_of_nonemptyNF f hE prems
-    let S := fun i ↦ (T i).a
-    have hdefS : ∀ i, S i = (T i).a := by
-      intro i
-      trivial
-    have hdefS' : ∀ i, (T (i+1)).a = (T i).b := by
-      intro i
-      rfl
-    refine ⟨S, ?_⟩
-    intro i
-    let this := (T i)
-    have hSi : S i = this.a := by
-      rw [hdefS,]
-    have hSip1 : S (i+1) = this.b := by
-      rw [hdefS, hdefS']
-    rw [hSi, hSip1]
-    exact this.red
+private noncomputable def RedSeqAux (f : ARS α) (hE : ¬ Nonempty (NF_of f)) (prems : α) :
+  InfRedSeq f := by
+    let T := infRedSeq_of_emptyNF f hE prems
+    exact ⟨fun i ↦ (T i).a, fun i ↦ (T i).red⟩
 
-lemma ARS_termination_of_exists_NF (f : ARS α) [Inhabited α] :
+lemma exists_NF_of_termination [Inhabited α] (f : ARS α) :
   isTerminatingRel f → Nonempty (NF_of f) := by
     contrapose
     intro h
     rw [terminatingRelEquiv, isTerminatingRel']
     push_neg at h ⊢
     have a : α := Inhabited.default
-    use (RedSeq f h a).val
-    exact (RedSeq f h a).prop
+    use (RedSeqAux f h a).val
+    exact (RedSeqAux f h a).prop
 
 def isProfondeur (f : ARS α) (π : α → ℕ) : Prop :=
   ∀ a, ∃ k, π a = Nat.succ k → ∃ b, π b = k ∧ f a b
 
 def profondeurARS (f : ARS α) := Subtype (isProfondeur f)
 
-instance inhabited_profondeurARS_of_termination {f : ARS α} (hfT : isTerminatingRel f) :
-  Nonempty (profondeurARS f) := by
-      let π : α → ℕ := fun a ↦ by
-        have hTfa := hfT a
-        push_neg at hTfa
+def is_of_rank (f : ARS α) (k : ℕ) (a : α) :
+  Prop := by
+    match k with
+    | 0 => exact isNormalForm f a
+    | m+1 => exact ∃ b, f a b ∧ is_of_rank f m b
 
-        sorry
-      sorry
+def ranks (f : ARS α) (a :α) := {k : ℕ | is_of_rank f k a}
 
+def inacc (f : ARS α) (a : α) := ∀ k, ¬ is_of_rank f k a
 
+def Inacc (f : ARS α) := Subtype (inacc f)
 
-/-- Le but de cette fonction est de fournir une fonction `φ : NF_fun f`,
-étant données `f : ARS α` et la preuve de sa terminaison. -/
-/- Comment faire une preuve correcte (idées) :
-+ avoir une fonction `profondeur {f : ARS α} [isTerminatingRel f] : α → ℕ`, telle que
-  `profondeur a = k + 1 → ∃ b, f a b ∧ profondeur b = k)` ;
-+ `NF_fun_of_termination hfT` est bien définie, car les argument de type α successifs
-  décroissent en profondeur.
- -/
-noncomputable def NF_fun_of_termination {f : ARS α} (hfT : isTerminatingRel f) :
-  NF_fun f := by
-    refine ⟨?_, ?_⟩
-    · intro a
-      by_cases h : isNormalForm f a
-      · exact ⟨a,h⟩
-      · rw [isNormalForm] at h
-        push_neg at h
-        let b := h.choose
-        exact (NF_fun_of_termination hfT).val b
-    · intro a
+lemma lAux₁ (f : ARS α) : ∀ a : Inacc f, ∃ b : Inacc f, f a.val b.val := by
+  intro ⟨a, ha⟩
+  by_cases hNFa : isNormalForm f a
+  · exfalso
+    have := ha 0
+    rw [is_of_rank] at this
+    exact this hNFa
+  · rw [isNormalForm] at hNFa
+    push_neg at hNFa
+    let b := hNFa.choose
+    by_cases hb : inacc f b
+    · use ⟨b, hb⟩
       simp only
-      by_cases h : isNormalForm f a
-      · sorry
-      · sorry
-termination_by sorry
+      exact hNFa.choose_spec
+    · exfalso
+      rw [inacc] at hb
+      push_neg at hb
+      let k := hb.choose
+      have hAbsu := ha (k+1)
+      rw [is_of_rank] at hAbsu
+      push_neg at hAbsu
+      exact hAbsu b hNFa.choose_spec hb.choose_spec
+
+def isInfRedSeq_of_Inacc (f : ARS α) (S : ℕ → Inacc f) :=
+  ∀ i, f (S i).val (S (i+1)).val
+
+def InfRedSeq_of_Inacc ( f : ARS α) := Subtype (isInfRedSeq_of_Inacc f)
+
+noncomputable def dAux₀ (f : ARS α) (a : Inacc f) (i : ℕ): Inacc f := match i with
+    | 0 => a
+    | j+1 => (lAux₁ f ((dAux₀ f a) j)).choose
+
+noncomputable def dAux₁ (f : ARS α) (a : Inacc f) : InfRedSeq_of_Inacc f := by
+  exact ⟨dAux₀ f a, by
+    rw [isInfRedSeq_of_Inacc]
+    intro i
+    match i with
+    | 0 =>
+      have : (dAux₀ f a) 0 = a := by
+        unfold dAux₀
+        rfl
+      rw [this]
+      exact (lAux₁ f a).choose_spec
+    | j+1 =>
+      have := (lAux₁ f (dAux₀ f a (j+1))).choose_spec
+      unfold dAux₀ at this ⊢
+      exact this
+    ⟩
+
+noncomputable instance existsInfRedSeq_of_Inacc (f : ARS α) (a : Inacc f) :
+  Inhabited (InfRedSeq f) := by
+    let S := dAux₁ f a
+    use fun i ↦ (S.val i).val
+    exact fun i ↦ S.prop i
+
+lemma nonTerminating_f_of_Inacc (f : ARS α) (a : Inacc f) :
+  ¬ isTerminatingRel f := by
+    intro hfT
+    have S := (existsInfRedSeq_of_Inacc f a).default
+    rw [terminatingRelEquiv, isTerminatingRel'] at hfT
+    push_neg at hfT
+    exact hfT S.val S.prop
+
+noncomputable def π (f : ARS α) (hfT : isTerminatingRel f) (a : α) : ℕ := by
+  let ranks := {k : ℕ | is_of_rank f k a}
+  by_cases ha : inacc f a
+  · exfalso
+    exact nonTerminating_f_of_Inacc f ⟨a, ha⟩ hfT
+  · rw [inacc] at ha
+    push_neg at ha
+    have : ranks.Nonempty := by
+      use ha.choose
+      exact ha.choose_spec
+    exact minSet this
+
+-- /-- Le but de cette fonction est de fournir une fonction `φ : NF_fun f`,
+-- étant données `f : ARS α` et la preuve de sa terminaison. -/
+-- /- Comment faire une preuve correcte (idées) :
+-- + avoir une fonction `profondeur {f : ARS α} [isTerminatingRel f] : α → ℕ`, telle que
+--   `profondeur a = k + 1 → ∃ b, f a b ∧ profondeur b = k)` ;
+-- + `NF_fun_of_termination hfT` est bien définie, car les argument de type α successifs
+--   décroissent en profondeur.
+--  -/
+-- noncomputable def NF_fun_of_termination {f : ARS α} (hfT : isTerminatingRel f) :
+--   NF_fun f := by
+--     by_cases hα : Nonempty α
+--     · refine ⟨?_, ?_⟩
+--       · intro a
+--         by_cases h : isNormalForm f a
+--         · exact ⟨a,h⟩
+--         · rw [isNormalForm] at h
+--           push_neg at h
+--           let b := h.choose
+--           exact (NF_fun_of_termination hfT).val b
+--       · intro a
+--         by_cases h : isNormalForm f a
+--         · simp only [h, reduceDIte]
+--           exact kstar_is_refl f a
+--         · simp only [h, reduceDIte]
+
+--           sorry
+--     · refine ⟨?_, ?_⟩
+--       · intro a
+--         exfalso
+--         have : Nonempty α := by use a
+--         exact hα this
+--       · intro a
+--         exfalso
+--         have : Nonempty α := by use a
+--         exact hα this
 
 def isConvergent (f : ARS α) : Prop := isConfluent f ∧ isTerminatingRel f
 
@@ -312,68 +372,89 @@ lemma eq_of_trans_and_NF {f : ARS α} (b : NF_of f) : ∀ w, f∗ b.val w → b.
 def hasNoetherianInduction (f : ARS α) :=
   ∀ P : α → Prop, (∀ a, (∀ b, f a b → P b) → P a) → ∀ x, P x
 
-def relous (P : α → Prop) := Subtype (¬ P ·)
+noncomputable def dAux₃ (f : ARS α) (hf : ¬ hasNoetherianInduction f) : Inacc f := by
+  rw [hasNoetherianInduction] at hf
+  push_neg at hf
+  let P := hf.choose
+  have Pdef : P = hf.choose := by trivial
+  have ⟨hP, hx⟩ := hf.choose_spec
+  rw [←Pdef] at hP hx
+  let relous := {a | ¬ P a}
+  have neRelous : relous.Nonempty := by
+    use hx.choose
+    exact hx.choose_spec
+  let profsRelous := 0
+  let x := hx.choose
+  have xdef : x = hx.choose := by trivial
+  have hhx := hx.choose_spec
+  rw [←xdef] at hhx
+  by_cases hInacc : inacc f x
+  · exact ⟨x, hInacc⟩
+  · exfalso
+    rw [inacc] at hInacc
+    push_neg at hInacc
+    let k := hInacc.choose
+    have kdef : k = hInacc.choose := by trivial
+    have hkx := hInacc.choose_spec
+    rw [←kdef] at hkx
+    unfold is_of_rank at hkx
+
+    sorry
 
 theorem NoetherianInduction_from_termination {f : ARS α} (hfT : isTerminatingRel f) :
   hasNoetherianInduction f := by
-    intro P
-    contrapose
-    push_neg
-    intro hnPx
-    let x := hnPx.choose
-    have xdef : x = hnPx.choose := by trivial
-    have hx := hnPx.choose_spec
-    rw [← xdef] at hx
-    have := hfT x
-    by_cases hNFx : isNormalForm f x
-    · have : ∀ b, f x b → P b := by
-        intro y hAbsu
-        exfalso
-        exact hNFx y hAbsu
-      use x
-    · let ⟨φ, hφ⟩ := NF_fun_of_termination hfT
-      let ⟨φx , hφx⟩ := φ x
-      use φx
-      constructor
-      · intro b hfφxb
-        exfalso
-        exact hφx b hfφxb
-      · intro hPφx
-
-        sorry
-    -- by_cases hIndu : ∀ y, ¬ P y → ∃ z, f y z ∧ ¬ P z
-    -- · have : ∃ S : Nat → relous P, ∀ i, ¬ P (S i).val ∧ f (S i).val (S (i+1)).val := by
-    --     let rec S := fun i : Nat ↦ if i = 0
-    --       then
-    --         (⟨x, hx⟩ : relous P)
-    --       else by
-    --         let z := (hIndu (S i.pred).val (S i.pred).prop).choose
-    --         have zdef : z = (hIndu (S i.pred).val (S i.pred).prop).choose := by trivial
-    --         have hz := (hIndu (S i.pred).val (S i.pred).prop).choose_spec.right
-    --         rw [← zdef] at hz
-    --         exact ⟨z, hz⟩
-    --     termination_by sorry
-    --     use S
-    --     intro i
-    --     constructor
-    --     · by_cases hi : i = 0
-    --       · sorry
-    --       · sorry
-    --     · sorry
-    --   sorry
-    -- · push_neg at hIndu
-    --   sorry
-    --
-    --
-    -- intro P h x
+    by_contra hNIf
+    rw [hasNoetherianInduction] at hNIf
+    push_neg at hNIf
+    let P := hNIf.choose
+    have Pdef : P = hNIf.choose := by trivial
+    have ⟨hP, hnP⟩ := hNIf.choose_spec
+    rw [←Pdef] at hP hnP
+    let relous := {a | ¬ P a}
+    have neRelous : relous.Nonempty := by
+      use hnP.choose
+      exact hnP.choose_spec
+    let profsRelous := π f hfT '' relous
+    have profsRelousdef : profsRelous = π f hfT '' relous := by trivial
+    have neProfsRelous : profsRelous.Nonempty := by sorry
+    let kmin := minSet neProfsRelous
+    have kmindef : kmin = minSet neProfsRelous := by trivial
+    -- have : kmin ∈ profsRelous := minSet_in_A neProfsRelous
+    -- rw [profsRelousdef] at this
+    let minRelous := π f hfT ⁻¹' {kmin}
+    have minRelousdef : minRelous = π f hfT ⁻¹' {kmin} := by trivial
+    have neMinRelous : minRelous.Nonempty := by sorry
+    let x := neMinRelous.choose
+    have xdef : x = neMinRelous.choose := by trivial
+    have hx := neMinRelous.choose_spec
+    rw [←xdef, minRelousdef, kmindef] at hx
+    simp at hx
+    sorry
+    -- intro P
+    -- contrapose
+    -- push_neg
+    -- intro hnPx
+    -- let x := hnPx.choose
+    -- have xdef : x = hnPx.choose := by trivial
+    -- have hx := hnPx.choose_spec
+    -- rw [← xdef] at hx
+    -- have := hfT x
     -- by_cases hNFx : isNormalForm f x
     -- · have : ∀ b, f x b → P b := by
     --     intro y hAbsu
     --     exfalso
     --     exact hNFx y hAbsu
-    --   exact h x this
-    -- ·
-    --   sorry
+    --   use x
+    -- · let ⟨φ, hφ⟩ := NF_fun_of_termination hfT
+    --   let ⟨φx , hφx⟩ := φ x
+    --   use φx
+    --   constructor
+    --   · intro b hfφxb
+    --     exfalso
+    --     exact hφx b hfφxb
+    --   · intro hPφx
+    --     sorry
+
 
 /- Le théorème 2.3.8-i -/
 example (f : ARS α) :
