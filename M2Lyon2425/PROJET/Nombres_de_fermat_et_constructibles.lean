@@ -222,7 +222,6 @@ theorem Wantzel1 (a : ℂ ) : nombre_constructible a → ∃ (m : ℕ), (FiniteD
   rw [← top.toLinearEquiv.finrank_eq]
   sorry
 
-
 --Lemme : si p est premier de Fermat, alors Φₚ(X) est irréductible sur ℚ.
 theorem poly_cyclo_p_irre (p : ℕ) : premierfermat p → Irreducible (Polynomial.cyclotomic (↑p) ℚ) :=by
 intro hp
@@ -431,21 +430,15 @@ theorem adjoin_is_cyclo (p : ℕ+) (α : ℕ) (_: Nat.Prime p) (_ : 0 < α) :
     {exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))}) :=
 IsPrimitiveRoot.adjoin_isCyclotomicExtension _ (isPrimitiveRoot_exp _ (PNat.ne_zero (p ^ α)))
 
+theorem cyclofield (p : ℕ+) (α : ℕ ) : Nat.Prime p ∧ 0 < α → Algebra.adjoin ℚ {exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))} = CyclotomicField (p^α) ℚ :=by
+intro h
+change (↥(Algebra.adjoin ℚ {cexp (2 * ↑Real.pi * I / ↑↑(p ^ α))}) = (Polynomial.cyclotomic (↑p^α) ℚ).SplittingField)
+have h1 := adjoin_is_cyclo p α h.1 h.2
+have h12 := Subalgebra.algebra (Algebra.adjoin ℚ {cexp (2 * ↑Real.pi * I / ↑↑(p ^ α))})
+have h2 := @IsCyclotomicExtension.splitting_field_cyclotomic (p^α) ℚ (Algebra.adjoin ℚ {exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))}) _ sorry sorry sorry
 
-theorem adjoin_is_field (p : ℕ+) (α : ℕ) : Nat.Prime p ∧ 0 < α → IsField
-(Algebra.adjoin ℚ
-    {exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))}) := by
-intro h1
-have h2 := adjoin_is_cyclo p α h1.1 h1.2
-constructor 
-· use 0
-  use 1
-  simp
-· intro x y 
-  exact CommMonoid.mul_comm x y
-· intro a ha
-  sorry
-  
+sorry
+
 
 
 theorem cyclic_iso (G H : Type*) [inst1 : Group G] [inst2 : Group H] : (G ≃* H) → (IsCyclic H) → (IsCyclic G) := by
@@ -534,6 +527,43 @@ structure TowerOfGroup2 {G : Type*} [Group G] where
   normalSubGroup : ∀ i, @IsNormalSubgroup (H i) _ (Subgroup.inclusion (inclusion i)).range
 
 
+theorem TowSG (G : Type*) (m : ℕ) (p : ℕ+) [inst1 : Group G] : premierfermat p → (G ≃* (ZMod (p))ˣ → ∃ (ζ : @TowerOfGroup2 G inst1), ∀ (i : ℕ), (@Subgroup.relindex G inst1 (ζ.1 (i+1)) (ζ.1 i)) = 2 ):= by
+intro fermatp
+intro h
+have h1 : IsCyclic G := by
+  have h10 : IsCyclic ((ZMod p)ˣ):=by
+    have h101 := fermatp.1
+    exact ZModx_cyclic (↑p) h101
+  exact cyclic_iso G ((ZMod p)ˣ) h h10
+apply IsCyclic.exists_generator at h1
+obtain ⟨ ζ, hypζgen ⟩ := h1
+let H := fun (i : ℕ) ↦ Subgroup.zpowers (ζ ^(2^i))
+have inclusionH : ∀ i, H (i + 1) ≤ H i :=by
+  intro i g
+  intro hg
+  change (g ∈ Subgroup.zpowers (ζ ^ 2 ^ (i+1))) at hg
+  change (g ∈ Subgroup.zpowers (ζ ^ 2 ^ i))
+  obtain ⟨k, hk⟩:= hg
+  simp at hk
+  use 2*k
+  simp
+  rw[<-hk]
+  group
+have normalSubGroupH : ∀ i, @IsNormalSubgroup (H i) _ (Subgroup.inclusion (inclusionH i)).range := by
+  intro i
+  constructor
+  · simp
+    exact Subgroup.isSubgroup ((H (i + 1)).subgroupOf (H i))
+  · simp
+have hh : @TowerOfGroup2 G inst1 := by
+  constructor
+  · use normalSubGroupH
+use hh
+intro i
+sorry
+
+
+
 theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
 intro h
 cases h with
@@ -555,9 +585,10 @@ cases h with
         have hz := exist_gen.choose_spec
         have hQ := adjoin_is_cyclo p 1 (hp.1) (Nat.one_pos)
         simp at hQ
-        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) })
-        simp at hsub 
-      
+        have TowSGgal := @TowSG Gp_Galois sorry p _ _ sorry
+        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) sorry (Subalgebra.algebra (Algebra.adjoin ℚ {cexp ((2 * ↑Real.pi * I) / ↑↑p)}))
+        simp at hsub
+
         sorry
         sorry
         sorry
