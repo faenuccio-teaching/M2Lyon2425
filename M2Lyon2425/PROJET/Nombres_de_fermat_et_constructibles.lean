@@ -526,8 +526,8 @@ structure TowerOfGroup2 {G : Type*} [Group G] where
   inclusion : ∀ i, H (i + 1) ≤ H i
   normalSubGroup : ∀ i, @IsNormalSubgroup (H i) _ (Subgroup.inclusion (inclusion i)).range
 
-
-theorem TowSG (G : Type*) (m : ℕ) (p : ℕ+) [inst1 : Group G] : premierfermat p → (G ≃* (ZMod (p))ˣ → ∃ (ζ : @TowerOfGroup2 G inst1), ∀ (i : ℕ), (@Subgroup.relindex G inst1 (ζ.1 (i+1)) (ζ.1 i)) = 2 ):= by
+--Construction d'une tour de sous-groupe distingué d'indice 2.
+theorem TowSG (G : Type*) (p : ℕ+) [inst1 : Group G] : premierfermat p → (G ≃* (ZMod (p))ˣ → ∃ (ζ : @TowerOfGroup2 G inst1), ∀ (i : ℕ), (@Subgroup.relindex G inst1 (ζ.1 (i+1)) (ζ.1 i)) = 2 ∧ ζ.H 0 = G ∧ ζ.H (p-1) = IsSubgroup.trivial G ):= by
 intro fermatp
 intro h
 have h1 : IsCyclic G := by
@@ -555,12 +555,47 @@ have normalSubGroupH : ∀ i, @IsNormalSubgroup (H i) _ (Subgroup.inclusion (inc
   · simp
     exact Subgroup.isSubgroup ((H (i + 1)).subgroupOf (H i))
   · simp
-have hh : @TowerOfGroup2 G inst1 := by
+let hh : @TowerOfGroup2 G inst1 := by
   constructor
   · use normalSubGroupH
 use hh
 intro i
-sorry
+constructor
+· simp
+  change ((Subgroup.zpowers (ζ ^ 2 ^ (i+1))).relindex (Subgroup.zpowers (ζ ^ 2 ^ i)) = 2)
+  rw [Nat.pow_add']
+  simp
+  rw [@npow_mul',Subgroup.relindex]
+  rw[Subgroup.index_eq_two_iff]
+  simp
+  use 1
+  intro m
+  group
+  refine xor_iff_iff_not.mpr ?h.a
+  constructor
+  · intro h31
+    simp at h31
+    simp
+    rw [@Subgroup.mem_subgroupOf] at h31
+    rw[@Subgroup.mem_subgroupOf]
+    by_contra h32
+    sorry
+  · intro h41
+    simp at h41
+    simp
+    rw [@Subgroup.mem_subgroupOf] at h41
+    rw [@Subgroup.mem_subgroupOf]
+    sorry
+· constructor
+  · change (Subgroup.zpowers (ζ^2^0)=G)
+    simp
+    --rw [← @Set.coe_setOf]
+    rw [@Subgroup.zpowers_eq_closure] at hypζgen
+    rw [@Subgroup.zpowers_eq_closure]
+    rw [@Set.singleton_def] at hypζgen
+    simp at hypζgen
+    sorry
+  · sorry
 
 
 
@@ -573,23 +608,23 @@ cases h with
     · constructor
       · rw[ha]; exact Nat.one_pos
       · rw[ha]; simp
-        have Gp_Galois := Polynomial.Gal.instGroup (Polynomial.cyclotomic (↑p) ℚ)
+        have Gp_Galois_gp := Polynomial.Gal.instGroup (Polynomial.cyclotomic (↑p) ℚ)
+        let Gp_Galois := Polynomial.Gal (Polynomial.cyclotomic (↑p) ℚ)
         have Gp_Galois_iso := (Polynomial.cyclotomic.irreducible_rat (Nat.Prime.pos hp.left))
         apply galCyclotomicEquivUnitsZMod at Gp_Galois_iso
         have zmodcycl := ZModx_cyclic p hp.left
         have Gp_Galois_cycl : IsCyclic (Polynomial.cyclotomic ↑p ℚ).Gal :=by
           have hh := cyclic_iso ((Polynomial.cyclotomic ↑p ℚ).Gal) ((ZMod ↑p)ˣ) (Gp_Galois_iso) zmodcycl
           exact hh
-        have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois Gp_Galois_cycl
+        have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois_gp Gp_Galois_cycl
         let ζ := exist_gen.choose
         have hz := exist_gen.choose_spec
         have hQ := adjoin_is_cyclo p 1 (hp.1) (Nat.one_pos)
         simp at hQ
-        have TowSGgal := @TowSG Gp_Galois sorry p _ _ sorry
-        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) sorry (Subalgebra.algebra (Algebra.adjoin ℚ {cexp ((2 * ↑Real.pi * I) / ↑↑p)}))
+        have TowSGgal := @TowSG (Polynomial.Gal (Polynomial.cyclotomic (↑p) ℚ)) p Gp_Galois_gp hp sorry
+        obtain ⟨TSG,TSGproof⟩ := TowSGgal
+        have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) sorry sorry sorry sorry
         simp at hsub
-
-        sorry
         sorry
         sorry
         sorry
