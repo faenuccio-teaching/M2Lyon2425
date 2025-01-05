@@ -9,10 +9,7 @@ import Mathlib.GroupTheory.Sylow
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.GroupTheory.Perm.Subgroup
 import Mathlib.Data.Nat.Prime.Defs
-#print IsPGroup
-#print Sylow
-#check MulAction
-#print Subgroup.subgroupOf
+
 variable (p:ℕ ) ( hp : Nat.Prime p)
 /- j'ai repris des définitions données dans les cours sur les groupes-/
 def conjugate {G : Type*} [Group G] (x : G) (H : Subgroup G) : Subgroup G where
@@ -63,10 +60,19 @@ instance {G : Type*} [Group G] (H : Subgroup G)(S : Sylow  p G) : MulAction H (Q
   smul := fun x y => Quotient.mk (Sylow.toSubgroup S).Setoid (x * (Quot.out y))
   one_smul := by
     intro b
-    rw[smul]
+    dsimp [HSMul.hSMul]
+    simp
+    exact Quot.out_eq b
+  mul_smul := by
+    intro x y b
+    dsimp [HSMul.hSMul]
+    simp
 
 
-  mul_smul := by sorry
+    dsimp [HasEquiv.Equiv]
+    sorry
+
+
 
 /-- dans la prop 2.2 , le fait que le stabilisateurs des point de X sous l'action de H sont de la forme H ∩ gSg⁻¹-/
 theorem stab {G : Type*} [Group G] (H : Subgroup G) (S : Sylow  p G)  (h : H) :
@@ -78,6 +84,8 @@ theorem stab {G : Type*} [Group G] (H : Subgroup G) (S : Sylow  p G)  (h : H) :
       sorry
     · intro h2
       sorry
+
+/-- l'existence d'une orbite dont le cardinal n'est pas divisible par p-/
 lemma orbite {G : Type*} [Group G] (H : Subgroup G) (S : Sylow  p G) : ∃ h : H , ¬ (p ∣ Nat.card (Quotient.mk   (Subgroup.Setoid (Sylow.toSubgroup S)) h)) :=
   by sorry
 
@@ -101,9 +109,5 @@ theorem exist_sylow_of_subgroup {G : Type*} [Group G] (H : Subgroup G) ( S : Syl
       exact pow_card_eq_one'
   · intro Q hQ h
     cases hw with
-    | mk isPgroup isMaximal =>sorry
-     -- have :∃ n, Subgroup.index H = p ^ n :=  IsPGroup.index hQ ((conjugate w ↑S).subgroupOf H : Subgroup Q)
-
-#check Equiv.Perm.subgroupOfMulAction
-
- --theorem imbedd_to_gln {G : Type*} [Group G]
+    | mk isPgroup isMaximal =>
+     --have :∃ n, Subgroup.index H = p ^ n :=  IsPGroup.index hQ ((conjugate w ↑S).subgroupOf H : Subgroup Q)
