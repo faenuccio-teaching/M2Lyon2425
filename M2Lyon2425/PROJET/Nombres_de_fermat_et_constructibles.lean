@@ -595,7 +595,16 @@ constructor
     rw [@Set.singleton_def] at hypζgen
     simp at hypζgen
     sorry
-  · sorry
+  · cases h with
+  | mk toEquiv map_mul' =>
+    have h41 : Nat.card G = p-1 := by
+      have h411 := jacobiSym.proof_1 p fermatp.1
+      have h412 := ZMod.card_units p
+      have h413 := Nat.card_congr toEquiv
+      have h414 := @Nat.card_eq_fintype_card ((ZMod ↑p)ˣ) _
+      rwa[<-h414,<-h413] at h412
+
+    sorry
 
 
 
