@@ -10,6 +10,8 @@ open Computability -- pour avoir la notation ∗
 On peut désormais facilement et de façon unifiée définir différentes propriétés
 et propositions dont les preuves sont aisées. -/
 
+section Definitions
+
 def isWeaklyCommuting (f₁ f₂ : ARS α) : Prop := f₁⇐ * f₂ ≤ f₂∗ * f₁⇐∗
 
 @[reducible]
@@ -44,36 +46,6 @@ lemma confluentEquiv {f : ARS α} : isConfluent f ↔ isConfluent' f := by
     exact hyp w x y hw
 
 def isWeaklyConfluent (f : ARS α) : Prop := f⇐ * f ≤ f∗ * f⇐∗
-
-/- Le théorème 2.2.5 du pdf, mais via la preuve issu de la partie 2.5 -/
-theorem ChurchRosser {f : ARS α} : isConfluent f ↔ isChurchRosser f := by
-  rw [isConfluent, isDiamond, isCommuting, isChurchRosser]
-  simp only [inv_trans_eq_trans_inv]
-  exact KleeneChurchRosser -- ce théorème est le clou du spectacle de KleeneAlgebra.lean
-
-/- La preuve "naïve" du même théorème (incomplète) -/
-theorem ChurchRosser' {f : ARS α} :  isConfluent f ↔ isChurchRosser f := by
-  rw [isConfluent, isDiamond, isCommuting, isChurchRosser]
-  simp only [inv_trans_eq_trans_inv]
-  constructor
-  · intro hyp
-    rw [ARS.le_iff_imp]
-    intro x y hEquiv
-    sorry -- ici, la preuve serait pénible, il faudrait faire une induction
-  · intro hyp
-    rw [ARS.le_iff_imp]
-    intro x y hBranching
-    rw [ARS.le_iff_imp] at hyp
-    have coeur : (f⇐∗ * f∗) ≤ f≡ := by
-      refine lubEquiv_contains_mul ?_ ?_
-      · simp only [
-          lubEquiv_contains_self,
-          lubEquiv_contains_inverse,
-          lubEquiv_contains_kstar
-          ]
-      · simp only [lubEquiv_contains_self, lubEquiv_contains_kstar]
-    rw [ARS.le_iff_imp] at coeur
-    exact hyp x y (coeur x y hBranching)
 
 /- Cette définition implique notamment que `f∗` n'admet **aucune** forme normale,
 puisque `f∗ a a` est vrai pour tout `a : α`. -/
@@ -132,172 +104,6 @@ lemma terminatingRelEquiv {f :ARS α} :
       intro A hfA
       exfalso
       exact (hyp A) hfA
-
-structure RedStep (f : ARS α) :=
-  a : α
-  b : α
-  red : f a b
-
-noncomputable def infRedSeq_of_emptyNF (f : ARS α) (hE : ¬ Nonempty (NF_of f)) (prems : α) (i : ℕ) :
-  RedStep f := by
-      have h₁ : ∀ b : α, ∃ c, f b c := by
-        intro b
-        simp only [nonempty_subtype, not_exists] at hE
-        have := hE b
-        rw [isNormalForm] at this
-        push_neg at this
-        exact this
-      let a := match i with
-      | 0 => prems
-      | m+1 => (infRedSeq_of_emptyNF f hE prems m).b
-      exact {
-          a := a
-          b := (h₁ a).choose
-          red := (h₁ a).choose_spec
-      }
-
-private noncomputable def RedSeqAux (f : ARS α) (hE : ¬ Nonempty (NF_of f)) (prems : α) :
-  InfRedSeq f := by
-    let T := infRedSeq_of_emptyNF f hE prems
-    exact ⟨fun i ↦ (T i).a, fun i ↦ (T i).red⟩
-
-lemma exists_NF_of_termination [Inhabited α] (f : ARS α) :
-  isTerminatingRel f → Nonempty (NF_of f) := by
-    contrapose
-    intro h
-    rw [terminatingRelEquiv, isTerminatingRel']
-    push_neg at h ⊢
-    have a : α := Inhabited.default
-    use (RedSeqAux f h a).val
-    exact (RedSeqAux f h a).prop
-
-def isProfondeur (f : ARS α) (π : α → ℕ) : Prop :=
-  ∀ a, ∃ k, π a = Nat.succ k → ∃ b, π b = k ∧ f a b
-
-def profondeurARS (f : ARS α) := Subtype (isProfondeur f)
-
-def is_of_rank (f : ARS α) (k : ℕ) (a : α) :
-  Prop := by
-    match k with
-    | 0 => exact isNormalForm f a
-    | m+1 => exact ∃ b, f a b ∧ is_of_rank f m b
-
-def ranks (f : ARS α) (a :α) := {k : ℕ | is_of_rank f k a}
-
-def inacc (f : ARS α) (a : α) := ∀ k, ¬ is_of_rank f k a
-
-def Inacc (f : ARS α) := Subtype (inacc f)
-
-lemma lAux₁ (f : ARS α) : ∀ a : Inacc f, ∃ b : Inacc f, f a.val b.val := by
-  intro ⟨a, ha⟩
-  by_cases hNFa : isNormalForm f a
-  · exfalso
-    have := ha 0
-    rw [is_of_rank] at this
-    exact this hNFa
-  · rw [isNormalForm] at hNFa
-    push_neg at hNFa
-    let b := hNFa.choose
-    by_cases hb : inacc f b
-    · use ⟨b, hb⟩
-      simp only
-      exact hNFa.choose_spec
-    · exfalso
-      rw [inacc] at hb
-      push_neg at hb
-      let k := hb.choose
-      have hAbsu := ha (k+1)
-      rw [is_of_rank] at hAbsu
-      push_neg at hAbsu
-      exact hAbsu b hNFa.choose_spec hb.choose_spec
-
-def isInfRedSeq_of_Inacc (f : ARS α) (S : ℕ → Inacc f) :=
-  ∀ i, f (S i).val (S (i+1)).val
-
-def InfRedSeq_of_Inacc ( f : ARS α) := Subtype (isInfRedSeq_of_Inacc f)
-
-noncomputable def dAux₀ (f : ARS α) (a : Inacc f) (i : ℕ): Inacc f := match i with
-    | 0 => a
-    | j+1 => (lAux₁ f ((dAux₀ f a) j)).choose
-
-noncomputable def dAux₁ (f : ARS α) (a : Inacc f) : InfRedSeq_of_Inacc f := by
-  exact ⟨dAux₀ f a, by
-    rw [isInfRedSeq_of_Inacc]
-    intro i
-    match i with
-    | 0 =>
-      have : (dAux₀ f a) 0 = a := by
-        unfold dAux₀
-        rfl
-      rw [this]
-      exact (lAux₁ f a).choose_spec
-    | j+1 =>
-      have := (lAux₁ f (dAux₀ f a (j+1))).choose_spec
-      unfold dAux₀ at this ⊢
-      exact this
-    ⟩
-
-noncomputable instance existsInfRedSeq_of_Inacc (f : ARS α) (a : Inacc f) :
-  Inhabited (InfRedSeq f) := by
-    let S := dAux₁ f a
-    use fun i ↦ (S.val i).val
-    exact fun i ↦ S.prop i
-
-lemma nonTerminating_f_of_Inacc (f : ARS α) (a : Inacc f) :
-  ¬ isTerminatingRel f := by
-    intro hfT
-    have S := (existsInfRedSeq_of_Inacc f a).default
-    rw [terminatingRelEquiv, isTerminatingRel'] at hfT
-    push_neg at hfT
-    exact hfT S.val S.prop
-
-noncomputable def π (f : ARS α) (hfT : isTerminatingRel f) (a : α) : ℕ := by
-  let ranks := {k : ℕ | is_of_rank f k a}
-  by_cases ha : inacc f a
-  · exfalso
-    exact nonTerminating_f_of_Inacc f ⟨a, ha⟩ hfT
-  · rw [inacc] at ha
-    push_neg at ha
-    have : ranks.Nonempty := by
-      use ha.choose
-      exact ha.choose_spec
-    exact minSet this
-
--- /-- Le but de cette fonction est de fournir une fonction `φ : NF_fun f`,
--- étant données `f : ARS α` et la preuve de sa terminaison. -/
--- /- Comment faire une preuve correcte (idées) :
--- + avoir une fonction `profondeur {f : ARS α} [isTerminatingRel f] : α → ℕ`, telle que
---   `profondeur a = k + 1 → ∃ b, f a b ∧ profondeur b = k)` ;
--- + `NF_fun_of_termination hfT` est bien définie, car les argument de type α successifs
---   décroissent en profondeur.
---  -/
--- noncomputable def NF_fun_of_termination {f : ARS α} (hfT : isTerminatingRel f) :
---   NF_fun f := by
---     by_cases hα : Nonempty α
---     · refine ⟨?_, ?_⟩
---       · intro a
---         by_cases h : isNormalForm f a
---         · exact ⟨a,h⟩
---         · rw [isNormalForm] at h
---           push_neg at h
---           let b := h.choose
---           exact (NF_fun_of_termination hfT).val b
---       · intro a
---         by_cases h : isNormalForm f a
---         · simp only [h, reduceDIte]
---           exact kstar_is_refl f a
---         · simp only [h, reduceDIte]
-
---           sorry
---     · refine ⟨?_, ?_⟩
---       · intro a
---         exfalso
---         have : Nonempty α := by use a
---         exact hα this
---       · intro a
---         exfalso
---         have : Nonempty α := by use a
---         exact hα this
 
 def isConvergent (f : ARS α) : Prop := isConfluent f ∧ isTerminatingRel f
 
@@ -369,101 +175,49 @@ lemma eq_of_trans_and_NF {f : ARS α} (b : NF_of f) : ∀ w, f∗ b.val w → b.
     rw [← ndef, hpredn, ← Nat.add_one, add_comm, pow_add, pow_one] at hn
     exact b.prop hn.choose hn.choose_spec.left
 
-def hasNoetherianInduction (f : ARS α) :=
-  ∀ P : α → Prop, (∀ a, (∀ b, f a b → P b) → P a) → ∀ x, P x
 
-noncomputable def dAux₃ (f : ARS α) (hf : ¬ hasNoetherianInduction f) : Inacc f := by
-  rw [hasNoetherianInduction] at hf
-  push_neg at hf
-  let P := hf.choose
-  have Pdef : P = hf.choose := by trivial
-  have ⟨hP, hx⟩ := hf.choose_spec
-  rw [←Pdef] at hP hx
-  let relous := {a | ¬ P a}
-  have neRelous : relous.Nonempty := by
-    use hx.choose
-    exact hx.choose_spec
-  let profsRelous := 0
-  let x := hx.choose
-  have xdef : x = hx.choose := by trivial
-  have hhx := hx.choose_spec
-  rw [←xdef] at hhx
-  by_cases hInacc : inacc f x
-  · exact ⟨x, hInacc⟩
-  · exfalso
-    rw [inacc] at hInacc
-    push_neg at hInacc
-    let k := hInacc.choose
-    have kdef : k = hInacc.choose := by trivial
-    have hkx := hInacc.choose_spec
-    rw [←kdef] at hkx
-    unfold is_of_rank at hkx
+end Definitions
 
-    sorry
+section Resultats
 
-theorem NoetherianInduction_from_termination {f : ARS α} (hfT : isTerminatingRel f) :
-  hasNoetherianInduction f := by
-    by_contra hNIf
-    rw [hasNoetherianInduction] at hNIf
-    push_neg at hNIf
-    let P := hNIf.choose
-    have Pdef : P = hNIf.choose := by trivial
-    have ⟨hP, hnP⟩ := hNIf.choose_spec
-    rw [←Pdef] at hP hnP
-    let relous := {a | ¬ P a}
-    have neRelous : relous.Nonempty := by
-      use hnP.choose
-      exact hnP.choose_spec
-    let profsRelous := π f hfT '' relous
-    have profsRelousdef : profsRelous = π f hfT '' relous := by trivial
-    have neProfsRelous : profsRelous.Nonempty := by sorry
-    let kmin := minSet neProfsRelous
-    have kmindef : kmin = minSet neProfsRelous := by trivial
-    -- have : kmin ∈ profsRelous := minSet_in_A neProfsRelous
-    -- rw [profsRelousdef] at this
-    let minRelous := π f hfT ⁻¹' {kmin}
-    have minRelousdef : minRelous = π f hfT ⁻¹' {kmin} := by trivial
-    have neMinRelous : minRelous.Nonempty := by sorry
-    let x := neMinRelous.choose
-    have xdef : x = neMinRelous.choose := by trivial
-    have hx := neMinRelous.choose_spec
-    rw [←xdef, minRelousdef, kmindef] at hx
-    simp at hx
-    sorry
-    -- intro P
-    -- contrapose
-    -- push_neg
-    -- intro hnPx
-    -- let x := hnPx.choose
-    -- have xdef : x = hnPx.choose := by trivial
-    -- have hx := hnPx.choose_spec
-    -- rw [← xdef] at hx
-    -- have := hfT x
-    -- by_cases hNFx : isNormalForm f x
-    -- · have : ∀ b, f x b → P b := by
-    --     intro y hAbsu
-    --     exfalso
-    --     exact hNFx y hAbsu
-    --   use x
-    -- · let ⟨φ, hφ⟩ := NF_fun_of_termination hfT
-    --   let ⟨φx , hφx⟩ := φ x
-    --   use φx
-    --   constructor
-    --   · intro b hfφxb
-    --     exfalso
-    --     exact hφx b hfφxb
-    --   · intro hPφx
-    --     sorry
+/- Le théorème 2.2.5 du pdf, mais via la preuve issu de la partie 2.5 -/
+theorem ChurchRosser {f : ARS α} : isConfluent f ↔ isChurchRosser f := by
+  rw [isConfluent, isDiamond, isCommuting, isChurchRosser]
+  simp only [inv_trans_eq_trans_inv]
+  exact KleeneChurchRosser -- ce théorème est le clou du spectacle de KleeneAlgebra.lean
 
+/- La preuve "naïve" du même théorème (incomplète) -/
+theorem ChurchRosser' {f : ARS α} :  isConfluent f ↔ isChurchRosser f := by
+  rw [isConfluent, isDiamond, isCommuting, isChurchRosser]
+  simp only [inv_trans_eq_trans_inv]
+  constructor
+  · intro hyp
+    rw [ARS.le_iff_imp]
+    intro x y hEquiv
+    sorry -- ici, la preuve serait pénible, il faudrait faire une induction
+  · intro hyp
+    rw [ARS.le_iff_imp]
+    intro x y hBranching
+    rw [ARS.le_iff_imp] at hyp
+    have coeur : (f⇐∗ * f∗) ≤ f≡ := by
+      refine lubEquiv_contains_mul ?_ ?_
+      · simp only [
+          lubEquiv_contains_self,
+          lubEquiv_contains_inverse,
+          lubEquiv_contains_kstar
+          ]
+      · simp only [lubEquiv_contains_self, lubEquiv_contains_kstar]
+    rw [ARS.le_iff_imp] at coeur
+    exact hyp x y (coeur x y hBranching)
 
-/- Le théorème 2.3.8-i -/
+/- Le théorème 2.3.8-i du pdf -/
 example (f : ARS α) :
   hasNormalFormProp f → hasUniqueNormalFormProp f :=  by
     intro hfNFProp a b hab
     have hfNFconcl := hfNFProp a b hab
     exact Subtype.ext_val (eq_of_trans_and_NF a b.val hfNFconcl)
 
-/- Le théorème 2.3.8-ii -/
+/- Le théorème 2.3.8-ii du pdf -/
 example (f : ARS α) :
   isConfluent f → hasNormalFormProp f := by
     intro hfConf a b hfab
@@ -479,7 +233,7 @@ example (f : ARS α) :
     rw [← this] at hwa
     exact hwa
 
-/- Le théorème 2.3.8-iii -/
+/- Le théorème 2.3.8-iii du pdf -/
 noncomputable example (f : ARS α) :
   isSemiConvergent f → isConfluent f := by
     intro hfSC
@@ -499,6 +253,10 @@ noncomputable example (f : ARS α) :
       have := (hfSC.left (φ a) (φ b') h)
       rw [this]
       exact hφ b'
+
+end Resultats
+
+section PasFini
 
 noncomputable instance inhabited_NF_fun_of_confluence_and_normalization
   {f : ARS α} (_ : isConfluent f) (hfNR : isNormalizingRel f) :
@@ -546,6 +304,8 @@ instance subsingleton_NF_fun_of_confluence_and_normalization
           rw [← nφdef, hpredn, ← Nat.add_one, add_comm, pow_add, pow_one] at hnφ
           exact (φ x).prop hnφ.choose hnφ.choose_spec.left
 
+/- Je n'ai pas eu le temps de finaliser ce résultats, néanmoins,
+il me semblait intéressant de préciser que je voulais le prouver. -/
 noncomputable example
   {f : ARS α} (hfC : isConfluent f) (hfNR : isNormalizingRel f) :
   ∀ φ : NF_fun f, ∀ a b : α, (f≡) a b ↔ (φ.val a = φ.val b) := by
@@ -576,6 +336,7 @@ noncomputable example
           ((subsingleton_NF_fun_of_confluence_and_normalization hfC hfNR).allEq
             ⟨φ, hφ⟩ ⟨ψ, hψ⟩)
       · push_neg at h
-
         sorry
     · sorry
+
+end PasFini

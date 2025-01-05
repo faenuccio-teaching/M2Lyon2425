@@ -1,6 +1,15 @@
+/- Résultats inutilisés. Je voulais l'utiliser à l'origine pour
+la preuve de l'induction noetherienne. -/
 import Mathlib
 
+/- On (re)définit une fonction `minSet {A : Set ℕ} : A.Nonempty → ℕ`
+et on prouve que cette fonction coincide bien avec le minimum de `A`.
+En passant, on définit la fonction auxilliaire
+`minSetAux {a : ℕ} {A : Set ℕ} (n : ℕ) : (a ∈ A ∧ n ≤ a) → ℕ`
+qui facilite les preuves voulues. -/
 
+/-- Étant donné `A : Set ℕ`, `a ∈ A`, `n ∉ A`, on a
+l'implication `n ≤ a → n+1 ≤ a`. -/
 lemma lAux₃ (A : Set ℕ) (a : ℕ) (ha : a ∈ A) (n : ℕ) (hn : n ∉ A) :
   n ≤ a → n+1 ≤ a := by
     intro h
@@ -14,10 +23,11 @@ lemma lAux₃ (A : Set ℕ) (a : ℕ) (ha : a ∈ A) (n : ℕ) (hn : n ∉ A) :
       exact h₂
 
 
-/-- Calcule le plus petit entier de `A` supérieur à `n`,
-étant donné l'existence d'un tel élément -/
-private noncomputable def minSetAux {a : ℕ} (A : Set ℕ) (n : ℕ) (ha : a ∈ A ∧ n ≤ a) :
-  ℕ := by
+/-- Calcule le plus petit entier de `A : Set ℕ` supérieur à `n : ℕ`,
+étant donnée l'existence d'un élément `a : ℕ` dans A et supérieur à n -/
+private noncomputable def minSetAux {a : ℕ} {A : Set ℕ} (n : ℕ) :
+  a ∈ A ∧ n ≤ a → ℕ := by
+  intro ha
   by_cases h₁ : n ∈ A
   · exact n
   · have ⟨haA, han⟩ := ha
@@ -31,11 +41,11 @@ private noncomputable def minSetAux {a : ℕ} (A : Set ℕ) (n : ℕ) (ha : a �
           rw [h₂] at h₁
           exact h₁ haA
         | inr h => exact h
-    exact minSetAux A (n+1) this
+    exact minSetAux (n+1) this
 termination_by a - n
 
 lemma minSetAux_in_A {a : ℕ} (A : Set ℕ) (n : ℕ) (ha : a ∈ A ∧ n ≤ a) :
-  minSetAux A n ha ∈ A := by
+  minSetAux n ha ∈ A := by
     rw [minSetAux]
     split
     · case isTrue h => exact h
@@ -51,7 +61,7 @@ lemma minSetAux_in_A {a : ℕ} (A : Set ℕ) (n : ℕ) (ha : a ∈ A ∧ n ≤ a
         · exact minSetAux_in_A A (n+1) this
 
 lemma minSetAuxIncr {a : ℕ} (A : Set ℕ) (n : ℕ) (ha : a ∈ A ∧ n ≤ a) :
-  n ≤ minSetAux A n ha ∧ minSetAux A n ha ≤ a := by
+  n ≤ minSetAux n ha ∧ minSetAux n ha ≤ a := by
     constructor
     · unfold minSetAux
       simp
@@ -88,7 +98,7 @@ lemma minSetAuxIncr {a : ℕ} (A : Set ℕ) (n : ℕ) (ha : a ∈ A ∧ n ≤ a)
 termination_by a - n
 
 lemma minSetAuxStable (A : Set ℕ) (n a b : ℕ) (ha : a ∈ A) (hb : b ∈ A) (hn : n ≤ a ∧ n ≤ b) :
-  minSetAux A n ⟨ha, hn.left⟩ = minSetAux A n ⟨hb, hn.right⟩ := by
+  minSetAux n ⟨ha, hn.left⟩ = minSetAux n ⟨hb, hn.right⟩ := by
     rw [minSetAux, minSetAux]
     simp only
     split
@@ -113,7 +123,7 @@ decreasing_by
   exact this
 
 lemma minSetAuxIncr₂ {a : ℕ} (A : Set ℕ) (ha : a ∈ A) (n m : ℕ) (hn : n ≤ a) (hm : m ≤ a) :
-  n ≤ m → minSetAux A n ⟨ha, hn⟩ ≤ minSetAux A m ⟨ha, hm⟩ := by
+  n ≤ m → minSetAux n ⟨ha, hn⟩ ≤ minSetAux m ⟨ha, hm⟩ := by
     intro hnm
     unfold minSetAux
     simp
@@ -159,13 +169,13 @@ decreasing_by
   exact this
 
 noncomputable def minSet {A : Set ℕ} (hA : A.Nonempty) : ℕ := by
-  exact minSetAux A 0 ⟨hA.choose_spec, by omega⟩
+  exact minSetAux 0 ⟨hA.choose_spec, by omega⟩
 
 lemma minSet_in_A {A : Set ℕ} (hA : A.Nonempty) : minSet hA ∈ A := by
   exact minSetAux_in_A A 0 ⟨hA.choose_spec, by omega⟩
 
 lemma minSetAux_is_min {a : ℕ} {A : Set ℕ} (n : ℕ) (ha : a ∈ A ∧ n ≤ a) :
-  n < minSetAux A n ha →  ¬ n ∈ A := by
+  n < minSetAux n ha →  ¬ n ∈ A := by
     intro h₁ h₂
     rw [minSetAux] at h₁
     simp only [h₂, reduceDIte, lt_self_iff_false] at h₁
@@ -180,8 +190,8 @@ lemma minSet_is_min {A : Set ℕ} (hA : A.Nonempty) :
     simp at hm
     by_cases h : n ≤ a
     · have ineq₁ := minSetAuxIncr₂ A hA.choose_spec 0 n (by omega) h (by omega)
-      have ineq₂ : n < minSetAux A n ⟨hA.choose_spec, h⟩ := by omega
+      have ineq₂ : n < minSetAux n ⟨hA.choose_spec, h⟩ := by omega
       exact minSetAux_is_min n ⟨hA.choose_spec, h⟩ ineq₂ h₁
-    · have ineq₁ : a < minSetAux A 0 ha := by omega
+    · have ineq₁ : a < minSetAux 0 ha := by omega
       have ineq₂ := (minSetAuxIncr A 0 ha).right
       omega

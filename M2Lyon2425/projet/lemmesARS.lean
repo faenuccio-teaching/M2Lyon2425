@@ -1,3 +1,4 @@
+/- Un lemme très utilisé -/
 import «M2Lyon2425».projet.ARSinstKleene
 
 variable {α : Type*}
