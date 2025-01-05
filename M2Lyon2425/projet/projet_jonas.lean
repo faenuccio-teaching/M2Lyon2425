@@ -378,7 +378,7 @@ constructor
   rfl
 
 
-theorem structure_char2' : ((SO(2,F_2_exp_n)) ≃* ZMod (Nat.card F_2_exp_n) ) := by
+theorem structure_char2' : ((SO(2,F_2_exp_n)) ≃* ZMod (2) ^ n  ) := by
 
   sorry
 

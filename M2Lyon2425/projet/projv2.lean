@@ -309,6 +309,35 @@ theorem desc_E  (F : Type*) [Field F] (f: F[X]) : (∃ g : F[X], g.degree ≤ 1 
     nth_rewrite 2 [← h_div]
     ring
 
+lemma p_deg_one_eq (F : Type*) [Field F] (g' : F[X]) (hg1 : g'.degree ≤ 1) : ( g' = C (g'.coeff 0) + C (g'.coeff 1) * X) := by
+  rw[Polynomial.ext_iff]
+  intro i
+  if hi : i = 0 then
+    rw[hi]
+    change g'.coeff 0 = (C (g'.coeff 0) + C (g'.coeff 1) * X).coeff 0
+    simp only [coeff_C, coeff_X, coeff_add, coeff_C_mul, zero_mul, add_zero]
+    ring_nf
+  else
+  if hii : i = 1 then
+    rw[hii]
+    simp only [coeff_C, coeff_X, coeff_add, coeff_C_mul, zero_mul, add_zero]
+    ring_nf
+  else
+  have hiii :  2 ≤ i := by
+    refine (Nat.two_le_iff i).mpr ?_
+    constructor
+    exact hi
+    exact hii
+  simp only [coeff_C, coeff_X, coeff_add, coeff_C_mul, zero_mul, add_zero,hi, hii ]
+  ring_nf
+  rw [g'.degree_le_iff_coeff_zero 1] at hg1
+  rw[hg1]
+  have hiiii : (1=i)=False := by
+    exact eq_false fun a ↦ hii (id (Eq.symm a))
+  simp only [hiiii]
+  ring_nf
+  exact Nat.one_lt_cast.mpr hiii
+
 --def pi : F × F  → (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) :=
 noncomputable def pi  (F : Type*) [Field F] (a : (F ×  F)) := proj_FX_to_E F (C a.1 + C a.2 * X)
 
@@ -346,11 +375,14 @@ noncomputable def desc_E' (F : Type*) [Field F] :F × F ≃ (F[X] ⧸ Ideal.span
     obtain ⟨g, hg⟩ := desc_E F (Quotient.out' f)
     use (g.coeff 0, g.coeff 1)
     have : g = C (g.coeff 0) + C (g.coeff 1) * X := by
-      sorry
+      exact p_deg_one_eq F g hg.1
     change proj_FX_to_E F (C (g.coeff 0) + C (g.coeff 1) * X) = f
     rw [← this, hg.2]
     exact Quotient.out_eq' f
 
+
+noncomputable def desc_F_quo_deg_1 (F : Type*) [Field F] (i : F) : F ≃ (F[X] ⧸ Ideal.span ({X - C i} : Set F[X])) := by
+  sorry
 
 -- Compose p' with the projection map
 noncomputable def p : D F →+* (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) :=
@@ -424,6 +456,8 @@ theorem p_inj (F : Type*) [Field F] :  Function.Injective (p : D F →+* (F[X] �
   | 0, 1 => exact h1
   | 1, 1 => exact h0
 
+
+
 theorem p_surj (F : Type*) [Field F] : Function.Surjective (p : D F →+* (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))) := by
   intro f
   have h := @Ideal.Quotient.mk_surjective (R:=F[X]) (I :=Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))
@@ -431,44 +465,16 @@ theorem p_surj (F : Type*) [Field F] : Function.Surjective (p : D F →+* (F[X] 
   have hg := desc_E F g
   obtain ⟨g', hg'⟩ := hg
   have hg1 := hg'.1
-  rw [g'.degree_le_iff_coeff_zero 1] at hg1
+  --rw [g'.degree_le_iff_coeff_zero 1] at hg1
   set a := g'.coeff 0
   set b := g'.coeff 1
   have : g' = C a + C b * X := by
-    rw[Polynomial.ext_iff]
-    intro i
-    if hi : i = 0 then
-      rw[hi]
-      change g'.coeff 0 = (C (g'.coeff 0) + C b * X).coeff 0
-      simp only [coeff_C, coeff_X, coeff_add, coeff_C_mul, zero_mul, add_zero]
-      ring_nf
-    else
-    if hii : i = 1 then
-      rw[hii]
-      simp only [coeff_C, coeff_X, coeff_add, coeff_C_mul, zero_mul, add_zero]
-      ring_nf
-    else
-    have hiii :  2 ≤ i := by
-      refine (Nat.two_le_iff i).mpr ?_
-      constructor
-      exact hi
-      exact hii
-
-    simp only [coeff_C, coeff_X, coeff_add, coeff_C_mul, zero_mul, add_zero,hi, hii ]
-    ring_nf
-    rw[hg1]
-    have hiiii : (1=i)=False := by
-      exact eq_false fun a ↦ hii (id (Eq.symm a))
-
-    simp only [hiiii]
-    ring_nf
-    exact Nat.one_lt_cast.mpr hiii
+    exact p_deg_one_eq F g' hg1
   set A : Matrix (Fin 2) (Fin 2) F := !![a, -b; b, a]
   set B : D F := ⟨ A , {
     left := by rfl
     right := by change b = - - b
-                rw [neg_neg]
-            }  ⟩
+                rw [neg_neg]    }  ⟩
   use B
   rw[p]
   dsimp
@@ -494,6 +500,7 @@ noncomputable def D_star_iso_E_star (F : Type*) [Field F ] : (D F)ˣ  ≃* (F[X]
   exact this.toMulEquiv
 
 
+
 def q : (D F)ˣ →* Fˣ := {
   toFun := λ A => ⟨ Matrix.det (A.val.val), Matrix.det (A.2.val), by rw[← Matrix.det_mul, ← coe_mul , A.3,coe_one , Matrix.det_one]
    , by rw[← Matrix.det_mul, ← coe_mul , A.4 ,coe_one , Matrix.det_one]  ⟩
@@ -516,34 +523,122 @@ variable { p : Nat  }[Fact (Nat.Prime p)][hp3 : Fact (p ≥ 3)]
 
 variable [Fintype F][hF : Fact (ringChar F ≠ 2)]
 
+open Finset
 
+-- Define the set {1, -1} as a Finset
+def one_neg_one_set (F : Type*) [Field F] [DecidableEq F] : Finset Fˣ :=
+  {1, -1}
+
+-- Prove that the cardinality of the set {1, -1} is 2
+lemma card_one_neg_one_set (F : Type*) [Field F] [DecidableEq F] : Nat.card (one_neg_one_set F) = 2 := by
+  -- Convert the Finset to a Set and use Finset.card
+  have h : (one_neg_one_set F : Set Fˣ) = {1, -1} := by
+    ext x
+    simp [one_neg_one_set]
+  rw [h]
+  -- Use Finset.card to count the number of elements
+  exact Finset.card_insert_of_not_mem (by simp) (Finset.singleton 1)
+
+
+def B  (F : Type*) [Field F ] [Fintype F ]  c := {a : F | ∃ d : F, (c - d^2) = a}
+def sqq  (F : Type*) [Field F ] [Fintype F] : (Fˣ) →* Fˣ := MonoidHom.id (Fˣ) * MonoidHom.id (Fˣ)
 
 def A   (F : Type*) [Field F ] [Fintype F ] := {a : F | ∃ b : F, b^2 = a}
-def B  (F : Type*) [Field F ] [Fintype F ]  c := {a : F | ∃ d : F, (c - d^2) = a}
 
 
+theorem kersqq (F : Type*) [Field F ] [Fintype F ](hF : ringChar F ≠ 2) :
+    Nat.card (MonoidHom.ker (sqq F): Set Fˣ) =  2 := by
 
-theorem number_of_squares (F : Type*) [Field F ] [Fintype F ] (hF : ringChar F ≠ 2)  : Nat.card (A F) = (Nat.card F +1)/2 := by
-   sorry
+  have h : MonoidHom.ker (sqq F) = ({1 , -1 } : Set Fˣ) := by
+    refine Set.Subset.antisymm ?h₁ ?h₂
+    · intros x hx
+      have hx2 : x ∈ (sqq F).ker := by
+        exact hx
+      rw [MonoidHom.mem_ker] at hx2
+      change x * x = 1 at hx2
+      rw[← pow_two ] at hx2
+      have h : (x^2).val = 1 := by
+        simp only [hx2]
+        rfl
+      have : x.val^2 =1 := by
+        exact h
+      have : x.val ∈ ({1 , -1 } : Set F) := by
+
+        have ht : x.val = 1 ∨ x.val = -1 := by
+          exact sq_eq_one_iff.mp h
+        exact ht
+      cases this with
+      | inl h => refine Set.mem_insert_iff.mpr ?h₁.inl.a;  left; exact Units.ext h
+      | inr h => refine Set.mem_insert_iff.mpr ?h₁.inr.a; right; exact Units.ext h
+    · intro x hx
+      refine SetLike.mem_coe.mpr ?h₂.a
+      rw[Set.mem_insert_iff] at hx
+      rw[sqq]
+      change x*x=1
+      cases hx with
+      | inl h => rw[h,one_mul]
+      | inr h => rw[h, ← pow_two, neg_one_sq]
+  rw[h]
+  have hFin : Finset  ({1, -1}: Set Fˣ) := by
+    exact Finset.empty
+  apply Nat.card_eq_two_iff
+
+theorem number_of_squares (F : Type*) [Field F] [Fintype F] (hF : ringChar F ≠ 2) :
+    Nat.card (A F) = (Nat.card F +1)/2 := by
+  have : A F = Set (MonoidHom.range (sqq))
+
+
 theorem number_of_squares' (F : Type*) [Field F ] [Fintype F ] (hF : ringChar F ≠ 2) c : Nat.card (B F c) = (Nat.card F +1)/2 := by
    sorry
 
-theorem antecedent_det (F : Type*) [Field F ] [Fintype F ] [DecidableEq F] (hF : ringChar F ≠ 2) c : (∃ a b : F , a^2 = c - b^2 ) := by
+theorem antecedent_det (F : Type*) [Field F ] [Fintype F ] [DecidableEq F] (hF : ringChar F ≠ 2) c :
+    (∃ a b : F , a^2 = c - b^2 ) := by
   have hA := number_of_squares F hF
   have hB := number_of_squares' F hF c
   have hAA : Fintype (A F) := by
     exact Set.fintypeRange fun y ↦ y ^ 2
   have hBB : Fintype (B F c) := by
     exact Set.fintypeRange fun y ↦ c - y ^ 2
+  have : Nat.card ((A F ∩ B F c):Set F) ≥ 1 := by
+    sorry
 
   have : (Set.toFinset (A F) ∩ Set.toFinset (B F c)).card ≥ 1 := by
-    have h : (Set.toFinset (A F) ∩ Set.toFinset (B F c)).card +(Set.toFinset (A F) ∪ Set.toFinset (B F c)).card = Nat.card (A F) + Nat.card (B F c) :=  by
+    have h : (Set.toFinset (A F) ∩ Set.toFinset (B F c)).card +(Set.toFinset (A F) ∪ Set.toFinset (B F c)).card =
+        Nat.card (A F) + Nat.card (B F c) :=  by
       rw[Nat.card_eq_card_toFinset (A F), Nat.card_eq_card_toFinset (B F c)]
       exact Finset.card_inter_add_card_union (Set.toFinset (A F)) (Set.toFinset (B F c))
+    have h' : Nat.card ((A F ∩ B F c):Set F) + Nat.card (((A F) ∪ (B F c)):Set F) =  Nat.card (A F) + Nat.card (B F c) := by
+      rw [← h]
+      rw [← Set.toFinset_union,  ← Set.toFinset_inter, Set.toFinset_card, Set.toFinset_card]
+      rw[Nat.card_eq_fintype_card,Nat.card_eq_fintype_card]
     rw[hA, hB] at h
     ring_nf at h
 
-    sorry
+
+    have h_union : (Set.toFinset (A F) ∪ Set.toFinset (B F c)).card ≤ Nat.card ( F) := by
+
+      have : Nat.card (((A F) ∪ (B F c)):Set F)  ≤ Nat.card F := by
+        exact Finite.card_subtype_le fun x ↦ x ∈ A F ∪ B F c
+
+      rw [← Set.toFinset_union, Set.toFinset_card]
+      rw[← Nat.card_eq_fintype_card]
+      exact this
+    replace h :  (Set.toFinset (A F) ∩ Set.toFinset (B F c)).card =  (1 + Nat.card F) / 2 * 2  - ((A F).toFinset ∪ (B F c).toFinset).card := by
+      exact Nat.eq_sub_of_add_eq h
+    rw[h]
+    refine Nat.le_sub_of_add_le ?h
+    have : (1 + Nat.card F) / 2 * 2 = 1 + Nat.card F := by
+      refine Nat.div_two_mul_two_of_even ?_
+      sorry
+    rw[this ]
+    exact Nat.add_le_add_left h_union 1
+
+  have : 0 < ((A F).toFinset ∩ (B F c).toFinset).card  := by
+    exact this
+  rw[Finset.card_pos] at this
+  have h_exists : ∃ a : ((A F).toFinset ∩ (B F c).toFinset),  True :=
+
+
 
 
   sorry
@@ -552,42 +647,40 @@ theorem antecedent_det (F : Type*) [Field F ] [Fintype F ] [DecidableEq F] (hF :
 instance coe_invertible (F : Type*)  [Field F ] [Fintype F ] [DecidableEq F]  (A : D F) [ Invertible A.val] : Invertible A :=
 {
   invOf := ⟨⅟A, by
-
-    have h := Matrix.mul_adjugate A.val
+    have h := A.prop
     have h1 : Invertible (A.val).det := by
       exact (A.val).detInvertibleOfInvertible
-    have h2 : A.val * (A.val.adjugate) * (⅟((A.val).det)• 1) = 1 := by
-      rw[h]
-      rw[smul_mul_assoc, mul_smul_comm]
-      rw[smul_smul]
-      rw[mul_invOf_self]
-      rw[one_smul, one_mul]
+
+    have : ⅟A.val = ⅟((A.val).det) • (A.val.adjugate)  := by
+      exact Matrix.invOf_eq A.val
+    rw[this]
+    rw[Matrix.adjugate_fin_two]
+
+    constructor
+    change ⅟((A.val).det) * A.val 1 1 = ⅟((A.val).det) * A.val 0 0
+    rw[h.1]
+    change ⅟((A.val).det) *  (- (A.val 1 0)) =  - (⅟((A.val).det) * (- (A.val 0 1)))
+    rw[h.2, neg_neg, ← neg_mul,neg_mul_neg]
+
+    ⟩,
+  invOf_mul_self := by
+    have : ⅟A.val * A = 1 := by
+      exact invOf_mul_self A.val
 
     sorry
-
-
-
-  ⟩,
-  invOf_mul_self := by
-    ext i j
-    simp only [Matrix.mul_apply, Matrix.one_apply, Matrix.invOf_apply, Matrix.invOf_mul_self, A.property.1, A.property.2]
-
   mul_invOf_self := by
-    ext i j
-    simp only [Matrix.mul_apply, Matrix.one_apply, Matrix.invOf_apply, Matrix.invOf_mul_self, A.property.1, A.property.2]
+    sorry
 }
 
 
-
-
-theorem q_surj (F : Type*) [Field F ] [Fintype F ][DecidableEq F]  (hF : ringChar F ≠ 2) : Function.Surjective (q : (D F)ˣ →* Fˣ) := by
+theorem q_surj (F : Type*) [Field F ] [Fintype F ][DecidableEq F]  (hF : ringChar F ≠ 2) :
+    Function.Surjective (q : (D F)ˣ →* Fˣ) := by
   intro c
   have h := antecedent_det F hF c
   obtain ⟨ a, b , h ⟩  :=  h
   replace h : a^2 + b^2 = c.val := by
     rw [h]
     ring
-
   set A : D F := ⟨!![a, -b; b, a], ⟨rfl, by change b = - - b; rw[neg_neg] ⟩⟩
   have : Invertible A := by
     have : Invertible A.val := by
@@ -598,17 +691,23 @@ theorem q_surj (F : Type*) [Field F ] [Fintype F ][DecidableEq F]  (hF : ringCha
         rw[h]
         exact c.invertible
       apply Matrix.invertibleOfDetInvertible
-
-  have A_unit : (D F)ˣ := ⟨A, ⟨A^-1, by , by simp⟩, by simp, by simp⟩
-
-
-  sorry
+    exact coe_invertible F A
+  set B : (D F)ˣ := unitOfInvertible A
+  use B
+  rw[q]
+  dsimp
+  refine Units.eq_iff.mp ?h.a
+  change Matrix.det (A.val) = c.val
+  simp only [Matrix.det_fin_two]
+  change a * a - (-b) * b = c.val
+  ring_nf
+  exact h
 
 def SO2  (F : Type*) [Field F ] [Fintype F ][DecidableEq F] := MonoidHom.ker (q : (D F)ˣ →* Fˣ)
 
 open Polynomial
 
-theorem card_field_inv (F : Type*) [Field F ] [Fintype F ][DecidableEq F]  : Nat.card (Fˣ) = Nat.card (F) -1 := by
+theorem card_field_inv (F : Type*) [Field F] [Fintype F] [DecidableEq F] : Nat.card (Fˣ) = Nat.card (F) -1 := by
   have hF : Fˣ ≃ {x : F // x ≠ 0} := by
     exact unitsEquivNeZero
   have Nat_card_Fx : Nat.card (Fˣ) = Nat.card ({x : F // x ≠ 0}) := by
@@ -622,13 +721,13 @@ theorem card_field_inv (F : Type*) [Field F ] [Fintype F ][DecidableEq F]  : Nat
 
 
 
-theorem card_So2 (F : Type*) [Field F ] [Fintype F ][DecidableEq F] [Nonempty F]  (hF : ringChar F ≠ 2) : Nat.card (SO2 F) = Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) / (Nat.card (F) -1) := by
+theorem card_So2 (F : Type*) [Field F ] [hFin : Fintype F ][hDec : DecidableEq F] [Nonempty F]  (hF : ringChar F ≠ 2) : Nat.card (SO2 F) = Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) / (Nat.card (F) -1) := by
   have : (D F)ˣ  ≃* (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ := D_star_iso_E_star F
   have : Nat.card ((D F)ˣ)  = Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) := by
     refine Nat.card_congr ?f
     exact this.toEquiv
   rw[← this]
-  have : Nat.card (Fˣ) = Nat.card (F) -1 := card_field_inv F
+  have : Nat.card (Fˣ) = Nat.card (F) -1 := card_field_inv F _ ?_ ?_
   rw[← this]
   change   Nat.card  (MonoidHom.ker (q : (D F)ˣ →* Fˣ)) = Nat.card (D F)ˣ / Nat.card Fˣ
   have :  (D F)ˣ ⧸ (MonoidHom.ker (q : (D F)ˣ →* Fˣ))  ≃* MonoidHom.range (q : (D F)ˣ →* Fˣ) := by
@@ -640,7 +739,6 @@ theorem card_So2 (F : Type*) [Field F ] [Fintype F ][DecidableEq F] [Nonempty F]
     have :Nat.card ( (D F)ˣ ⧸ (MonoidHom.ker (q : (D F)ˣ →* Fˣ))) * Nat.card (MonoidHom.ker (q : (D F)ˣ →* Fˣ)) = Nat.card ((D F)ˣ)  := by
       exact Eq.symm (Subgroup.card_eq_card_quotient_mul_card_subgroup q.ker)
     rw [← this, h ]
-
   have : MonoidHom.range (q : (D F)ˣ →* Fˣ) ≃ Fˣ := by
     have : Function.Surjective (q : (D F)ˣ →* Fˣ) := q_surj F hF
     exact Equiv.subtypeUnivEquiv this
@@ -652,23 +750,139 @@ theorem card_So2 (F : Type*) [Field F ] [Fintype F ][DecidableEq F] [Nonempty F]
   constructor
   · exact instNonemptyOfInhabited
   · exact instFiniteUnits
+  exact hFin
+  exact hDec
+
+
+
 
 noncomputable def q' (F : Type*) [Field F ] [Fintype F ][DecidableEq F] := Nat.card F
 
-theorem formE_Xsq_irr (F : Type*) [Field F ] [Fintype F ][DecidableEq F](h_sq : Irreducible (X^2+1:F[X])) : Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) = (q' F)^2 -1 := by
+set_option maxHeartbeats 300000
+theorem cardE_Xsq_irr (F : Type*) [Field F ] [Fintype F ][DecidableEq F](h_sq : Irreducible (X^2+1:F[X])) :
+    Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) = (q' F)^2 -1 := by
   have : Ideal.IsMaximal (Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
     exact PrincipalIdealRing.isMaximal_of_irreducible h_sq
-  have : IsField (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
+  have hField : IsField (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
     exact (Ideal.Quotient.maximal_ideal_iff_isField_quotient (Ideal.span {X ^ 2 + 1})).mp this
-  let q := q' F
-
-  have : Nat.card (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) = q^2 := by
+  have hField' : Field (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) :=  by
+    exact Ideal.Quotient.field (Ideal.span {X ^ 2 + 1})
+  have hDec : DecidableEq (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
+    exact Classical.typeDecidableEq (F[X] ⧸ Ideal.span {X ^ 2 + 1})
+  have hFin : Fintype (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
+    exact Fintype.ofEquiv (F × F) (desc_E' F)
+  have test : Nat.card (F[X] ⧸ Ideal.span (α := F[X]) {X ^ 2 + 1}) = q' F ^ 2 := sorry
+ -- rw [← test]
+  have : Nat.card (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) = q' F ^2 := by
     have : F × F ≃ (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := desc_E' F
     have h : Nat.card (F × F) = Nat.card  F * Nat.card  F := by
       exact Nat.card_prod F F
     have : Nat.card (F × F) = Nat.card (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
       exact Nat.card_congr this
     rw[← this, h]
-    exact Eq.symm (Nat.pow_two q)
-  change  Nat.card (F[X] ⧸ Ideal.span {X ^ 2 + 1})ˣ = q ^ 2 - 1
-  apply?
+    exact Eq.symm (Nat.pow_two (q' F))
+  --rw [← this]
+  have test2 : Nat.card (F[X] ⧸ Ideal.span (α := F[X]) {X ^ 2 + 1})ˣ = Nat.card (F[X] ⧸ Ideal.span (α := F[X]) {X ^ 2 + 1}) - 1 := sorry
+
+ -- apply @card_field_inv ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))) hField' hFin hDec
+
+
+
+  have hF : Nat.card (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ =
+      Nat.card (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) - 1 :=
+    card_field_inv ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])))
+  rw [this] at hF
+
+
+
+  exact hF
+
+
+
+  sorry
+
+theorem cardE_Xsq_red (F:Type*) [Field F ] [Fintype F ][DecidableEq F]  (hF : ringChar F ≠ 2) (h_sq : (∃ i: F, X^2 +1 = (X - C i)*(X+ C i))) : Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) = ((q' F)-1)^2 := by
+  obtain ⟨i, hi⟩ := h_sq
+
+  have : (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) ≃+* (F[X] ⧸ Ideal.span ({X - C i } : Set F[X])) ×  (F[X] ⧸ Ideal.span ({X+ C i} : Set F[X])) := by
+    rw[hi ]
+    have : Ideal.span ({(X - C i )*  (X+C i)} : Set F[X]) = Ideal.span ({X - C i } : Set F[X]) * Ideal.span ({X + C i} : Set F[X]) := by
+      exact Eq.symm (Ideal.span_singleton_mul_span_singleton (X - C i) (X + C i))
+    rw[this]
+    have coprime : IsCoprime (Ideal.span {X - C i}) (Ideal.span {X + C i})  := by
+      sorry
+
+    exact (Ideal.span {X - C i}).quotientMulEquivQuotientProd (Ideal.span {X + C i}) coprime
+  have : ((F[X] ⧸ Ideal.span {X - C i}) × F[X] ⧸ Ideal.span {X + C i})ˣ ≃* (F[X] ⧸Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ := by
+    refine Units.mapEquiv ?h
+    exact this.toMulEquiv.symm
+  have : Nat.card (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ  = Nat.card ((F[X] ⧸ Ideal.span ({X - C i} : Set F[X])) × (F[X] ⧸ Ideal.span ({X + C i} : Set F[X])))ˣ  := by
+    exact Nat.card_congr this.toEquiv.symm
+  rw[this]
+  have :  Nat.card (F[X] ⧸ Ideal.span ({X - C i}: Set F[X]))ˣ = q' F - 1 := by
+
+    haveI : Field (F[X] ⧸ Ideal.span ({X - C i}: Set F[X])) := by
+      have : Irreducible (X - C i) := by
+        exact irreducible_X_sub_C i
+      have : Ideal.IsMaximal ( Ideal.span ({X - C i}: Set F[X])) := by
+        exact PrincipalIdealRing.isMaximal_of_irreducible this
+      exact Ideal.Quotient.field (Ideal.span {X - C i})
+    haveI : Fintype  (F[X] ⧸ Ideal.span ({X - C i}: Set F[X])) := by
+      sorry
+
+
+
+     -- refine Ideal.Quotient.field (Ideal.span ({X - C i}:Set F[X]))
+
+    rw [card_field_inv (F[X] ⧸ Ideal.span ({X - C i}: Set F[X]))]
+
+  sorry
+
+theorem card_F_ge_two (F : Type*) [Field F ] [Fintype F ][DecidableEq F] [Nonempty F] (hF : ringChar F ≠ 2) : Nat.card F > 1 := by
+  have h := Fintype.card_pos_iff.mpr (by infer_instance : Nonempty F)
+  sorry
+
+
+
+theorem card_So2_Xsq_irr  (F : Type*) [Field F ] [Fintype F ][DecidableEq F](h_sq : Irreducible (X^2+1:F[X])) (hF : ringChar F ≠ 2)   : Nat.card (SO2 F) = (q' F) +1 := by
+  have h := cardE_Xsq_irr F h_sq
+  have h' := card_So2 F hF
+  rw[h',h]
+  change (q' F ^ 2 - 1^2) / (q' F - 1) = q' F + 1
+  rw[Nat.sq_sub_sq]
+  refine Nat.div_eq_of_eq_mul_left ?H1 rfl
+  refine Nat.zero_lt_sub_of_lt ?H1.h
+  exact card_F_ge_two F hF
+
+theorem card_So2_Xsq_red  (F : Type*) [Field F ] [Fintype F ][DecidableEq F] (h_sq : (∃ i: F, X^2 +1 = (X - C i)*(X+ C i))) (hF : ringChar F ≠ 2)   : Nat.card (SO2 F) = (q' F) - 1 := by
+  have h := cardE_Xsq_red F hF h_sq
+  have h' := card_So2 F hF
+  rw[h',h]
+  change ((q' F - 1)^2) / (q' F - 1) = q' F - 1
+  refine Nat.div_eq_of_eq_mul_right ?H1 ?H2
+  refine Nat.zero_lt_sub_of_lt ?H1.h
+  exact card_F_ge_two F hF
+  ring
+
+theorem invertibles_of_field_is_cyclic (F : Type*) [Field F ] [Fintype F ][DecidableEq F] : IsCyclic (Fˣ) := by
+  exact instIsCyclicUnitsOfFinite
+
+
+theorem So2_cyclic0 (F : Type*) [Field F ] [Fintype F ][DecidableEq F] [Nonempty F] (hF : ringChar F ≠ 2) (h_sq : Irreducible (X^2+1:F[X])): IsCyclic (SO2 F) := by
+  have hField : IsField (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
+    exact (Ideal.Quotient.maximal_ideal_iff_isField_quotient (Ideal.span {X ^ 2 + 1})).mp (PrincipalIdealRing.isMaximal_of_irreducible h_sq)
+  have : (D F)  ≃* (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := D_iso_E F
+  have : IsField (D F):= by
+    exact MulEquiv.isField (F[X] ⧸ Ideal.span {X ^ 2 + 1}) hField this
+
+  have : IsCyclic (D F)ˣ  := by
+    --have :  invertibles_of_field_is_cyclic (D F)
+    sorry
+  apply Subgroup.isCyclic
+
+noncomputable def So2_iso (F : Type*) [Field F ] [Fintype F ][DecidableEq F] [Nonempty F] (hF : ringChar F ≠ 2) (h_sq : Irreducible (X^2+1:F[X])) : SO2 F ≃* ZMod (q' F +1) := by
+  have hcard :  Nat.card (SO2 F) = (q' F) +1 := card_So2_Xsq_irr F h_sq hF
+  have hcycle := So2_cyclic0 F hF h_sq
+  have :   ∃ g: SO2 F, ∀ (x : SO2 F), x ∈ Subgroup.zpowers g := IsCyclic.exists_zpow_surjective
+  --obtain ⟨g, hg⟩ := this
+  sorry
