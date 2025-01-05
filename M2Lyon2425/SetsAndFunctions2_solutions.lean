@@ -1,10 +1,4 @@
-import Mathlib.Algebra.Group.Nat
-import Mathlib.Algebra.Field.Basic
-import Mathlib.Data.Set.Basic
-import Mathlib.Data.Set.Operations
-import Mathlib.Tactic.Common
-import Mathlib.Order.Basic
-import Mathlib.Logic.Function.Defs
+import Mathlib
 import «M2Lyon2425».«SetsAndFunctions1_solutions»
 
 set_option linter.unusedVariables false
@@ -15,6 +9,11 @@ open Set Classical Function
 section FirstTrap
 
 -- # §1: A first trap
+variable (a b : ℕ)(x : Set.Icc a b)( t : Set (Set.Icc a b))(hx : x ∈ t)
+def A := { x | x ∈ t}
+
+def y(A : Set ℕ)(x : ℕ )(hA : x ∈ A) : A := by
+  exact ⟨x, hA⟩
 
 
 -- Functions do not natively act on elements of sets: how can we fix this code?

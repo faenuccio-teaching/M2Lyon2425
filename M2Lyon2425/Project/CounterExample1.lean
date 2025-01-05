@@ -15,9 +15,28 @@ F : ℝ → ℝ such that
 lim{n → ∞} [F(x + hₙ) - F(x)]/hₙ = f(x). -/
 
 /-Defining the sequence which tends to 0-/
-variable (h : ℕ → ℝ) (h1 : Filter.Tendsto h Filter.atTop (nhds 0))(h2 : h.Injective)(h3 : ∀ n , h n ≠ 0)(f : ℝ → ℝ)
-/-Some Preliminary Lemmas -/
+variable (h : ℕ → ℝ) (h1 : Filter.Tendsto h Filter.atTop (nhds 0))(h2 : h.Injective)(f : ℝ → ℝ)
 
+include h2
+lemma h3 : ∀ᶠ n in Filter.atTop, h n ≠ 0:= by
+  by_contra lem
+  simp only [ne_eq, Filter.eventually_atTop, ge_iff_le, not_exists, not_forall, Classical.not_imp,
+    Decidable.not_not] at lem
+  let n := 1
+  have lem1 := lem n
+  obtain ⟨y, hy1,hy2⟩ := lem1
+  set y1 := y + 1 with hy11
+  have lem2 := lem y1
+  obtain ⟨y2, hy3,hy4⟩ := lem2
+  rw[hy11] at hy3
+  have lem3 : y2 ≠  y := by
+    linarith
+  rw[← hy2] at hy4
+  have lem4 := h2 hy4
+  exact lem3 lem4
+
+/-Some Preliminary Lemmas -/
+omit h2
 def T (g : ℕ → ℝ)(S : Set ℝ )(hS :  ∀ (a : ℕ), ∃ b ≥ a, g b ∈ S) : Set ℕ := {c |  ∃(a : ℕ), c = (hS a).choose }
 
 
@@ -1239,7 +1258,7 @@ lemma helper_aux {u : ℕ → ℝ} {x₀ : ℝ} :
   rw[Filter.HasBasis.tendsto_iff Filter.atTop_basis (nhds_basis_Ioo_pos x₀)]
   simp only [Set.mem_Ici, Set.mem_Ioo, true_and, gt_iff_lt, ge_iff_le]
 
-include h3
+
 theorem MainCounterExampleTheorem(x : ℝ )  : (Filter.Tendsto (Ft h f x) Filter.atTop (nhds (f x))) := by
   rw[helper_aux h h1 h2]
   intros ε hε
@@ -1247,31 +1266,48 @@ theorem MainCounterExampleTheorem(x : ℝ )  : (Filter.Tendsto (Ft h f x) Filter
   obtain ⟨m,hm⟩ := lem
   rw [hm]
   set α := (IndexedPartiononℝ h).index x with hα
+  have h3 := h3 h h2
   by_cases hm1 : EnumerateEalpha h α m ∈ Ralpha h α m
   ·   have mlem := Main_aux2 h h1 h2 f hm1
       simp at mlem
       obtain ⟨N,hN⟩ := mlem
-      use N
+      simp at h3 h h2
+      obtain ⟨N1,hN1⟩ := h3
+      use max N N1
       intros n hn
-      specialize hN n hn
+      simp only [ge_iff_le, sup_le_iff] at hn
+      have hn' : n ≥ N := by
+        exact hn.1
+      have hn'' : n ≥ N1 := by
+        exact hn.2
+      specialize hN1 n hn''
+      specialize hN n hn'
       rw[Ft,hN]
       simp only [add_sub_cancel_left, Set.mem_Ioo]
       have lem1 : h n * f (EnumerateEalpha h α m) / h n = f (EnumerateEalpha h α m):= by
         rw[div_eq_mul_inv,mul_assoc,mul_comm _ (h n)⁻¹,← mul_assoc ]
-        simp only [isUnit_iff_ne_zero, ne_eq, h3 n, not_false_eq_true, IsUnit.mul_inv_cancel, one_mul]
+        simp only [isUnit_iff_ne_zero, ne_eq, hN1, not_false_eq_true, IsUnit.mul_inv_cancel, one_mul]
       constructor<;>
       simp [lem1, hε]
   ·   have mlem := Main_aux1 h h1 h2 f hm1
       simp at mlem
       obtain ⟨N,hN⟩ := mlem
-      use N
+      simp at h3
+      obtain ⟨N1,hN1⟩ := h3
+      use max N N1
       intros n hn
-      specialize hN n hn
+      simp only [ge_iff_le, sup_le_iff] at hn
+      have hn' : n ≥ N := by
+        exact hn.1
+      have hn'' : n ≥ N1 := by
+        exact hn.2
+      specialize hN1 n hn''
+      specialize hN n hn'
       rw[Ft,hN]
       simp only [add_sub_cancel_left, Set.mem_Ioo]
       have lem1 : h n * f (EnumerateEalpha h α m) / h n = f (EnumerateEalpha h α m):= by
         rw[div_eq_mul_inv,mul_assoc,mul_comm _ (h n)⁻¹,← mul_assoc ]
-        simp only [isUnit_iff_ne_zero, ne_eq, h3 n, not_false_eq_true, IsUnit.mul_inv_cancel, one_mul]
+        simp only [isUnit_iff_ne_zero, ne_eq, hN1, not_false_eq_true, IsUnit.mul_inv_cancel, one_mul]
       constructor<;>
       simp [lem1, hε]
 
