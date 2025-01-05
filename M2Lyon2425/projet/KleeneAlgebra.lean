@@ -1,13 +1,13 @@
 import Mathlib
 
-open Computability
-
 /- Dans cette section, on établit quelques propriétés de élémentaires
 des algèbres de Kleene. Beaucoup sont déjà prouvées
-dans Mathlib/Algebra/Order/Kleene. les preuves sont longues car j'ai tenté
+dans Mathlib/Algebra/Order/Kleene. Les preuves sont longues car j'ai tenté
 d'être complet et d'expliciter les lemmes et résultats intermédiaires utilisés.
 
 Le résultat le plus important est `KleeneChurchRosser`, le dernier de ce fichier. -/
+
+open Computability
 
 variable {K : Type*} [KleeneAlgebra K]
 

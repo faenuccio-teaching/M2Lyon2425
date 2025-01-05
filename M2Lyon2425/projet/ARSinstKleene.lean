@@ -1,5 +1,8 @@
 import Mathlib
 
+/- On prouve ici le qu'étant donné un type `α`, on peut
+mettre une structure d'algèbre de Kleene sur `α → α → Prop`. -/
+
 /-- Un alias pour le type des relations binaires sur un type  `α`. -/
 @[reducible]
 def ARS (β : Type*) := β → β → Prop

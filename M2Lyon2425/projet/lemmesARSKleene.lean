@@ -12,11 +12,6 @@ On montre quelques lemmes basiques spécifique aux ARS :
 - …
 -/
 
--- /-- Une définition alternative de `∗`.-/
--- lemma kstar' (f : ARS α) :
---   f∗ = ARS.big_sum (fun n ↦ f^n) := by
---     rfl
-
 /- `∗` n'est pas la clôture transitive,
 mais bien la clôture transitive *et* réflexive.-/
 lemma kstar_is_refl (f : ARS α) : Reflexive f∗ := by
@@ -37,25 +32,6 @@ lemma kstar_is_trans (f : ARS α) : Transitive f∗ := by
 def trans_closure (f : ARS α) : ARS α := fun x y ↦ ∃ n, (f^n) x y ∧ 0 < n
 notation:1024 elm "⁺" => trans_closure elm
 
-/-- Une définition alternative de `⁺`.-/
--- lemma plus' (f : ARS α) :
---   f⁺ = ARS.big_sum (fun i ↦ f^(i+1)) := by
---     ext x y
---     constructor
---     · intro hyp
---       let n := hyp.choose
---       have ⟨hf, _⟩ := hyp.choose_spec
---       use hyp.choose - 1
---       simp only
---       have : n - 1 + 1 = n := by omega
---       rw [this]
---       exact hf
---     · intro hyp
---       have hf := hyp.choose_spec
---       simp only at hf
---       use hyp.choose + 1
---       exact ⟨hf, by omega⟩
-
 lemma le_plus (f : ARS α) : f ≤ f⁺ := by
   rw [ARS.le_iff_imp]
   intro _ _ fxy
@@ -71,27 +47,6 @@ lemma plus_mono {f g : ARS α} : f ≤ g → f⁺ ≤ g⁺  := by
   have ⟨hfnxy, hn⟩ := fpxy.choose_spec
   use n
   exact ⟨ARS.le_iff_imp.mp (topown_mono n lefg) x y hfnxy, hn⟩
-
--- lemma plus_comm_pown {f : ARS α} {n : ℕ} : f⁺ * f^n = f^n * f⁺ := by
---   rw [plus']
---   refine ARS.big_sum_comm_from_comm (fun i g ↦ g^(i+1)) ?_
---   intro i
---   simp only
---   rw [← pow_add, ← pow_add, add_comm]
-
--- lemma _fonction_puissance_succ [Monoid α] (f : α) :
---   (fun i ↦ f * f^i) = fun i ↦ f^(i+1) := by
---   ext i
---   nth_rw 1 [← pow_one f]
---   rw [← pow_add, add_comm]
-
--- lemma plus_mul_kstar {f : ARS α} : f⁺ = f * f∗  := by
---   rw [
---     kstar',
---     plus',
---     ARS.big_sum_distrib_left,
---     _fonction_puissance_succ
---     ]
 
 lemma plus_is_transitive (f : ARS α) : Transitive f⁺ := by
   intro x y z hxy hyz
