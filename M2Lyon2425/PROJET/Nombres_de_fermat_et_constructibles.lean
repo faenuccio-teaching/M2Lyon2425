@@ -526,8 +526,9 @@ structure TowerOfGroup2 {G : Type*} [Group G] where
   inclusion : ∀ i, H (i + 1) ≤ H i
   normalSubGroup : ∀ i, @IsNormalSubgroup (H i) _ (Subgroup.inclusion (inclusion i)).range
 
---Construction d'une tour de sous-groupe distingué d'indice 2.
-theorem TowSG (G : Type*) (p : ℕ+) [inst1 : Group G] : premierfermat p → (G ≃* (ZMod (p))ˣ → ∃ (ζ : @TowerOfGroup2 G inst1), ∀ (i : ℕ), (@Subgroup.relindex G inst1 (ζ.1 (i+1)) (ζ.1 i)) = 2 ∧ ζ.H 0 = G ∧ ζ.H (p-1) = IsSubgroup.trivial G ):= by
+--Construction d'une tour de sous-groupe distingué d'indice 2 :  si G iso à ℤ/pℤˣ, alors on a une tour de sg Gi de G telle que Gi+1 est d'indice
+--2 dans Gi et G0=G et Gm={1}, avec m tel que p=2^m+1.
+theorem TowSG (G : Type*) (p : ℕ) [inst1 : Group G] : premierfermat p → (G ≃* (ZMod (p))ˣ → ∃ (ζ : @TowerOfGroup2 G inst1), ∀ (i : ℕ), (@Subgroup.relindex G inst1 (ζ.1 (i+1)) (ζ.1 i)) = 2 ∧ ζ.H 0 = G ∧ ∃ (m : ℕ), ζ.H m = IsSubgroup.trivial G ):= by
 intro fermatp
 intro h
 have h1 : IsCyclic G := by
@@ -597,14 +598,28 @@ constructor
     sorry
   · cases h with
   | mk toEquiv map_mul' =>
-    have h41 : Nat.card G = p-1 := by
+    have h41 : Nat.card G = (p-1) := by
       have h411 := jacobiSym.proof_1 p fermatp.1
       have h412 := ZMod.card_units p
       have h413 := Nat.card_congr toEquiv
       have h414 := @Nat.card_eq_fintype_card ((ZMod ↑p)ˣ) _
       rwa[<-h414,<-h413] at h412
-
-    sorry
+    rw[premierfermat_eq] at fermatp
+    obtain ⟨m,hm⟩ := fermatp.2
+    use m
+    change ((Subgroup.zpowers (ζ ^ (2 ^ m)))= IsSubgroup.trivial G)
+    have hmm : 2^m= ↑↑(p-1) :=by
+      have hm := (hm.right)
+      apply Nat.sub_eq_of_eq_add at hm
+      rw[<-hm]
+    have h51 : ↑(Subgroup.zpowers (ζ ^ 2 ^ m)) = ↑(Subgroup.zpowers (ζ ^ (p-1) )) :=by
+      rw[hmm]
+    rw[h51]
+    have h52 : ↑(Subgroup.zpowers (ζ ^ (p - 1))) = ↑(Subgroup.zpowers (ζ ^ (Nat.card G))) :=by
+      rw [h41]
+    rw[h52]
+    simp
+    trivial
 
 
 
