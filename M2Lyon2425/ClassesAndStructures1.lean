@@ -113,45 +113,65 @@ what follows to complete them -/
 example : three₁' = three₂' := rfl
 /- both are `{fst = 1, snd = 2, right = 11}` (the field `left` has been discharged) . -/
 
+/- ## As classes
+This `extends` has a special behaviour when we're upgrading `structures` to `classes`. Suppose
+that we make `OneNat`, `TwoNat` and `OtherTwo` classes: how can we produce instances for them?
+-/
 
-/- OK, so everything seems marvellous with this `extend` and `with`. But it can lead to problems if
+attribute [class] OneNat
+attribute [class] TwoNat
+attribute [class] OtherTwo
+
+instance (n : ℕ) : OneNat := ⟨n⟩
+-- instance (n m : ℕ) : TwoNat := ⟨n, m⟩--does not work, it extends!
+instance (n m : ℕ) : TwoNat := ⟨⟨n⟩, m⟩--ok
+instance (n m : ℕ) : OtherTwo := ⟨n, m⟩ --yes
+
+/- And `extends` interacts with instances even more if we have variables!-/
+
+class GeTwo (X : Type*) where
+  x : X
+  y : X
+  ne : x ≠ y
+
+class GeThree (X : Type*) [GeTwo X] where
+  z : X
+  nex : z ≠ GeTwo.x
+  ney : z ≠ GeTwo.y
+
+class GeThree' (X : Type*) extends GeTwo X where
+  z : X
+  nex : z ≠ x
+  ney : z ≠ y
+
+instance : GeTwo ℕ := ⟨1, 2, by omega⟩
+-- instance : GeTwo Bool := ⟨true, false, by simp⟩
+
+-- instance : GeThree ℤ := ⟨3, by omega, by omega⟩--unhappy
+-- instance : GeThree ℕ := ⟨3, by linarith [show GeTwo.x = 1 by rfl],
+--   by linarith [show GeTwo.y = 2 by rfl]⟩
+
+instance : GeThree' ℕ where
+-- three more fields where proposed,but are useless
+  z := 3
+  nex := by linarith [show GeTwo.x = 1 by rfl]
+  ney := by linarith [show GeTwo.y = 2 by rfl]
+
+instance : GeThree' ℤ where
+  x := 1
+  y := 2
+  ne := by simp
+  z := 3
+  nex := by
+    -- have : GeTwo.x = 1 := by
+       --still does not work, it uses the coercion from `ℕ` to `ℤ`: with `(1 : ℤ)` it fails.
+    sorry
+  ney := sorry
+
+
+/- ### In True Math
+OK, so everything seems marvellous with this `extend` and `with`. But it can lead to problems if
 the *duplication* is not what you're looking for. **ADD HERE SOPHIE'S EXAMPLES**-/
-
-structure C where
-  a : Nat
-
-variable (x : C)
-
-structure D where (a b : Nat)
-
-structure E extends TwoNat
-
-def bleah_old (x : TwoNat) (e : C) : E :=
-  {x, e with}
-
-def bleah_old' (x : TwoNat) (e : C) : E :=
-  {x with}
-
-def bleah_new (x : TwoNat) (e : C) : E :=
-  {e, x with}
-
-#print bleah_old
-#print bleah_old'
-#print bleah_new
-
-example : bleah_old = bleah_old' := rfl
-
-def foo (x : TwoNat) (y : C) : D :=
-  {x , y with}
-
-def bar (x : TwoNat) (y : C) : D :=
-  {x with}
-
-def biz (x : TwoNat) (y : C) : D :=
-  {y, x with}
-
-example : foo = bar := rfl
-example : foo = biz := rfl
 
 
 end Extends
@@ -160,7 +180,6 @@ section ForgetfulInheritance
 
 class NormedModule_long (M : Type*) [AddCommGroup M] where
   norm : M → ℝ
-
 
 class NormedModule₁ (M : Type*) extends AddCommGroup M where
   norm₁ : M → ℝ
