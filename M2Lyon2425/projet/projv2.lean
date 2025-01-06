@@ -16,14 +16,401 @@ import Mathlib.Tactic.Ring
 import Init.Data.Cast
 import Mathlib.RingTheory.Ideal.Quotient
 
+/-
+J'ai commencé mon projet, sur la description de SO_2(F_q)
+Pour q= 2^n, j'ai le cardinal de So2 et que les elements sont d'ordre au plus 2,
+Je voudrais bien dire que le groupe est isomorphe à (Z/2Z)^n
+Pour q non puissance de 2 je suis la preuve faite dans le nouvelles histoires hédonistes  de groupes et géométrie tome 2 de Calderos, p 53
+En passant par F_q[X]/X^2+1 -/
+
+
+/-Dans cette première partie je commence par définir SO(n) puis à lui exhiber des propriétés, dans la seconde partie je définis So2
+comme sous groupe d'un groupe de matrices. -/
+
+namespace Matrix
+
+universe u v
+open Matrix
+
+
+
+
+
+variable (n : Type u) [DecidableEq n] [Fintype n] (R : Type v) [CommRing R]
+
+
+def SpecialOrthogonalGroup :=
+  { A : Matrix n n R // A.det = 1 ∧ A*A.transpose= 1 }
+
+
+
+scoped[MatrixGroups] notation "SO(" n ", " R ")" => Matrix.SpecialOrthogonalGroup (Fin n) R
+
+/-abbrev SO := SpecialOrthogonalGroup-/
+
+namespace SpecialOrthogonalGroup
+
+variable {n : Type u} [DecidableEq n] [Fintype n] {R : Type v} [CommRing R]
+
+instance hasCoeToMatrix : Coe (SpecialOrthogonalGroup n R) (Matrix n n R) :=
+  ⟨fun A => A.val⟩
+
+local notation:1024 "↑ₘ" A:1024 => ((A : SpecialOrthogonalGroup n R) : Matrix n n R)
+
+
+theorem ext_iff (A B : SpecialOrthogonalGroup n R) : A = B ↔ ∀ i j, ↑ₘA i j = ↑ₘB i j :=
+  Subtype.ext_iff.trans Matrix.ext_iff.symm
+
+@[ext]
+theorem ext (A B : SpecialOrthogonalGroup n R) : (∀ i j, ↑ₘA i j = ↑ₘB i j) → A = B :=
+  (SpecialOrthogonalGroup.ext_iff A B).mpr
+
+instance hasInv : Inv (SpecialOrthogonalGroup n R) :=
+   ⟨fun A => ⟨transpose A , by
+  constructor
+  · simp[det_transpose ]
+    simp[ A.prop.left ]
+  · simp [transpose_transpose]
+    have h := A.prop.right
+    have h1 := (↑ₘA)^2
+    rw[mul_eq_one_comm] at h
+    exact h
+    ⟩⟩
+
+instance hasMul : Mul (SpecialOrthogonalGroup n R) :=
+  ⟨fun A B => ⟨↑ₘA * ↑ₘB, by
+  constructor
+  · rw[det_mul, A.prop.left, B.prop.left ]
+    simp
+  · rw[transpose_mul,← mul_assoc]
+    nth_rewrite 2 [mul_assoc]
+    rw[B.prop.right, mul_one, A.prop.right]
+   ⟩⟩
+
+instance hasOne : One (SpecialOrthogonalGroup n R) :=
+  ⟨⟨1, by
+  constructor
+  · exact det_one
+  · rw[transpose_one,one_mul]⟩⟩
+
+instance : Pow (SpecialOrthogonalGroup n R) ℕ where
+  pow x n := ⟨↑ₘx ^ n, by
+  constructor
+  · rw[det_pow, x.prop.left, one_pow]
+  · induction' n with n h
+    · rw[pow_zero,transpose_one,one_mul]
+    · rw[pow_succ, transpose_mul, ← mul_assoc]
+      nth_rewrite 2 [mul_assoc]
+      rw[x.prop.right, mul_one,h] ⟩
+
+instance : Inhabited (SpecialOrthogonalGroup n R) :=
+  ⟨1⟩
+section CoeLemmas
+
+
+variable (A B : SpecialOrthogonalGroup n R)
+theorem coe_mk (A : Matrix n n R) (h : det A = 1 ∧ A*A.transpose= 1) : ↑(⟨A, h⟩ : SpecialOrthogonalGroup n R) = A :=
+  rfl
+
+@[simp]
+theorem coe_inv : ↑ₘA⁻¹ = transpose A :=
+  rfl
+@[simp]
+theorem coe_mul : ↑ₘ(A * B) = ↑ₘA * ↑ₘB :=
+  rfl
+
+@[simp]
+theorem coe_one : ↑ₘ(1 : SpecialOrthogonalGroup n R) = (1 : Matrix n n R) :=
+  rfl
+@[simp]
+theorem det_coe : det ↑ₘA = 1 :=
+  A.2.1
+
+@[simp]
+theorem coe_pow (m : ℕ) : ↑ₘ(A ^ m) = ↑ₘA ^ m :=
+  rfl
+
+
+
+theorem det_ne_zero [Nontrivial R] (g : SpecialOrthogonalGroup n R) : det ↑ₘg ≠ 0 := by
+  rw [g.det_coe]
+  norm_num
+
+end CoeLemmas
+
+instance monoid : Monoid (SpecialOrthogonalGroup n R) :=
+  Function.Injective.monoid (↑) Subtype.coe_injective coe_one coe_mul coe_pow
+
+#check (SpecialOrthogonalGroup)
+
+instance : Group (SpecialOrthogonalGroup n R) :=
+  {SpecialOrthogonalGroup.monoid, SpecialOrthogonalGroup.hasInv with
+    inv_mul_cancel := fun A => by
+      have ha := A.prop.right
+      ext1 i j
+      simp only [coe_mul, coe_inv, coe_one]
+      rw[mul_eq_one_comm] at ha
+      exact congrFun (congrFun ha i) j
+      }
+
+
+variable (K : Type v) [Field K] [Fintype K]
+
+open scoped MatrixGroups
+
+
+theorem SO2_inv_co (A : SpecialOrthogonalGroup (Fin 2) R) : A.1 1 0 = -A.1 0 1 ∧ A.1 0 0 = A.1 1 1 ∧ (A.1 0 0)^2 + (A.1 1 0)^2 = 1  := by
+  have ⟨ ha1 ,ha2⟩   := A.2
+  have h := mul_adjugate A.1
+  rw[ ha1] at h
+  simp only [one_smul] at h
+  have h3 :  (A.1)ᵀ * ( A.1 * (A.1).adjugate)= (A.1)ᵀ  *  (A.1 * (A.1).adjugate)
+  simp
+  nth_rewrite 1 [ h ] at h3
+  rw[← mul_assoc] at h3
+  rw[mul_eq_one_comm] at ha2
+  rw[ha2, one_mul, mul_one] at h3
+  rw[← Matrix.ext_iff ] at h3
+  have h5 := h3
+  specialize h3 0 1
+  rw[transpose_apply ] at h3
+  have := Matrix.adjugate_fin_two A.1
+  rw[this ] at h3 h5
+  simp only [Fin.isValue, of_apply, cons_val', cons_val_one, head_cons, empty_val',
+    cons_val_fin_one, cons_val_zero] at h3
+  specialize h5 0 0
+  simp only [Fin.isValue, transpose_apply, of_apply, cons_val', cons_val_zero, empty_val',
+    cons_val_fin_one] at h5
+  rw[Matrix.det_fin_two, ← h5 ] at ha1
+  have h6 : A.1 0 0 ^ 2 + A.1 1 0 ^ 2 = 1 := by
+    rw[pow_two,pow_two ]
+    nth_rewrite 1[h3 ]
+    rw[sub_eq_add_neg] at ha1
+    simp only [Fin.isValue, neg_mul]
+    exact ha1
+  constructor
+  exact h3
+  constructor
+  exact h5
+  exact h6
+
+
+
+
+variable {F : Type*} [Field F]
+variable [Fintype F]
+
+def make_So2 (a: F )( b: F )(h : a^2+b^2=1) : SO(2,F ) := by
+  constructor
+  swap
+  · exact  !![a,-b ; b ,a]
+  · constructor
+    · rw[det_fin_two]
+      change a*a - (-b)*b = 1
+      simp
+      repeat rw[← pow_two]
+      exact h
+    · have hT : (transpose !![a, -b; b, a])= !![a, b; -b, a] := by
+        rw [← Matrix.ext_iff ]
+        intro i j
+        match i, j with
+        |0, 0 => rfl
+        |0,1 => rfl
+        |1, 0 => rfl
+        |1,1 => rfl
+      rw [hT]
+      rw[Matrix.mul_fin_two]
+      rw [← Matrix.ext_iff ]
+      intro i j
+      match i, j with
+      |0, 0 => simp; rw[← pow_two,← pow_two ]; exact h
+      |0,1 => simp; rw[mul_comm]; simp
+      |1, 0 => simp ;rw[mul_comm]; simp
+      |1,1 => simp; rw[← pow_two,← pow_two, add_comm ]; exact h
+
+
+
+
+
+-- Partie sur la charactéristique 2
+
+/-Dans cette section je cherche à montrer que SO(2,F(2^n)) est isomorphe a (Z/2Z)^n
+J'ai pas réussi à montrer exactement cela, mais j'ai que SO(2,F(2^n)) est un groupe dans lequel tout élément est son propre inverse et
+qui est de cardinal 2^n; j'aurais voulu conclure en utilisant le théorème de structure des groupes abéliens finis. -/
+
+section Char2
+
+theorem square_char_2 (h : CharP F 2) (A : SO(2, F)) : (A.1= (A⁻¹).1) := by
+  have ha := (SO2_inv_co A).left
+  rw[CharTwo.neg_eq] at ha
+  have haa : transpose A.1 = A.1
+  rw[← Matrix.ext_iff ]
+  intro i j
+  rw[transpose_apply ]
+  match i, j with
+  |0, 0 => rfl
+  |0,1 => exact ha
+  |1, 0 => exact (symm ha)
+  |1,1 => rfl
+  simp only [coe_inv]
+  exact(symm haa)
+
+theorem auto_inv_char2 (h : CharP F 2) (A : SO(2, F)) : A= (A⁻¹) := by
+  have ha := square_char_2 (h : CharP F 2) (A : SO(2, F))
+  exact ext A A⁻¹ fun i ↦ congrFun (congrFun ha i)
+
+
+
+def f (A:SO(2,F)) := A.1 0 0
+
+
+variable {F_2_exp_n : Type*} [Field F_2_exp_n][Fintype F_2_exp_n][char2 :CharP F_2_exp_n 2]
+
+noncomputable def m := Nat.card F_2_exp_n
+
+theorem auto_inv_char2'  (A : SO(2, F_2_exp_n)) : A= (A⁻¹) := by
+  have := auto_inv_char2 (char2) (A)
+  exact this
+
+
+instance commGroup : CommGroup (SO(2,F_2_exp_n))  where
+
+  mul_comm (a:SO(2,F_2_exp_n)) b := by
+    rw [ auto_inv_char2' (a*b)]
+    simp
+    nth_rewrite 2 [auto_inv_char2' b]
+    nth_rewrite 2 [auto_inv_char2' a]
+    rfl
+
+
+-- AddCommGroup.equiv_directSum_zmod_of_fintype (Additive SO(2,F_2_exp_n))
+
+theorem card_so2_char2  : (Nat.card SO(2,F_2_exp_n) = Nat.card F_2_exp_n) := by
+refine Nat.card_eq_of_bijective f ?_
+constructor
+· intro A B h
+  rw[ext_iff]
+  intro i j
+  repeat rw[f] at h
+  have ha := SO2_inv_co A
+  have hb := SO2_inv_co B
+  have h1A : A.1 1 0 ^2 = 1+ A.1 0 0^2 :=  by
+    have h2 :  A.1 0 0^2 + ( A.1 0 0^2 + A.1 1 0 ^2) = A.1 0 0^2 +  (A.1 0 0^2 + A.1 1 0 ^2 ):= by rfl
+    nth_rewrite 2 [ha.right.right] at h2
+    rw[← add_assoc] at h2
+    rw[CharTwo.add_self_eq_zero] at h2
+    rw[zero_add] at h2
+    rw[add_comm]
+    exact h2
+  have  : A.1 1 0^2  =(frobenius F_2_exp_n 2) (A.1 1 0)  := by
+    rfl
+  rw[this] at h1A
+  have h1B : B.1 1 0 ^2 = 1+ B.1 0 0^2 :=  by
+    have h2 :  B.1 0 0^2 + ( B.1 0 0^2 + B.1 1 0 ^2) = B.1 0 0^2 +  (B.1 0 0^2 + B.1 1 0 ^2 ):= by rfl
+    nth_rewrite 2 [hb.right.right] at h2
+    rw[← add_assoc] at h2
+    rw[CharTwo.add_self_eq_zero] at h2
+    rw[zero_add] at h2
+    rw[add_comm]
+    exact h2
+  have  : B.1 1 0^2  =(frobenius F_2_exp_n 2) (B.1 1 0)  := by
+    rfl
+  rw[this] at h1B
+  have h11 := h
+  rw[ha.right.left, hb.right.left] at h11
+  rw[← h ] at h1B
+  rw[← h1B] at h1A
+
+  have h10 : A.1 1 0 = B.1 1 0 := by
+    apply injective_frobenius F_2_exp_n 2
+    exact h1A
+
+  have h01 :  A.1 0 1 = B.1 0 1 := by
+    have : A.1 1 0 = A.1 0 1 := by
+      have hh : -A.1 0 1 = - A.1 0 1 := by rfl
+      nth_rewrite 1 [CharTwo.neg_eq] at hh
+      rw[← ha.left] at hh
+      exact hh.symm
+    rw[← this]
+    rw[h10 ]
+    have : B.1 1 0 = B.1 0 1 := by
+      have hh : -B.1 0 1 = - B.1 0 1 := by rfl
+      nth_rewrite 1 [CharTwo.neg_eq] at hh
+      rw[← hb.left] at hh
+      exact hh.symm
+    exact this
+
+  match i, j with
+  |0, 0 => exact h
+  |0,1 => exact h01
+  |1, 0 => exact h10
+  |1,1 =>  exact h11
+
+· intro a
+  have b:= bijective_frobenius F_2_exp_n 2
+  have c := b.right
+  specialize c (-a^2+1)
+  obtain ⟨ b0, hb⟩ := c
+  have hb0 : b0^2 =-a^2 +1 := by
+    exact hb
+  set A := !![a,-b0 ; b0 ,a]
+  have hA : det A = 1 ∧ A*A.transpose= 1 := by
+    constructor
+    · rw[det_fin_two]
+      change a * a - (-b0) * b0 = 1
+      simp
+      repeat rw[← pow_two]
+      change a^2 + (frobenius F_2_exp_n 2) b0 = 1
+      rw[hb]
+      simp
+    · have h : a^2 + b0^2 = 1 := by
+        rw[hb0]
+        simp
+      have hT : (transpose !![a, -b0; b0, a])= !![a, b0; -b0, a] := by
+        rw [← Matrix.ext_iff ]
+        intro i j
+        match i, j with
+        |0, 0 => rfl
+        |0,1 => rfl
+        |1, 0 => rfl
+        |1,1 => rfl
+      rw [hT]
+      rw[Matrix.mul_fin_two]
+      rw [← Matrix.ext_iff ]
+      intro i j
+      match i, j with
+      |0, 0 => simp; rw[← pow_two,← pow_two ]; exact h
+      |0,1 => simp; rw[mul_comm]; simp
+      |1, 0 => simp ;rw[mul_comm]; simp
+      |1,1 => simp; rw[← pow_two,← pow_two, add_comm ]; exact h
+
+  use ↑⟨A, hA⟩
+  rw[f ]
+  simp
+  rfl
+
+
+theorem structure_char2' : ((SO(2,F_2_exp_n)) ≃* ZMod (2) ^ n  ) := by
+  sorry
+
+
+end  Char2
+
+end SpecialOrthogonalGroup
+
+
+end Matrix
+
+
+/-Dans cette section je considère l'ensemble D de matrices, pour étudier SO2-/
+
+
 
 section char_sg_2
 
 variable {F : Type*} [Field F]
 
 def D (F : Type*) [Field F] := {A : Matrix (Fin 2) (Fin 2) F // A 0 0 = A 1 1 ∧ A 1 0 = -A 0 1}
-
-
 
 
 instance hasCoeToMatrix : Coe (D F) (Matrix (Fin 2) (Fin 2) F) :=
@@ -38,7 +425,6 @@ theorem ext_iff (A B : D F) : A = B ↔ ∀ i j, ↑ₘA i j = ↑ₘB i j :=
 theorem ext (A B : D F) : (∀ i j, ↑ₘA i j = ↑ₘB i j) → A = B :=
   (ext_iff A B).mpr
 
--- Prove that D F is a subring of Matrix (Fin 2) (Fin 2) F
 
 instance [Field F] : Zero (D F) :=
   ⟨⟨0, by simp [Matrix.zero_apply]⟩⟩
@@ -109,7 +495,7 @@ instance [Field F] : Inhabited (D F) := ⟨0⟩
 
 section coe
 
--- Define coercion from D to Matrix (Fin 2) (Fin 2) F
+-- coercion de D à Matrix (Fin 2) (Fin 2) F
 instance [Field F] : Coe (D F) (Matrix (Fin 2) (Fin 2) F) :=
   ⟨λ A => A.val⟩
 
@@ -144,7 +530,6 @@ theorem coe_neg : ↑ₘ(-A) = -↑ₘA := by
 theorem coe_sub : ↑ₘ(A - B) = ↑ₘA - ↑ₘB := by
   rfl
 
-
 @[simp]
 theorem coe_pow (n : ℕ) : ↑ₘ(A ^ n) = ↑ₘA ^ n := by
   rfl
@@ -156,7 +541,6 @@ theorem coe_nsmul (n : ℕ) (A : D F ): ↑ₘ(n • A) = n • ↑ₘA := by
 @[simp]
 theorem coe_zsmul (n : ℤ)  (A : D F ) : ↑ₘ(n • A) = n • ↑ₘA := by
   rfl
-
 
 @[simp] theorem coe_nat_cast (n : ℕ) : ↑ₘ(n : D F) = (n : Matrix (Fin 2) (Fin 2) F) := by
 change ↑ₘ(n • 1) = (n : Matrix (Fin 2) (Fin 2) F)
@@ -181,6 +565,9 @@ open Polynomial
 open Ideal
 
 def E (F : Type*) [Field F] := F[X]⧸Ideal.span ({Polynomial.X^2 + 1} : Set F[X])
+-- Dans la suite je n'utilise pas E dans le code mais uniquement dans les notations.
+-- Je n'ai pas réussi à montrer que E est un anneaux commutatif mais
+-- (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) synth bien en anneau commutatif.
 
 #check (E F)
 
@@ -192,10 +579,12 @@ instance commRing (I : Ideal R) : CommRing (R ⧸ I) where
   __ : AddCommGroup (R ⧸ I) := inferInstance
   __ : CommRing (Quotient.ringCon I).Quotient := inferInstance
 
+
+#synth CommRing (E F)
+
 #synth CommRing F[X]
 #check Ideal.span ({Polynomial.X^2 + 1} : Set (Polynomial F))
 #synth CommRing (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))
-
 
 
 noncomputable def p' : D F →+ F[X] :=
@@ -206,34 +595,36 @@ noncomputable def p' : D F →+ F[X] :=
     simp [Matrix.add_apply]
     ring }
 
--- Define the projection map from F[X] to E
+-- Projection de F[X] vers E
 noncomputable def proj_FX_to_E (F : Type*) [Field F] :
     F[X] →+* (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) :=
   Ideal.Quotient.mk (Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))
 
 #check proj_FX_to_E
 
+/-Les lemmes et théorèmes suivants servirons à montrer que proj_FX_to_E ∘ p' est un isomorphisme d'anneaux -/
+
 @[simp]
-theorem proj_FX_to_E_Xsquare_eq_moins1 (F : Type*) [Field F] : proj_FX_to_E F (X^2) = -1 := by
+lemma proj_FX_to_E_Xsquare_eq_moins1 (F : Type*) [Field F] : proj_FX_to_E F (X^2) = -1 := by
   apply Ideal.Quotient.eq.2
   rw [sub_neg_eq_add]
   exact Ideal.subset_span (Set.mem_singleton _)
 
 @[simp]
-theorem proj_FX_to_quotient_Xsquare_eq_moins1 (F : Type*) [Field F] : (Ideal.Quotient.mk (span {(X:F[X]) ^ 2 + 1}) (X^2)) = -1 := by
+lemma proj_FX_to_quotient_Xsquare_eq_moins1 (F : Type*) [Field F] : (Ideal.Quotient.mk (span {(X:F[X]) ^ 2 + 1}) (X^2)) = -1 := by
   apply Ideal.Quotient.eq.2
   rw [sub_neg_eq_add]
   exact Ideal.subset_span (Set.mem_singleton _)
 
 @[simp]
-theorem deg_Xsquare_plus1 : ((X:F[X])^2 + 1).degree = 2 := by
+lemma deg_Xsquare_plus1 : ((X:F[X])^2 + 1).degree = 2 := by
   rw [degree_add_eq_left_of_degree_lt]
   rw [degree_X_pow]
   simp
   rw[degree_X_pow]
   simp
 
-theorem deg_a_plusbX_le_one (a b : F) : (C a + C b * X).degree ≤ 1 := by
+lemma deg_a_plusbX_le_one (a b : F) : (C a + C b * X).degree ≤ 1 := by
   refine ((C a + C b * X).degree_le_iff_coeff_zero 1).2 (fun m hm ↦ ?_)
   replace hm := Nat.one_lt_cast.1 hm
   have : b * X.coeff m = 0 := by
@@ -242,7 +633,7 @@ theorem deg_a_plusbX_le_one (a b : F) : (C a + C b * X).degree ≤ 1 := by
     exact Polynomial.coeff_X_of_ne_one (ne_of_lt (Nat.one_lt_cast.1 hm)).symm
   simp only [Polynomial.coeff_C_mul, Polynomial.coeff_add, this, coeff_C_ne_zero (Nat.not_eq_zero_of_lt hm), zero_add]
 
-theorem deg_c (c : F[X]) (hc : 2 + c.degree ≤ 1) : c.degree = ⊥ := by
+lemma deg_c (c : F[X]) (hc : 2 + c.degree ≤ 1) : c.degree = ⊥ := by
   by_cases h : c = 0
   · rw [h]
     rfl
@@ -338,7 +729,6 @@ lemma p_deg_one_eq (F : Type*) [Field F] (g' : F[X]) (hg1 : g'.degree ≤ 1) : (
   ring_nf
   exact Nat.one_lt_cast.mpr hiii
 
---def pi : F × F  → (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) :=
 noncomputable def pi  (F : Type*) [Field F] (a : (F ×  F)) := proj_FX_to_E F (C a.1 + C a.2 * X)
 
 noncomputable def desc_E' (F : Type*) [Field F] :F × F ≃ (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
@@ -384,7 +774,8 @@ noncomputable def desc_E' (F : Type*) [Field F] :F × F ≃ (F[X] ⧸ Ideal.span
 noncomputable def desc_F_quo_deg_1 (F : Type*) [Field F] (i : F) : F ≃ (F[X] ⧸ Ideal.span ({X - C i} : Set F[X])) := by
   sorry
 
--- Compose p' with the projection map
+-- Compose p' et la projection de F[X] dans E pour obtenir un morphisme d'anneaux
+
 noncomputable def p : D F →+* (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) :=
   {
   toFun := fun A ↦ (proj_FX_to_E F) (p' A)
@@ -465,7 +856,6 @@ theorem p_surj (F : Type*) [Field F] : Function.Surjective (p : D F →+* (F[X] 
   have hg := desc_E F g
   obtain ⟨g', hg'⟩ := hg
   have hg1 := hg'.1
-  --rw [g'.degree_le_iff_coeff_zero 1] at hg1
   set a := g'.coeff 0
   set b := g'.coeff 1
   have : g' = C a + C b * X := by
@@ -499,7 +889,7 @@ noncomputable def D_star_iso_E_star (F : Type*) [Field F ] : (D F)ˣ  ≃* (F[X]
   refine Units.mapEquiv ?h
   exact this.toMulEquiv
 
-
+/-On définit q le déterminant qui réalise un morphisme de groupe entre les inversibles de D F et ceux de F-/
 
 def q : (D F)ˣ →* Fˣ := {
   toFun := λ A => ⟨ Matrix.det (A.val.val), Matrix.det (A.2.val), by rw[← Matrix.det_mul, ← coe_mul , A.3,coe_one , Matrix.det_one]
@@ -519,32 +909,22 @@ end poly
 
 section det
 
-variable { p : Nat  }[Fact (Nat.Prime p)][hp3 : Fact (p ≥ 3)]
 
 variable [Fintype F][hF : Fact (ringChar F ≠ 2)]
 
 open Finset
 
--- Define the set {1, -1} as a Finset
-def one_neg_one_set (F : Type*) [Field F] [DecidableEq F] : Finset Fˣ :=
-  {1, -1}
-
--- Prove that the cardinality of the set {1, -1} is 2
-lemma card_one_neg_one_set (F : Type*) [Field F] [DecidableEq F] : Nat.card (one_neg_one_set F) = 2 := by
-  -- Convert the Finset to a Set and use Finset.card
-  have h : (one_neg_one_set F : Set Fˣ) = {1, -1} := by
-    ext x
-    simp [one_neg_one_set]
-  rw [h]
-  -- Use Finset.card to count the number of elements
-  exact Finset.card_insert_of_not_mem (by simp) (Finset.singleton 1)
-
+/-Je souhaite montrer que le déterminant est surjectif,
+Pour cela je voulais montrer que {a : F | ∃ d : F, (c - d^2) = a} et   {a : F | ∃ b : F, b^2 = a} sont de cardinal (Cardinal F +1)/2
+tous les deux. Donc leur intersection est non vide.
+Je n'ai pas réussi à le faire entièrement -/
 
 def B  (F : Type*) [Field F ] [Fintype F ]  c := {a : F | ∃ d : F, (c - d^2) = a}
 def sqq  (F : Type*) [Field F ] [Fintype F] : (Fˣ) →* Fˣ := MonoidHom.id (Fˣ) * MonoidHom.id (Fˣ)
 
 def A   (F : Type*) [Field F ] [Fintype F ] := {a : F | ∃ b : F, b^2 = a}
 
+/-a→ a^2 a un noyau de cardinal 2 -/
 
 theorem kersqq (F : Type*) [Field F ] [Fintype F ](hF : ringChar F ≠ 2) :
     Nat.card (MonoidHom.ker (sqq F): Set Fˣ) =  2 := by
@@ -579,9 +959,35 @@ theorem kersqq (F : Type*) [Field F ] [Fintype F ](hF : ringChar F ≠ 2) :
       | inl h => rw[h,one_mul]
       | inr h => rw[h, ← pow_two, neg_one_sq]
   rw[h]
-  have hFin : Finset  ({1, -1}: Set Fˣ) := by
-    exact Finset.empty
-  apply Nat.card_eq_two_iff
+  rw[ Nat.card_eq_two_iff]
+  use (⟨(1 : Fˣ), by exact Set.mem_insert 1 ({-1})⟩ : ({1, -1} : Set Fˣ))
+  use (⟨(-1 : Fˣ), by exact Set.mem_insert_of_mem 1 rfl ⟩ : ({1, -1} : Set Fˣ))
+  constructor
+  have  : (1 : Fˣ) ≠ (-1 : Fˣ) := by
+    have h_ne : (1:F) ≠ (-1 : F) := by exact Ne.symm (Ring.neg_one_ne_one_of_char_ne_two hF)
+
+    by_contra h
+
+    have : (1:F) = (-1 : F) := by
+      rw[ Units.ext_iff] at h
+      exact h
+    exact h_ne this
+  exact Subtype.ne_of_val_ne this
+  refine Eq.symm (Set.Subset.antisymm ?h.right.h₁ fun ⦃a⦄ _ ↦ trivial)
+  intro x hx
+  simp only [Set.mem_def] at hx
+  cases x with
+  | mk val property =>
+    have h : val = 1 ∨ val = -1 := by
+      exact property
+    cases h with
+    | inl h => refine Set.mem_insert_iff.mpr ?h.left.a; left; exact Subtype.mk_eq_mk.mpr h
+    | inr h => refine Set.mem_insert_iff.mpr ?h.right.a; right; refine
+      Set.mem_singleton_of_eq ?h.right.a.h.H; exact Subtype.mk_eq_mk.mpr h
+
+
+
+/-En utilisant les relations noyaux image on peut obtenir le cardinal de A et B-/
 
 theorem number_of_squares (F : Type*) [Field F] [Fintype F] (hF : ringChar F ≠ 2) :
     Nat.card (A F) = (Nat.card F +1)/2 := by
@@ -591,6 +997,8 @@ theorem number_of_squares (F : Type*) [Field F] [Fintype F] (hF : ringChar F ≠
 theorem number_of_squares' (F : Type*) [Field F ] [Fintype F ] (hF : ringChar F ≠ 2) c : Nat.card (B F c) = (Nat.card F +1)/2 := by
    sorry
 
+/-Outre le cardinal de A et B je n'ai pas montré que le cardinal d'un corps fini de caractéristique différente de 2 est impair.-/
+
 theorem antecedent_det (F : Type*) [Field F ] [Fintype F ] [DecidableEq F] (hF : ringChar F ≠ 2) c :
     (∃ a b : F , a^2 = c - b^2 ) := by
   have hA := number_of_squares F hF
@@ -599,9 +1007,6 @@ theorem antecedent_det (F : Type*) [Field F ] [Fintype F ] [DecidableEq F] (hF :
     exact Set.fintypeRange fun y ↦ y ^ 2
   have hBB : Fintype (B F c) := by
     exact Set.fintypeRange fun y ↦ c - y ^ 2
-  have : Nat.card ((A F ∩ B F c):Set F) ≥ 1 := by
-    sorry
-
   have : (Set.toFinset (A F) ∩ Set.toFinset (B F c)).card ≥ 1 := by
     have h : (Set.toFinset (A F) ∩ Set.toFinset (B F c)).card +(Set.toFinset (A F) ∪ Set.toFinset (B F c)).card =
         Nat.card (A F) + Nat.card (B F c) :=  by
@@ -613,13 +1018,9 @@ theorem antecedent_det (F : Type*) [Field F ] [Fintype F ] [DecidableEq F] (hF :
       rw[Nat.card_eq_fintype_card,Nat.card_eq_fintype_card]
     rw[hA, hB] at h
     ring_nf at h
-
-
     have h_union : (Set.toFinset (A F) ∪ Set.toFinset (B F c)).card ≤ Nat.card ( F) := by
-
       have : Nat.card (((A F) ∪ (B F c)):Set F)  ≤ Nat.card F := by
         exact Finite.card_subtype_le fun x ↦ x ∈ A F ∪ B F c
-
       rw [← Set.toFinset_union, Set.toFinset_card]
       rw[← Nat.card_eq_fintype_card]
       exact this
@@ -632,18 +1033,22 @@ theorem antecedent_det (F : Type*) [Field F ] [Fintype F ] [DecidableEq F] (hF :
       sorry
     rw[this ]
     exact Nat.add_le_add_left h_union 1
-
   have : 0 < ((A F).toFinset ∩ (B F c).toFinset).card  := by
     exact this
   rw[Finset.card_pos] at this
-  have h_exists : ∃ a : ((A F).toFinset ∩ (B F c).toFinset),  True :=
+  have : ((A F)∩ (B F c)).Nonempty := by
+    rw[← Set.toFinset_inter] at this
+    exact Set.toFinset_nonempty.mp this
+  rw [Set.inter_nonempty] at this
+  obtain ⟨a, ha⟩ := this
+  obtain ⟨d, hc⟩ := ha.1
+  obtain ⟨b, hb⟩ := ha.2
+  use d
+  use b
+  rw[hc,hb]
 
 
-
-
-  sorry
-
-
+/-Coertion de la matrice A inversible vers A element de D F inversible-/
 instance coe_invertible (F : Type*)  [Field F ] [Fintype F ] [DecidableEq F]  (A : D F) [ Invertible A.val] : Invertible A :=
 {
   invOf := ⟨⅟A, by
@@ -672,7 +1077,7 @@ instance coe_invertible (F : Type*)  [Field F ] [Fintype F ] [DecidableEq F]  (A
     sorry
 }
 
-
+/-Je montre la surjectivité de det dans Fˣ -/
 theorem q_surj (F : Type*) [Field F ] [Fintype F ][DecidableEq F]  (hF : ringChar F ≠ 2) :
     Function.Surjective (q : (D F)ˣ →* Fˣ) := by
   intro c
@@ -703,10 +1108,12 @@ theorem q_surj (F : Type*) [Field F ] [Fintype F ][DecidableEq F]  (hF : ringCha
   ring_nf
   exact h
 
+/-SO2 est le noyau du déterminant comme vu dans la première définition-/
 def SO2  (F : Type*) [Field F ] [Fintype F ][DecidableEq F] := MonoidHom.ker (q : (D F)ˣ →* Fˣ)
 
 open Polynomial
 
+--Je montre que le cardinal de Fˣ est égal au cardinal de F moins 1
 theorem card_field_inv (F : Type*) [Field F] [Fintype F] [DecidableEq F] : Nat.card (Fˣ) = Nat.card (F) -1 := by
   have hF : Fˣ ≃ {x : F // x ≠ 0} := by
     exact unitsEquivNeZero
@@ -720,14 +1127,15 @@ theorem card_field_inv (F : Type*) [Field F] [Fintype F] [DecidableEq F] : Nat.c
   rfl
 
 
-
-theorem card_So2 (F : Type*) [Field F ] [hFin : Fintype F ][hDec : DecidableEq F] [Nonempty F]  (hF : ringChar F ≠ 2) : Nat.card (SO2 F) = Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) / (Nat.card (F) -1) := by
+--Je montre que le cardinal de SO2 est égal au cardinal de E divisé par le cardinal de F moins 1
+theorem card_So2 (F : Type*) [Field F ] [hFin : Fintype F ][hDec : DecidableEq F] [Nonempty F]  (hF : ringChar F ≠ 2) :
+    Nat.card (SO2 F) = Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) / (Nat.card (F) -1) := by
   have : (D F)ˣ  ≃* (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ := D_star_iso_E_star F
   have : Nat.card ((D F)ˣ)  = Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) := by
     refine Nat.card_congr ?f
     exact this.toEquiv
   rw[← this]
-  have : Nat.card (Fˣ) = Nat.card (F) -1 := card_field_inv F _ ?_ ?_
+  have : Nat.card (Fˣ) = Nat.card (F) -1 := card_field_inv F
   rw[← this]
   change   Nat.card  (MonoidHom.ker (q : (D F)ˣ →* Fˣ)) = Nat.card (D F)ˣ / Nat.card Fˣ
   have :  (D F)ˣ ⧸ (MonoidHom.ker (q : (D F)ˣ →* Fˣ))  ≃* MonoidHom.range (q : (D F)ˣ →* Fˣ) := by
@@ -750,13 +1158,20 @@ theorem card_So2 (F : Type*) [Field F ] [hFin : Fintype F ][hDec : DecidableEq F
   constructor
   · exact instNonemptyOfInhabited
   · exact instFiniteUnits
-  exact hFin
-  exact hDec
+
 
 
 
 
 noncomputable def q' (F : Type*) [Field F ] [Fintype F ][DecidableEq F] := Nat.card F
+
+def quo_fint (F : Type*) [Field F ] [Fintype F ][DecidableEq F] : Fintype (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
+  exact Fintype.ofEquiv (F × F) (desc_E' F)
+
+-- Je montre que le cardinal des inversibles de E est  le cardinal de F au carré moins 1 lorsque -1 n'est pas un carré dans F
+-- Je suis très confus de pourquoi je n'arrive pas à montrer ce résultat car hF est le résultat
+
+
 
 set_option maxHeartbeats 300000
 theorem cardE_Xsq_irr (F : Type*) [Field F ] [Fintype F ][DecidableEq F](h_sq : Irreducible (X^2+1:F[X])) :
@@ -771,8 +1186,7 @@ theorem cardE_Xsq_irr (F : Type*) [Field F ] [Fintype F ][DecidableEq F](h_sq : 
     exact Classical.typeDecidableEq (F[X] ⧸ Ideal.span {X ^ 2 + 1})
   have hFin : Fintype (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
     exact Fintype.ofEquiv (F × F) (desc_E' F)
-  have test : Nat.card (F[X] ⧸ Ideal.span (α := F[X]) {X ^ 2 + 1}) = q' F ^ 2 := sorry
- -- rw [← test]
+
   have : Nat.card (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) = q' F ^2 := by
     have : F × F ≃ (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := desc_E' F
     have h : Nat.card (F × F) = Nat.card  F * Nat.card  F := by
@@ -781,27 +1195,19 @@ theorem cardE_Xsq_irr (F : Type*) [Field F ] [Fintype F ][DecidableEq F](h_sq : 
       exact Nat.card_congr this
     rw[← this, h]
     exact Eq.symm (Nat.pow_two (q' F))
-  --rw [← this]
-  have test2 : Nat.card (F[X] ⧸ Ideal.span (α := F[X]) {X ^ 2 + 1})ˣ = Nat.card (F[X] ⧸ Ideal.span (α := F[X]) {X ^ 2 + 1}) - 1 := sorry
-
- -- apply @card_field_inv ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))) hField' hFin hDec
-
-
 
   have hF : Nat.card (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ =
       Nat.card (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) - 1 :=
     card_field_inv ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])))
   rw [this] at hF
 
-
-
   exact hF
-
-
-
   sorry
 
-theorem cardE_Xsq_red (F:Type*) [Field F ] [Fintype F ][DecidableEq F]  (hF : ringChar F ≠ 2) (h_sq : (∃ i: F, X^2 +1 = (X - C i)*(X+ C i))) : Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) = ((q' F)-1)^2 := by
+-- Je montre que le cardinal des inversibles de E est  le cardinal de (F au moins 1) au carré lorsque -1 est un carré dans F
+-- A nouveau j'ai le meme problème qui viens de card_field_inv je crois
+theorem cardE_Xsq_red (F:Type*) [Field F ] [Fintype F ][DecidableEq F]  (hF : ringChar F ≠ 2) (h_sq : (∃ i: F, X^2 +1 = (X - C i)*(X+ C i))) :
+    Nat.card ((F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X]))ˣ) = ((q' F)-1)^2 := by
   obtain ⟨i, hi⟩ := h_sq
 
   have : (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) ≃+* (F[X] ⧸ Ideal.span ({X - C i } : Set F[X])) ×  (F[X] ⧸ Ideal.span ({X+ C i} : Set F[X])) := by
@@ -828,23 +1234,24 @@ theorem cardE_Xsq_red (F:Type*) [Field F ] [Fintype F ][DecidableEq F]  (hF : ri
         exact PrincipalIdealRing.isMaximal_of_irreducible this
       exact Ideal.Quotient.field (Ideal.span {X - C i})
     haveI : Fintype  (F[X] ⧸ Ideal.span ({X - C i}: Set F[X])) := by
-      sorry
+      exact Fintype.ofEquiv (F ) (desc_F_quo_deg_1 F ( i))
+    haveI : DecidableEq (F[X] ⧸ Ideal.span ({X - C i}: Set F[X])) := by
+      exact Classical.typeDecidableEq (F[X] ⧸ Ideal.span {X - C i})
 
 
-
-     -- refine Ideal.Quotient.field (Ideal.span ({X - C i}:Set F[X]))
-
-    rw [card_field_inv (F[X] ⧸ Ideal.span ({X - C i}: Set F[X]))]
-
+    have := card_field_inv (F[X] ⧸ Ideal.span ({X - C i}: Set F[X]))
+    rw[this]
   sorry
 
+--Un corps fini (de caractéristique différente de 2) a au moins deux éléments
 theorem card_F_ge_two (F : Type*) [Field F ] [Fintype F ][DecidableEq F] [Nonempty F] (hF : ringChar F ≠ 2) : Nat.card F > 1 := by
   have h := Fintype.card_pos_iff.mpr (by infer_instance : Nonempty F)
   sorry
 
 
-
-theorem card_So2_Xsq_irr  (F : Type*) [Field F ] [Fintype F ][DecidableEq F](h_sq : Irreducible (X^2+1:F[X])) (hF : ringChar F ≠ 2)   : Nat.card (SO2 F) = (q' F) +1 := by
+/-Cardinal de SO2 dans le cas -1 non carré-/
+theorem card_So2_Xsq_irr  (F : Type*) [Field F ] [Fintype F ][DecidableEq F](h_sq : Irreducible (X^2+1:F[X])) (hF : ringChar F ≠ 2)   :
+    Nat.card (SO2 F) = (q' F) +1 := by
   have h := cardE_Xsq_irr F h_sq
   have h' := card_So2 F hF
   rw[h',h]
@@ -854,6 +1261,7 @@ theorem card_So2_Xsq_irr  (F : Type*) [Field F ] [Fintype F ][DecidableEq F](h_s
   refine Nat.zero_lt_sub_of_lt ?H1.h
   exact card_F_ge_two F hF
 
+/-cardinal de SO si -1 est carré-/
 theorem card_So2_Xsq_red  (F : Type*) [Field F ] [Fintype F ][DecidableEq F] (h_sq : (∃ i: F, X^2 +1 = (X - C i)*(X+ C i))) (hF : ringChar F ≠ 2)   : Nat.card (SO2 F) = (q' F) - 1 := by
   have h := cardE_Xsq_red F hF h_sq
   have h' := card_So2 F hF
@@ -867,18 +1275,30 @@ theorem card_So2_Xsq_red  (F : Type*) [Field F ] [Fintype F ][DecidableEq F] (h_
 theorem invertibles_of_field_is_cyclic (F : Type*) [Field F ] [Fintype F ][DecidableEq F] : IsCyclic (Fˣ) := by
   exact instIsCyclicUnitsOfFinite
 
-
-theorem So2_cyclic0 (F : Type*) [Field F ] [Fintype F ][DecidableEq F] [Nonempty F] (hF : ringChar F ≠ 2) (h_sq : Irreducible (X^2+1:F[X])): IsCyclic (SO2 F) := by
+-- Here I show cyclicity of SO2 when -1 is not a square in F,
+-- I instance IsCylcic (Fˣ) but lean fails to see it as an instance
+theorem So2_cyclic0 (F : Type*) [Field F ] [Fintype F ][DecidableEq F] [Nonempty F] (hF : ringChar F ≠ 2) (h_sq : Irreducible (X^2+1:F[X])):
+    IsCyclic (SO2 F) := by
   have hField : IsField (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := by
     exact (Ideal.Quotient.maximal_ideal_iff_isField_quotient (Ideal.span {X ^ 2 + 1})).mp (PrincipalIdealRing.isMaximal_of_irreducible h_sq)
   have : (D F)  ≃* (F[X] ⧸ Ideal.span ({Polynomial.X^2 + 1} : Set F[X])) := D_iso_E F
   have : IsField (D F):= by
     exact MulEquiv.isField (F[X] ⧸ Ideal.span {X ^ 2 + 1}) hField this
+  haveI : Field (D F) := by
+    exact this.toField
+  have : F × F ≃ D F := by
+    have := desc_E' F
+    have h := (D_iso_E F).toEquiv
+    exact (h.trans (id this.symm)).symm
+  haveI : Fintype (D F) := by
+    exact Fintype.ofEquiv (F × F) this
+  haveI : DecidableEq (D F) := by
+    exact Classical.typeDecidableEq (D F)
 
-  have : IsCyclic (D F)ˣ  := by
-    --have :  invertibles_of_field_is_cyclic (D F)
-    sorry
-  apply Subgroup.isCyclic
+  haveI : IsCyclic (D F)ˣ := by
+    exact instIsCyclicUnitsOfFinite
+
+  exact Subgroup.isCyclic (SO2 F)
 
 noncomputable def So2_iso (F : Type*) [Field F ] [Fintype F ][DecidableEq F] [Nonempty F] (hF : ringChar F ≠ 2) (h_sq : Irreducible (X^2+1:F[X])) : SO2 F ≃* ZMod (q' F +1) := by
   have hcard :  Nat.card (SO2 F) = (q' F) +1 := card_So2_Xsq_irr F h_sq hF
