@@ -14,6 +14,9 @@ open Complex
 
 --On désignera par w le nombre Complex.exp (2*↑Real.pi*Complex.I/p)
 
+theorem isCyclic_iff_exists_zpowers_eq_top (α : Type*) [Group α] : IsCyclic α ↔ ∃ g : α, Subgroup.zpowers g = ⊤ := by
+  simp only [Subgroup.eq_top_iff', Subgroup.mem_zpowers_iff]
+  exact ⟨fun ⟨h⟩ ↦ h, fun h ↦ ⟨h⟩⟩
 
 
 -- Définiton d'un nombre premier de Fermat
@@ -528,7 +531,7 @@ structure TowerOfGroup2 {G : Type*} [Group G] where
 
 --Construction d'une tour de sous-groupe distingué d'indice 2 :  si G iso à ℤ/pℤˣ, alors on a une tour de sg Gi de G telle que Gi+1 est d'indice
 --2 dans Gi et G0=G et Gm={1}, avec m tel que p=2^m+1.
-theorem TowSG (G : Type*) (p : ℕ) [inst1 : Group G] : premierfermat p → (G ≃* (ZMod (p))ˣ → ∃ (ζ : @TowerOfGroup2 G inst1), ∀ (i : ℕ), (@Subgroup.relindex G inst1 (ζ.1 (i+1)) (ζ.1 i)) = 2 ∧ ζ.H 0 = G ∧ ∃ (m : ℕ), ζ.H m = IsSubgroup.trivial G ):= by
+theorem TowSG (G : Type*) (p : ℕ) [inst1 : Group G] : premierfermat p → (G ≃* (ZMod (p))ˣ → ∃ (ζ : @TowerOfGroup2 G inst1), ∀ (i : ℕ), (@Subgroup.relindex G inst1 (ζ.1 (i+1)) (ζ.1 i)) = 2 ∧ ζ.H 0 = ⊤ ∧ ∃ (m : ℕ), ζ.H m = IsSubgroup.trivial G ):= by
 intro fermatp
 intro h
 have h1 : IsCyclic G := by
@@ -536,6 +539,7 @@ have h1 : IsCyclic G := by
     have h101 := fermatp.1
     exact ZModx_cyclic (↑p) h101
   exact cyclic_iso G ((ZMod p)ˣ) h h10
+have h1bis := h1
 apply IsCyclic.exists_generator at h1
 obtain ⟨ ζ, hypζgen ⟩ := h1
 let H := fun (i : ℕ) ↦ Subgroup.zpowers (ζ ^(2^i))
@@ -579,7 +583,16 @@ constructor
     simp
     rw [@Subgroup.mem_subgroupOf] at h31
     rw[@Subgroup.mem_subgroupOf]
+    simp at h31
+    rw[<-zpow_add] at h31
+    simp
     by_contra h32
+    rw [@Subgroup.mem_zpowers_iff] at h32
+    rw [@Subgroup.mem_zpowers_iff] at h31
+    rw [@zpow_mul] at h32 h31
+    obtain ⟨k1, hk1⟩ := h31
+    obtain ⟨k2, hk2⟩ := h32
+    rw [@zpow_add] at hk1
     sorry
   · intro h41
     simp at h41
@@ -588,14 +601,9 @@ constructor
     rw [@Subgroup.mem_subgroupOf]
     sorry
 · constructor
-  · change (Subgroup.zpowers (ζ^2^0)=G)
+  · change (Subgroup.zpowers (ζ^2^0)=⊤)
     simp
-    --rw [← @Set.coe_setOf]
-    rw [@Subgroup.zpowers_eq_closure] at hypζgen
-    rw [@Subgroup.zpowers_eq_closure]
-    rw [@Set.singleton_def] at hypζgen
-    simp at hypζgen
-    sorry
+    exact (Subgroup.eq_top_iff' (Subgroup.zpowers ζ)).mpr hypζgen
   · cases h with
   | mk toEquiv map_mul' =>
     have h41 : Nat.card G = (p-1) := by
