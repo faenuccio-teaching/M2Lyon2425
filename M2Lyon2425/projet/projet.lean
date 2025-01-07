@@ -1,6 +1,5 @@
 -- pas besoin d'`import Mathlib`, qui est déjà importé par les dépendances
 import M2Lyon2425.projet.lemmesARSKleene
-import M2Lyon2425.projet.minSet
 
 variable {α : Type*}
 
