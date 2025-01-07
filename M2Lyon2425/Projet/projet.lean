@@ -85,9 +85,6 @@ theorem stab {G : Type*} [Group G] (H : Subgroup G) (S : Sylow  p G)  (h : H) :
     · intro h2
       sorry
 
-/-- l'existence d'une orbite dont le cardinal n'est pas divisible par p-/
-lemma orbite {G : Type*} [Group G] (H : Subgroup G) (S : Sylow  p G) : ∃ h : H , ¬ (p ∣ Nat.card (Quotient.mk   (Subgroup.Setoid (Sylow.toSubgroup S)) h)) :=
-  by sorry
 
 /-- prop 2.2-/
 theorem sylow_of_subgroup {G : Type*} [Group G]  (H : Subgroup G) (S : Sylow  p G) :
@@ -110,4 +107,4 @@ theorem exist_sylow_of_subgroup {G : Type*} [Group G] (H : Subgroup G) ( S : Syl
   · intro Q hQ h
     cases hw with
     | mk isPgroup isMaximal =>
-     --have :∃ n, Subgroup.index H = p ^ n :=  IsPGroup.index hQ ((conjugate w ↑S).subgroupOf H : Subgroup Q)
+     sorry
