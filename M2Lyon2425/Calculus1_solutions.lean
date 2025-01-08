@@ -324,13 +324,12 @@ example {ι : Type*} [CompleteSpace E] {g : ι → E →L[𝕜] F} (h : ∀ x, �
   · intro y h1 h2
     -- The idea is to write `y = (y + x) - x` and use the linearity of `g i`
     calc
-      ‖g i y‖ = ‖g i (y + x) - g i x‖           := ?_
+      ‖g i y‖ = ‖g i (y + x) - g i x‖           := by rw [map_add, add_sub_cancel_right]
       _       ≤ ‖g i (y + x)‖ + ‖g i x‖         := ?_
       _       ≤ ‖g i (y + x)‖ + m               := ?_
       _       ≤ m + m                           := ?_
       _       ≤ ↑(m + m) * (‖y‖ / (ε / ‖k‖))    := ?_
       _       ≤ ↑(m + m) / (ε / ‖k‖) * ‖y‖      := ?_
-    · rw [map_add, add_sub_cancel_right]
     · exact norm_sub_le _ _
     · exact (add_le_add_iff_left _).mpr <| real_norm_le x (mem_ball_self ε_pos) i
     · rw [add_le_add_iff_right]
