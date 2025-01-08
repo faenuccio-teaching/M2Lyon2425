@@ -1,0 +1,373 @@
+import Mathlib.Algebra.Group.Nat
+--import Mathlib.Data.Set.Basic
+--import Mathlib.Data.Set.Operations
+--import Mathlib.Order.SetNotation
+import Mathlib.Tactic
+--import Mathlib.Data.Real.Basic
+import Mathlib.GroupTheory.Perm.Basic
+--import Mathlib.Algebra.EuclideanDomain.Basic
+
+variable (d:ℤ)
+
+
+
+
+/--Projet LEAN :
+
+1) Définir l'anneau Z[sqrt(d)] avec ses opérations
+2) Montrer que Z[sqrt(d)] est un anneau commutatif
+3) Pour quels d (d<0) est-ce que Z[sqrt(d)] est euclidien ?
+
+-/
+
+
+
+
+
+
+
+--Etape 1 : On définit l'anneau Z[sqrt(d)] avec ses opérations
+
+@[ext]
+structure MonAnneau (d : ℤ) where
+  re : ℤ
+  im : ℤ
+
+instance : Zero (MonAnneau d) :=
+  ⟨ ⟨ 0,0 ⟩ ⟩
+
+instance : One (MonAnneau d) :=
+  ⟨ ⟨ 1, 0⟩ ⟩
+
+instance : Add (MonAnneau d) :=
+  ⟨ fun x y ↦ ⟨ x.re + y.re, x.im + y.im⟩ ⟩
+
+instance : Neg (MonAnneau d) :=
+  ⟨ fun x ↦ ⟨ -x.re, -x.im⟩ ⟩
+
+instance : Mul (MonAnneau d) :=
+  ⟨ fun x y ↦  ⟨ x.re * y.re - d* x.im * y.im, x.re * y.im + x.im * y.re⟩ ⟩
+
+
+
+
+
+--defs
+
+theorem zero_def : (0 : (MonAnneau d)) = ⟨0, 0⟩  :=
+  rfl
+theorem one_def : (1 : (MonAnneau d)) = ⟨1, 0⟩  :=
+  rfl
+theorem add_def (x y : (MonAnneau d)) : x + y = ⟨ x.re + y.re, x.im + y.im⟩  :=
+  rfl
+theorem neg_def (x : (MonAnneau d)) : -x = ⟨ -x.re, -x.im ⟩  :=
+  rfl
+theorem mul_def (x y : (MonAnneau d)) :
+  x * y = ⟨ x.re * y.re - d * x.im * y.im, x.re * y.im + x.im * y.re⟩ :=
+  rfl
+
+
+
+
+
+
+
+-- Etape 2 : On montre que Z[sqrt(d)] est un anneau commutatif
+
+
+@[simp]
+theorem zero_re : (0 : (MonAnneau d)).re = 0 := by
+  rfl
+@[simp]
+theorem zero_im : (0 : (MonAnneau d)).im = 0 := by
+  rfl
+@[simp]
+theorem one_re : (1 : (MonAnneau d)).re = 1 := by
+  rfl
+@[simp]
+theorem one_im : (1 : (MonAnneau d)).im = 0 := by
+  rfl
+@[simp]
+theorem add_re (x y : (MonAnneau d)) : (x + y).re = x.re + y.re := by
+  rfl
+@[simp]
+theorem add_im (x y : (MonAnneau d)) : (x + y).im = x.im + y.im := by
+  rfl
+@[simp]
+theorem neg_re (x : (MonAnneau d)) : (-x).re = -x.re := by
+  rfl
+@[simp]
+theorem neg_im (x : (MonAnneau d)) : (-x).im = -x.im := by
+  rfl
+@[simp]
+theorem mul_re (x y : (MonAnneau d)) : (x * y).re = x.re * y.re - d*x.im * y.im := by
+  rw[mul_def]
+@[simp]
+theorem mul_im (x y : (MonAnneau d)) : (x * y).im = x.re * y.im + x.im * y.re := by
+  rfl
+
+
+instance instCommRing_MonAnneau : CommRing (MonAnneau d) where
+  zero := 0
+  one := 1
+  add := (· + ·)
+  neg x := -x
+  mul := (· * ·)
+  nsmul := nsmulRec
+  zsmul := zsmulRec
+  add_assoc := by
+    intro a b c
+    ext
+    · simp
+      ring
+    · simp
+      ring
+  zero_add := by
+    intro a
+    ext
+    · simp
+    · simp
+  add_zero := by
+    intro a
+    ext
+    · simp
+    · simp
+  neg_add_cancel := by
+    intro a
+    ext
+    · simp
+    · simp
+  add_comm := by
+    intro a b
+    ext
+    · simp
+      ring
+    · simp
+      ring
+  mul_assoc := by
+    intro a b c
+    ext
+    · simp
+      ring
+    · simp
+      ring
+  one_mul := by
+    intro a
+    ext
+    · simp
+    · simp
+  mul_one := by
+    intro a
+    ext
+    · simp
+    · simp
+  left_distrib := by
+    intro a b c
+    ext
+    · simp
+      ring
+    · simp
+      ring
+
+  right_distrib := by
+    intro a b c
+    ext
+    · simp
+      ring
+    · simp
+      ring
+  mul_comm := by
+    intro a b
+    ext
+    · simp
+      ring
+    · simp
+      ring
+  zero_mul := by
+    intro a
+    ext
+    · simp
+    · simp
+  mul_zero := by
+    intro a
+    ext
+    · simp
+    · simp
+
+
+--Etape 3 : Pour quels d (d<0), est-ce que Z[sqrt(d)] est un anneau Euclidien ?
+
+--On montre que Z[sqrt(d)] contient au moins 2 éléments
+instance instNontrivial : Nontrivial (MonAnneau d) := by
+  use 0, 1
+  rw [Ne, MonAnneau.ext_iff]
+  simp
+
+
+
+--> Si d=-1 : Livre
+
+
+example (a b : ℤ) : a = b * (a / b) + a % b :=
+  Eq.symm (Int.ediv_add_emod a b)
+example (a b : ℤ) : b≠ 0 → 0 ≤ a % b :=
+  Int.emod_nonneg a
+example (a b : ℤ) : b ≠ 0 → a % b < |b| :=
+  Int.emod_lt a
+
+def div' (a b : ℤ) :=
+(a + b / 2) / b
+def mod' (a b : ℤ) :=
+(a + b / 2) % b - b / 2
+theorem div'_add_mod' (a b : ℤ) : b * div' a b + mod' a b = a := by
+  rw [div', mod']
+  linarith [Int.ediv_add_emod (a + b / 2) b]
+theorem abs_mod'_le (a b : ℤ) (h : 0 < b) : |mod' a b| ≤ b / 2 := by
+  rw [mod', abs_le]
+  constructor
+  · linarith [Int.emod_nonneg (a + b / 2) h.ne']
+  have := Int.emod_lt_of_pos (a + b / 2) h
+  have := Int.ediv_add_emod b 2
+  have := Int.emod_lt_of_pos b zero_lt_two
+  linarith
+
+theorem mod'_eq (a b : ℤ) : mod' a b = a - b * div' a b := by
+  linarith [div'_add_mod' a b]
+
+@[simp]
+def norm (x : (MonAnneau (-1))) :=
+  x.re ^ 2 + x.im ^ 2
+
+
+
+
+@[simp]
+theorem norm_nonneg_1 (x : (MonAnneau (-1))) : 0 ≤ norm x := by
+  simp
+  suffices : x.re^2 ≥ 0 ∧ x.im^2 ≥ 0
+  · cases this with
+  | intro left right =>
+    refine Int.add_nonneg left ?intro.hb
+    exact right
+  · constructor
+    · exact sq_nonneg x.re
+    · exact sq_nonneg x.im
+
+
+
+
+@[simp]
+def conj (x : (MonAnneau (-1))) : (MonAnneau (-1)) :=
+  ⟨x.re, -x.im⟩
+@[simp]
+theorem conj_re (x : (MonAnneau (-1))) : (conj x).re = x.re :=
+rfl
+@[simp]
+theorem conj_im (x : (MonAnneau (-1))) : (conj x).im = -x.im :=
+rfl
+theorem norm_conj (x : (MonAnneau (-1))) : norm (conj x) = norm x := by
+  simp
+
+instance : Div (MonAnneau (-1)) :=
+⟨fun x y ↦ ⟨div' (x * conj y).re (norm y), Int.div (x * conj y).im (norm y)⟩⟩
+
+instance : Mod (MonAnneau (-1)) :=
+  ⟨fun x y ↦ x - y * (x / y)⟩
+
+
+--> Si d=-2 : Un des sujets d'Agreg
+
+
+@[simp]
+def Norm_2 (a: (MonAnneau (-2))) :=
+  a.re^2+2*a.im^2
+
+@[simp]
+theorem norm_nonneg_MonAnneau (z : (MonAnneau (-2))) : 0 ≤ Norm_2 z := by
+  simp
+  suffices : z.re^2 ≥ 0 ∧ z.im^2 ≥ 0
+  · cases this with
+  | intro left right =>
+    refine Int.add_nonneg left ?intro.hb
+    simp
+    exact right
+  · constructor
+    · exact sq_nonneg z.re
+    · exact sq_nonneg z.im
+
+
+instance : Star (MonAnneau d) where
+  star z := ⟨z.1, -z.2⟩
+
+
+@[simp]
+theorem star_re (z : (MonAnneau d)) : (star z).re = z.re :=
+  rfl
+@[simp]
+theorem star_im (z : (MonAnneau d)) : (star z).im = -z.im :=
+  rfl
+
+instance : StarRing (MonAnneau d) where
+  star_involutive x := by
+    ext
+    · simp
+    · simp
+  star_mul a b := by
+    ext
+    · simp
+      ring
+    · simp
+      ring
+  star_add a b := by
+    ext
+    · simp
+    · simp
+      ring
+
+
+
+def norm_d (z : (MonAnneau d)) : ℤ :=
+  z.re^2 + d * z.im^2
+
+--Quotient :
+instance : Div (MonAnneau (-2)) :=
+  ⟨ fun (x y : (MonAnneau (-2))) =>
+    let Norme_y := (Norm_2 y : ℚ)⁻¹
+    let y_barre := star y
+    ⟨round ((x * y_barre).re * Norme_y : ℚ), round ((x * y_barre).im * Norme_y : ℚ)⟩⟩
+
+ --Remainder :
+instance : Mod (MonAnneau (-2)) :=
+  ⟨fun x y => x - y * (x / y)⟩
+
+
+
+instance : EuclideanDomain (MonAnneau (-2)) where
+  quotient := sorry
+  remainder := sorry
+  quotient_mul_add_remainder_eq:= sorry
+  quotient_zero:=sorry
+  r:=sorry
+  r_wellFounded:=sorry
+  remainder_lt:=sorry
+  mul_left_not_lt:=sorry
+
+
+
+--Si d<=-3 :
+
+def sqrt_moins_d (d : ℤ) : MonAnneau d :=
+  ⟨0, 1⟩
+
+def mul_two_MonAnneau {d : ℤ} (x : MonAnneau d) : MonAnneau d :=
+  ⟨2 * x.re, 2 * x.im⟩
+
+
+--theorem Non_factoriel (hd : d≤ (-3)) : ¬ UFD (MonAnneau d) :=
+
+/--Idée de la preuve : Regarder selon la parité de d
+On veut montrer que Z[sqrt(-d)] n'est pas factoriel pour d≤-3
+
+Synthaxe pour montrer qu'un anneau n'est pas factoriel sur Lean ?
+
+-/
