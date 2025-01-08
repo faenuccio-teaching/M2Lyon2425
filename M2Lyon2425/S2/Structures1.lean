@@ -4,8 +4,6 @@
   * Mathematics in Lean, J. Avigad, P. Massot
 -/
 import Mathlib.Algebra.BigOperators.Ring
-import Mathlib.Data.Real.Basic
-import Mathlib.Topology.Instances.Real
 
 -- The following class records that the given type `α` is endowed with a distinguished element
 -- called one. At this stage, it has no property at all.
