@@ -158,7 +158,8 @@ class Group₁ (G : Type) extends Monoid₁ G, Inv₁ G where
 
 lemma left_inv_eq_right_inv₁ {M : Type} [Monoid₁ M] {a b c : M} (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) :
     b = c := by
-  sorry
+  apply_fun (fun x ↦ x ⋄ c) at hba
+  rwa [DiaOneClass₁.one_dia, Semigroup₁.dia_assoc, hac, DiaOneClass₁.dia_one] at hba
 
 -- It is pretty annoying to give full names of the lemma. One way to fix this is to use the export
 -- command to copy those facts as lemmas in the root name space.
@@ -170,14 +171,18 @@ export Group₁ (inv_dia)
 -- Then we can rewrite the proof.
 
 example {M : Type} [Monoid₁ M] {a b c : M} (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) : b = c := by
-  sorry
+  apply_fun (fun x ↦ x ⋄ c) at hba
+  rwa [one_dia, dia_assoc, hac, dia_one] at hba
 
 -- Now, let's prove things about our algebraic structures.
 
-lemma inv_eq_of_dia {G : Type} [Group₁ G] {a b : G} (h : a ⋄ b = 𝟙) : a⁻¹ = b :=
-  sorry
+#check inv_dia
+lemma inv_eq_of_dia {G : Type} [Group₁ G] {a b : G} (h : a ⋄ b = 𝟙) : a⁻¹ = b := by
+  apply_fun (fun x ↦ a⁻¹ ⋄ x) at h
+  rw [← dia_assoc, inv_dia a, one_dia, dia_one] at h
+  exact h.symm
 
-lemma dia_inv {G : Type} [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 :=
+lemma dia_inv {G : Type} [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 := by
   sorry
 
 -- We would like to move on to define rings, but there is a serious issue. A ring structure on a
@@ -335,7 +340,36 @@ class OrderedCommMonoid₁ (α : Type)
   extends PartialOrder₁ α, CommMonoid₃ α where
   mul_of_le : ∀ a b : α, a ≤₁ b → ∀ c : α, c * a ≤₁ c * b
 
+def LEN : ℕ → ℕ → Prop := fun a b ↦ ∃ c : ℕ, b = a + c
+
 instance : OrderedCommMonoid₁ ℕ where
+  le := LEN
+  le_refl := by
+    intro a
+    use 0
+    rw [add_zero]
+  le_trans := by
+    intros a b c hab hbc
+    obtain ⟨d, hd⟩ := hab
+    obtain ⟨e, he⟩ := hbc
+    use d+e
+    rw [← add_assoc, ← hd, ← he]
+  le_antisymm := by
+    intros a b hab hba
+    obtain ⟨c, hc⟩ := hab
+    obtain ⟨d, hd⟩ := hba
+    rw [hc, add_assoc] at hd
+    have : c + d = 0 := by
+      exact Eq.symm (Nat.add_left_cancel hd)
+    have : c = 0 := by
+      exact Nat.eq_zero_of_add_eq_zero_right this
+    rw [this, add_zero] at hc
+    exact hc.symm
+  mul_assoc₃ := sorry
+  one_mul := sorry
+  mul_one := sorry
+  mul_comm := sorry
+  mul_of_le := sorry
 
 -- We now discuss algebraic structures involving several types. The prime example is modules over rings.
 -- Those are commutative additive groups equipped with a scalar multiplication by elements of some ring.
@@ -357,7 +391,7 @@ class Module₁ (R : Type) [Ring₃ R] (M : Type) [AddCommGroup₃ M] extends SM
 
 class Module₂ (R : Type) [Ring₃ R] (M : Type) extends SMul₃ R M, AddCommGroup₃ M where
 
--- Remember that such an extends clause would lead to a field `Module₃.toAddCommGroup₃` marked as an
+-- Remember that such an extends clause would lead to a field `Module₂.toAddCommGroup₃` marked as an
 -- instance. This instance would have the signature:
 -- `(R : Type) → [inst : Ring₃ R] → {M : Type} → [self : Module₁ R M] → AddCommGroup₃ M`.
 -- But with such an instance, each time Lean would look for a `AddCommGroup₃ M` instance for some M,
