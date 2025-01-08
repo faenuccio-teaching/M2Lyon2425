@@ -586,19 +586,25 @@ constructor
     simp at h31
     rw[<-zpow_add] at h31
     simp
-    by_contra h32
-    rw [@Subgroup.mem_zpowers_iff] at h32
+    --by_contra h32
+    --rw [@Subgroup.mem_zpowers_iff] at h32
     rw [@Subgroup.mem_zpowers_iff] at h31
-    rw [@zpow_mul] at h32 h31
+    --rw [@zpow_mul] at h32 h31
     obtain ⟨k1, hk1⟩ := h31
-    obtain ⟨k2, hk2⟩ := h32
-    rw [@zpow_add] at hk1
+    --obtain ⟨k2, hk2⟩ := h32
+    --rw [@zpow_add,<-hk2,<-zpow_mul',<-zpow_mul',<-zpow_mul',<-zpow_mul',<-zpow_add] at hk1
+    --rw[<-zpow_mul',<-zpow_mul'] at hk2
+    rw[zpow_add] at hk1
+    apply mul_inv_eq_of_eq_mul at hk1
     sorry
   · intro h41
     simp at h41
     simp
     rw [@Subgroup.mem_subgroupOf] at h41
     rw [@Subgroup.mem_subgroupOf]
+    simp
+    simp at h41
+
     sorry
 · constructor
   · change (Subgroup.zpowers (ζ^2^0)=⊤)
