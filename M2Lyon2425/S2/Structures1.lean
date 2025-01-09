@@ -183,7 +183,8 @@ lemma inv_eq_of_dia {G : Type} [Group₁ G] {a b : G} (h : a ⋄ b = 𝟙) : a�
   exact h.symm
 
 lemma dia_inv {G : Type} [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 := by
-  sorry
+  have this₁ := inv_dia a⁻¹
+  rwa [inv_eq_of_dia (inv_dia a)] at this₁
 
 -- We would like to move on to define rings, but there is a serious issue. A ring structure on a
 -- type contains both an additive group structure and a multiplicative monoid structure, and
@@ -253,24 +254,30 @@ attribute [simp] Group₃.inv_mul AddGroup₃.neg_add
 -- we need to repeat ourselves a bit since we switch to standard notations, but at least
 -- `to_additive` does the work of translating from the multiplicative notation to the additive one.
 
+#print Monoid₃
 @[to_additive]
-lemma inv_eq_of_mul {G : Type} [Group₃ G] {a b : G} (h : a * b = 1) : a⁻¹ = b :=
-  sorry
+lemma inv_eq_of_mul {G : Type} [Group₃ G] {a b : G} (h : a * b = 1) : a⁻¹ = b := by
+  apply_fun (fun x ↦ a⁻¹ * x) at h
+  rw [← mul_assoc₃, Group₃.inv_mul a, Monoid₃.one_mul, Monoid₃.mul_one] at h
+  exact h.symm
 
 -- Note that `to_additive` can be asked to tag a lemma with `simp` and propagate that
 -- attribute to the additive version.
 
 @[to_additive (attr := simp)]
 lemma Group₃.mul_inv {G : Type} [Group₃ G] {a : G} : a * a⁻¹ = 1 := by
-  sorry
+  have this₁ := Group₃.inv_mul a⁻¹
+  rwa [inv_eq_of_mul (Group₃.inv_mul a)] at this₁
 
 @[to_additive]
 lemma mul_left_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : a * b = a * c) : b = c := by
-  sorry
+  apply_fun (fun x ↦ a⁻¹ * x) at h
+  rwa [← mul_assoc₃, ← mul_assoc₃, Group₃.inv_mul, Monoid₃.one_mul, Monoid₃.one_mul] at h
 
 @[to_additive]
 lemma mul_right_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : b*a = c*a) : b = c := by
-  sorry
+  apply_fun (fun x ↦ x * a⁻¹) at h
+  rwa [mul_assoc₃, mul_assoc₃, Group₃.mul_inv, Monoid₃.mul_one, Monoid₃.mul_one] at h
 
 class AddCommGroup₃ (G : Type) extends AddGroup₃ G, AddCommMonoid₃ G
 
@@ -289,12 +296,20 @@ class Ring₃ (R : Type) extends AddGroup₃ R, Monoid₃ R, MulZeroClass R wher
 -- It is an example of building an instance using the syntax that allows to provide a parent structure
 -- and some extra fields.
 
+#print Ring₃
 instance {R : Type} [Ring₃ R] : AddCommGroup₃ R :=
 { Ring₃.toAddGroup₃ with
   add_comm := by
     intro a b
     have : a + (a + b + b) = a + (b + a + b) := by
-      sorry
+      have this₁ : a + (a + b + b) = (a + b) * (1 + 1) := by
+        rw [Ring₃.right_distrib, Ring₃.left_distrib, Ring₃.left_distrib,
+          Monoid₃.mul_one, Monoid₃.mul_one, add_assoc₃ a b b,
+          ← add_assoc₃ a a (b+b)]
+      have this₂ : a + (b + a + b) = (a + b) * (1 + 1) := by
+        rw [Ring₃.left_distrib, Ring₃.right_distrib, Monoid₃.mul_one,
+        Monoid₃.mul_one, add_assoc₃, ← add_assoc₃ a b (a+b)]
+      rw [this₁, this₂]
     exact add_right_cancel₃ (add_left_cancel₃ this) }
 
 -- We can also build concrete instances, such as a ring structure on integers.
@@ -303,19 +318,19 @@ instance : Ring₃ ℤ where
   add := (· + ·)
   add_assoc₃ := add_assoc
   zero := 0
-  zero_add := sorry
-  add_zero := sorry
+  zero_add := fun a ↦ a.zero_add
+  add_zero := fun a ↦ a.add_zero
   neg := (- ·)
-  neg_add := sorry
+  neg_add := fun a ↦ a.add_left_neg
   mul := (· * ·)
   mul_assoc₃ := mul_assoc
   one := 1
-  one_mul := sorry
-  mul_one := sorry
-  zero_mul := sorry
-  mul_zero := sorry
-  left_distrib := sorry
-  right_distrib := sorry
+  one_mul := fun a ↦ a.one_mul
+  mul_one := fun a ↦ a.mul_one
+  zero_mul := fun a ↦ a.zero_mul
+  mul_zero := fun a ↦ a.mul_zero
+  left_distrib := fun a b c ↦ Int.mul_add a b c
+  right_distrib := fun a b c ↦ Int.add_mul a b c
 
 -- As an exercise you can now set up a simple hierarchy for order relations, including a class
 -- for ordered commutative monoids, which have both a partial order and a commutative monoid
@@ -342,34 +357,31 @@ class OrderedCommMonoid₁ (α : Type)
 
 def LEN : ℕ → ℕ → Prop := fun a b ↦ ∃ c : ℕ, b = a + c
 
+#print Nat.add_assoc
 instance : OrderedCommMonoid₁ ℕ where
   le := LEN
-  le_refl := by
-    intro a
-    use 0
-    rw [add_zero]
+  le_refl := fun _ ↦ ⟨0, by rfl⟩
   le_trans := by
     intros a b c hab hbc
     obtain ⟨d, hd⟩ := hab
     obtain ⟨e, he⟩ := hbc
-    use d+e
-    rw [← add_assoc, ← hd, ← he]
+    exact ⟨d + e, by rw [← Nat.add_assoc, ← hd, ← he]⟩
   le_antisymm := by
     intros a b hab hba
     obtain ⟨c, hc⟩ := hab
     obtain ⟨d, hd⟩ := hba
-    rw [hc, add_assoc] at hd
-    have : c + d = 0 := by
-      exact Eq.symm (Nat.add_left_cancel hd)
-    have : c = 0 := by
-      exact Nat.eq_zero_of_add_eq_zero_right this
-    rw [this, add_zero] at hc
+    rw [hc, Nat.add_assoc, ← Nat.add_zero a] at hd
+    rw [Nat.eq_zero_of_add_eq_zero_right
+      (Nat.add_left_cancel hd).symm] at hc
     exact hc.symm
-  mul_assoc₃ := sorry
-  one_mul := sorry
-  mul_one := sorry
-  mul_comm := sorry
-  mul_of_le := sorry
+  mul_assoc₃ := fun a b c ↦ Nat.mul_assoc a b c
+  one_mul := fun a ↦ a.one_mul
+  mul_one := fun a ↦ a.mul_one
+  mul_comm := fun a b ↦ Nat.mul_comm a b
+  mul_of_le := by
+    intros a b hab c
+    obtain ⟨d, hd⟩ := hab
+    exact ⟨c * d, by rw [← Nat.left_distrib, ← hd]⟩
 
 -- We now discuss algebraic structures involving several types. The prime example is modules over rings.
 -- Those are commutative additive groups equipped with a scalar multiplication by elements of some ring.
