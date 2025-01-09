@@ -31,7 +31,7 @@ example (α : Type*) [One₁ α] : α := One₁.one
 
 -- Lean cannot figure out what is the type of the output
 
-example (α : Type) [One₁ α] := One₁.one
+example (α : Type*) [One₁ α] := One₁.one
 
 -- Given the type explicitly fixes the issue
 
@@ -45,13 +45,13 @@ example (α : Type*) (h : One₂ α) : α := h.one
 @[inherit_doc]
 notation "𝟙" => One₁.one -- Use `\b1` to write `𝟙`
 
-example {α : Type} [One₁ α] : α := 𝟙
+example {α : Type*} [One₁ α] : α := 𝟙
 
-example {α : Type} [One₁ α] : (𝟙 : α) = 𝟙 := rfl
+example {α : Type*} [One₁ α] : (𝟙 : α) = 𝟙 := rfl
 
 --  Now, we define a data-carrying class recording a binary operation
 
-class Dia₁ (α : Type) where
+class Dia₁ (α : Type*) where
   dia : α → α → α
 
 infixl:70 " ⋄ "   => Dia₁.dia -- Use `\diamond` to write `⋄`
@@ -61,7 +61,7 @@ infixl:70 " ⋄ "   => Dia₁.dia -- Use `\diamond` to write `⋄`
 -- For now, we define it by hand as a structure with two fields, a `Dia₁` instance and
 -- some Prop-valued field `dia_assoc` asserting associativity of `⋄`.
 
-class Semigroup₁ (α : Type) where
+class Semigroup₁ (α : Type*) where
   toDia₁ : Dia₁ α
   /-- Diamond is associative -/
   dia_assoc : ∀ a b c : α, (a ⋄ b) ⋄ c = a ⋄ (b ⋄ c)
@@ -70,29 +70,29 @@ class Semigroup₁ (α : Type) where
 -- hence can be used when Lean searches for an instance of `Dia₁ α` to make sense of `a ⋄ b`.
 -- However it is not part of the type class instances database.
 
-example {α : Type} [Semigroup₁ α] (a b : α) : α := a ⋄ b
+example {α : Type*} [Semigroup₁ α] (a b : α) : α := a ⋄ b
 
 -- We fix this by adding the instance attribute.
 
 attribute [instance] Semigroup₁.toDia₁
 
-example {α : Type} [Semigroup₁ α] (a b : α) : α := a ⋄ b
+example {α : Type*} [Semigroup₁ α] (a b : α) : α := a ⋄ b
 
 -- A more convenient way to extend structures than explicitly writing fields by hand and
 -- adding attribute is to use the `extends`.
 
-class Semigroup₂ (α : Type) extends Dia₁ α where
+class Semigroup₂ (α : Type*) extends Dia₁ α where
   /-- Diamond is associative -/
   dia_assoc : ∀ a b c : α, (a ⋄ b) ⋄ c = a ⋄ (b ⋄ c)
 
 -- Lean can automatically infer the operation of `α`.
 
-example {α : Type} [Semigroup₂ α] (a b : α) : α := a ⋄ b
+example {α : Type*} [Semigroup₂ α] (a b : α) : α := a ⋄ b
 
 -- We combine a diamond operation and a distinguished one with axioms saying this element
 -- is neutral on both sides.
 
-class DiaOneClass₁ (α : Type) extends One₁ α, Dia₁ α where
+class DiaOneClass₁ (α : Type*) extends One₁ α, Dia₁ α where
   /-- One is a left neutral element for diamond. -/
   one_dia : ∀ a : α, 𝟙 ⋄ a = a
   /-- One is a right neutral element for diamond -/
@@ -107,15 +107,15 @@ example {α : Type} [DiaOneClass₁ α] (a b : α) : Prop := a ⋄ b = 𝟙
 -- We don’t need to include extra fields where combining existing classes.
 -- Hence we can define monoids as:
 
-class Monoid₁ (α : Type) extends Semigroup₁ α, DiaOneClass₁ α
+class Monoid₁ (α : Type*) extends Semigroup₁ α, DiaOneClass₁ α
 
 -- If we try to build a monoid class by hand, we get two completely unrelated diamond operations
 
-class Monoid₂ (α : Type) where
+class Monoid₂ (α : Type*) where
   toSemigroup₁ : Semigroup₁ α
   toDiaOneClass₁ : DiaOneClass₁ α
 
-example {α : Type} [Monoid₁ α] :
+example {α : Type*} [Monoid₁ α] :
   (Monoid₁.toSemigroup₁.toDia₁.dia : α → α → α) = Monoid₁.toDiaOneClass₁.toDia₁.dia := rfl
 
 #check Monoid₂.mk
@@ -130,9 +130,9 @@ example {α : Type} [Monoid₁ α] :
 
 #check Monoid₁.toDiaOneClass₁
 
-example  {α : Type} [Monoid₁ α] (a : α) : 𝟙 ⋄ a = a := by exact DiaOneClass₁.one_dia a
+example  {α : Type*} [Monoid₁ α] (a : α) : 𝟙 ⋄ a = a := by exact DiaOneClass₁.one_dia a
 
-example  {α : Type} [Monoid₂ α] (a : α) : 𝟙 ⋄ a = a := by exact?
+example  {α : Type*} [Monoid₂ α] (a : α) : 𝟙 ⋄ a = a := by exact?
 
 -- We are now very close to defining groups. We could add to the monoid structure a field asserting
 -- the existence of an inverse for every element. But then we would need to work to access these inverses.
@@ -140,14 +140,14 @@ example  {α : Type} [Monoid₂ α] (a : α) : 𝟙 ⋄ a = a := by exact?
 
 -- To optimize reusability, we define a new data-carrying class, and then give it some notation.
 
-class Inv₁ (α : Type) where
+class Inv₁ (α : Type*) where
   /-- The inversion function -/
   inv : α → α
 
 @[inherit_doc]
 postfix:max "⁻¹" => Inv₁.inv
 
-class Group₁ (G : Type) extends Monoid₁ G, Inv₁ G where
+class Group₁ (G : Type*) extends Monoid₁ G, Inv₁ G where
   inv_dia : ∀ a : G, a⁻¹ ⋄ a = 𝟙
 
 -- Note that we only ask that `a⁻¹` is a left-inverse of `a` since the other side is automatic.
@@ -156,10 +156,9 @@ class Group₁ (G : Type) extends Monoid₁ G, Inv₁ G where
 #check DiaOneClass₁.one_dia
 #check Semigroup₁.dia_assoc
 
-lemma left_inv_eq_right_inv₁ {M : Type} [Monoid₁ M] {a b c : M} (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) :
+lemma left_inv_eq_right_inv₁ {M : Type*} [Monoid₁ M] {a b c : M} (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) :
     b = c := by
-  apply_fun (fun x ↦ x ⋄ c) at hba
-  rwa [DiaOneClass₁.one_dia, Semigroup₁.dia_assoc, hac, DiaOneClass₁.dia_one] at hba
+  rw [← DiaOneClass₁.one_dia c, ← hba, Semigroup₁.dia_assoc, hac, DiaOneClass₁.dia_one]
 
 -- It is pretty annoying to give full names of the lemma. One way to fix this is to use the export
 -- command to copy those facts as lemmas in the root name space.
@@ -170,21 +169,18 @@ export Group₁ (inv_dia)
 
 -- Then we can rewrite the proof.
 
-example {M : Type} [Monoid₁ M] {a b c : M} (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) : b = c := by
-  apply_fun (fun x ↦ x ⋄ c) at hba
-  rwa [one_dia, dia_assoc, hac, dia_one] at hba
+example {M : Type*} [Monoid₁ M] {a b c : M} (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) : b = c := by
+   rw [← one_dia c, ← hba, dia_assoc, hac, dia_one]
 
 -- Now, let's prove things about our algebraic structures.
 
-#check inv_dia
-lemma inv_eq_of_dia {G : Type} [Group₁ G] {a b : G} (h : a ⋄ b = 𝟙) : a⁻¹ = b := by
-  apply_fun (fun x ↦ a⁻¹ ⋄ x) at h
-  rw [← dia_assoc, inv_dia a, one_dia, dia_one] at h
-  exact h.symm
+lemma inv_eq_of_dia {G : Type*} [Group₁ G] {a b : G} (h : a ⋄ b = 𝟙) : a⁻¹ = b := by
+  refine left_inv_eq_right_inv₁ ?_ h
+  exact inv_dia a
 
-lemma dia_inv {G : Type} [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 := by
-  have this₁ := inv_dia a⁻¹
-  rwa [inv_eq_of_dia (inv_dia a)] at this₁
+lemma dia_inv {G : Type*} [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 := by
+  have : a⁻¹⁻¹ = a := inv_eq_of_dia (inv_dia a)
+  rw [← inv_dia a⁻¹, this]
 
 -- We would like to move on to define rings, but there is a serious issue. A ring structure on a
 -- type contains both an additive group structure and a multiplicative monoid structure, and
@@ -196,19 +192,19 @@ lemma dia_inv {G : Type} [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 := by
 --  Structures and classes are defined in both additive and multiplicative notation with an attribute
 -- `to_additive` linking them.
 
-class AddSemigroup₃ (α : Type) extends Add α where
+class AddSemigroup₃ (α : Type*) extends Add α where
 /-- Addition is associative -/
   add_assoc₃ : ∀ a b c : α, a + b + c = a + (b + c)
 
 @[to_additive AddSemigroup₃]
-class Semigroup₃ (α : Type) extends Mul α where
+class Semigroup₃ (α : Type*) extends Mul α where
 /-- Multiplication is associative -/
   mul_assoc₃ : ∀ a b c : α, a * b * c = a * (b * c)
 
-class AddMonoid₃ (α : Type) extends AddSemigroup₃ α, AddZeroClass α
+class AddMonoid₃ (α : Type*) extends AddSemigroup₃ α, AddZeroClass α
 
 @[to_additive AddMonoid₃]
-class Monoid₃ (α : Type) extends Semigroup₃ α, MulOneClass α
+class Monoid₃ (α : Type*) extends Semigroup₃ α, MulOneClass α
 
 attribute [to_additive existing] Monoid₃.toMulOneClass
 
@@ -220,7 +216,7 @@ export AddSemigroup₃ (add_assoc₃)
 
 whatsnew in
 @[to_additive]
-lemma left_inv_eq_right_inv' {M : Type} [Monoid₃ M] {a b c : M} (hba : b * a = 1) (hac : a * c = 1) :
+lemma left_inv_eq_right_inv' {M : Type*} [Monoid₃ M] {a b c : M} (hba : b * a = 1) (hac : a * c = 1) :
     b = c := by
   rw [← one_mul c, ← hba, mul_assoc₃, hac, mul_one b]
 
@@ -229,23 +225,23 @@ lemma left_inv_eq_right_inv' {M : Type} [Monoid₃ M] {a b c : M} (hba : b * a =
 -- Equipped with this technology, we can easily define also commutative semigroups, monoids and
 -- groups, and then define rings.
 
-class AddCommSemigroup₃ (α : Type) extends AddSemigroup₃ α where
+class AddCommSemigroup₃ (α : Type*) extends AddSemigroup₃ α where
   add_comm : ∀ a b : α, a + b = b + a
 
 @[to_additive AddCommSemigroup₃]
-class CommSemigroup₃ (α : Type) extends Semigroup₃ α where
+class CommSemigroup₃ (α : Type*) extends Semigroup₃ α where
   mul_comm : ∀ a b : α, a * b = b * a
 
-class AddCommMonoid₃ (α : Type) extends AddMonoid₃ α, AddCommSemigroup₃ α
+class AddCommMonoid₃ (α : Type*) extends AddMonoid₃ α, AddCommSemigroup₃ α
 
 @[to_additive AddCommMonoid₃]
-class CommMonoid₃ (α : Type) extends Monoid₃ α, CommSemigroup₃ α
+class CommMonoid₃ (α : Type*) extends Monoid₃ α, CommSemigroup₃ α
 
-class AddGroup₃ (G : Type) extends AddMonoid₃ G, Neg G where
+class AddGroup₃ (G : Type*) extends AddMonoid₃ G, Neg G where
   neg_add : ∀ a : G, -a + a = 0
 
 @[to_additive AddGroup₃]
-class Group₃ (G : Type) extends Monoid₃ G, Inv G where
+class Group₃ (G : Type*) extends Monoid₃ G, Inv G where
   inv_mul : ∀ a : G, a⁻¹ * a = 1
 
 -- We should remember to tag lemmas with `simp` when appropriate.
@@ -255,40 +251,38 @@ attribute [simp] Group₃.inv_mul AddGroup₃.neg_add
 -- we need to repeat ourselves a bit since we switch to standard notations, but at least
 -- `to_additive` does the work of translating from the multiplicative notation to the additive one.
 
-#print Monoid₃
+export Group₃ (inv_mul)
+
 @[to_additive]
-lemma inv_eq_of_mul {G : Type} [Group₃ G] {a b : G} (h : a * b = 1) : a⁻¹ = b := by
-  apply_fun (fun x ↦ a⁻¹ * x) at h
-  rw [← mul_assoc₃, Group₃.inv_mul a, Monoid₃.one_mul, Monoid₃.mul_one] at h
-  exact h.symm
+lemma inv_eq_of_mul {G : Type*} [Group₃ G] {a b : G} (h : a * b = 1) : a⁻¹ = b := by
+  refine left_inv_eq_right_inv' ?_ h
+  rw [inv_mul]
 
 -- Note that `to_additive` can be asked to tag a lemma with `simp` and propagate that
 -- attribute to the additive version.
 
 @[to_additive (attr := simp)]
-lemma Group₃.mul_inv {G : Type} [Group₃ G] {a : G} : a * a⁻¹ = 1 := by
-  have this₁ := Group₃.inv_mul a⁻¹
-  rwa [inv_eq_of_mul (Group₃.inv_mul a)] at this₁
+lemma mul_inv₃ {G : Type*} [Group₃ G] (a : G) : a * a⁻¹ = 1 := by
+  have : a⁻¹⁻¹ = a := inv_eq_of_mul (inv_mul a)
+  rw [← inv_mul a⁻¹, this]
 
 @[to_additive]
-lemma mul_left_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : a * b = a * c) : b = c := by
-  apply_fun (fun x ↦ a⁻¹ * x) at h
-  rwa [← mul_assoc₃, ← mul_assoc₃, Group₃.inv_mul, Monoid₃.one_mul, Monoid₃.one_mul] at h
+lemma mul_left_cancel₃ {G : Type*} [Group₃ G] {a b c : G} (h : a * b = a * c) : b = c := by
+  rw [← one_mul b, ← inv_mul a, mul_assoc₃, h, ← mul_assoc₃, inv_mul, one_mul]
 
 @[to_additive]
-lemma mul_right_cancel₃ {G : Type} [Group₃ G] {a b c : G} (h : b*a = c*a) : b = c := by
-  apply_fun (fun x ↦ x * a⁻¹) at h
-  rwa [mul_assoc₃, mul_assoc₃, Group₃.mul_inv, Monoid₃.mul_one, Monoid₃.mul_one] at h
+lemma mul_right_cancel₃ {G : Type*} [Group₃ G] {a b c : G} (h : b * a = c * a) : b = c := by
+  rw [← mul_one b, ← mul_inv₃ a, ← mul_assoc₃, h, mul_assoc₃, mul_inv₃, mul_one]
 
-class AddCommGroup₃ (G : Type) extends AddGroup₃ G, AddCommMonoid₃ G
+class AddCommGroup₃ (G : Type*) extends AddGroup₃ G, AddCommMonoid₃ G
 
 @[to_additive AddCommGroup₃]
-class CommGroup₃ (G : Type) extends Group₃ G, CommMonoid₃ G
+class CommGroup₃ (G : Type*) extends Group₃ G, CommMonoid₃ G
 
 -- We are now ready for rings. For demonstration purposes we won’t assume that addition is commutative,
 -- and then immediately provide an instance of `AddCommGroup₃`.
 
-class Ring₃ (R : Type) extends AddGroup₃ R, Monoid₃ R, MulZeroClass R where
+class Ring₃ (R : Type*) extends AddGroup₃ R, Monoid₃ R, MulZeroClass R where
   /-- Multiplication is left distributive over addition -/
   left_distrib : ∀ a b c : R, a * (b + c) = a * b + a * c
   /-- Multiplication is right distributive over addition -/
@@ -297,20 +291,12 @@ class Ring₃ (R : Type) extends AddGroup₃ R, Monoid₃ R, MulZeroClass R wher
 -- It is an example of building an instance using the syntax that allows to provide a parent structure
 -- and some extra fields.
 
-#print Ring₃
-instance {R : Type} [Ring₃ R] : AddCommGroup₃ R :=
+instance {R : Type*} [Ring₃ R] : AddCommGroup₃ R :=
 { Ring₃.toAddGroup₃ with
   add_comm := by
     intro a b
     have : a + (a + b + b) = a + (b + a + b) := by
-      have this₁ : a + (a + b + b) = (a + b) * (1 + 1) := by
-        rw [Ring₃.right_distrib, Ring₃.left_distrib, Ring₃.left_distrib,
-          Monoid₃.mul_one, Monoid₃.mul_one, add_assoc₃ a b b,
-          ← add_assoc₃ a a (b+b)]
-      have this₂ : a + (b + a + b) = (a + b) * (1 + 1) := by
-        rw [Ring₃.left_distrib, Ring₃.right_distrib, Monoid₃.mul_one,
-        Monoid₃.mul_one, add_assoc₃, ← add_assoc₃ a b (a+b)]
-      rw [this₁, this₂]
+      sorry
     exact add_right_cancel₃ (add_left_cancel₃ this) }
 
 -- We can also build concrete instances, such as a ring structure on integers.
@@ -319,81 +305,95 @@ instance : Ring₃ ℤ where
   add := (· + ·)
   add_assoc₃ := add_assoc
   zero := 0
-  zero_add := fun a ↦ a.zero_add
-  add_zero := fun a ↦ a.add_zero
+  zero_add := by simp
+  add_zero := by simp
   neg := (- ·)
-  neg_add := fun a ↦ a.add_left_neg
+  neg_add := by simp
   mul := (· * ·)
   mul_assoc₃ := mul_assoc
   one := 1
-  one_mul := fun a ↦ a.one_mul
-  mul_one := fun a ↦ a.mul_one
-  zero_mul := fun a ↦ a.zero_mul
-  mul_zero := fun a ↦ a.mul_zero
-  left_distrib := fun a b c ↦ Int.mul_add a b c
-  right_distrib := fun a b c ↦ Int.add_mul a b c
+  one_mul := by simp
+  mul_one := by simp
+  zero_mul := by simp
+  mul_zero := by simp
+  left_distrib := by
+    intro a b c
+    rw [mul_add]
+  right_distrib := by
+    intro a b c
+    rw [add_mul]
 
 -- As an exercise you can now set up a simple hierarchy for order relations, including a class
 -- for ordered commutative monoids, which have both a partial order and a commutative monoid
 -- structure such that `∀ a b : α, a ≤ b → ∀ c : α, c * a ≤ c * b`.
 
-class LE₁ (α : Type) where
+class LE₁ (α : Type*) where
   /-- The Less-or-Equal relation. -/
   le : α → α → Prop
 
 @[inherit_doc] infix:50 " ≤₁ " => LE₁.le
 
-class Preorder₁ (α : Type)
+class Preorder₁ (α : Type*)
   extends LE₁ α where
   le_refl : ∀ a : α, a ≤₁ a
   le_trans : ∀ a b c : α, a ≤₁ b → b ≤₁ c → a ≤₁ c
 
-class PartialOrder₁ (α : Type)
+class PartialOrder₁ (α : Type*)
   extends Preorder₁ α where
   le_antisymm : ∀ a b : α, a ≤₁ b → b ≤₁ a → a = b
 
-class OrderedCommMonoid₁ (α : Type)
+class OrderedCommMonoid₁ (α : Type*)
   extends PartialOrder₁ α, CommMonoid₃ α where
   mul_of_le : ∀ a b : α, a ≤₁ b → ∀ c : α, c * a ≤₁ c * b
 
-def LEN : ℕ → ℕ → Prop := fun a b ↦ ∃ c : ℕ, b = a + c
-
-#print Nat.add_assoc
-instance : OrderedCommMonoid₁ ℕ where
-  le := LEN
-  le_refl := fun _ ↦ ⟨0, by rfl⟩
+instance : PartialOrder₁ ℕ where
+  le := fun a b ↦ ∃ c : ℕ, b = a + c
+  le_refl := by
+    intro a
+    use 0
+    rw [add_zero]
   le_trans := by
-    intros a b c hab hbc
-    obtain ⟨d, hd⟩ := hab
-    obtain ⟨e, he⟩ := hbc
-    exact ⟨d + e, by rw [← Nat.add_assoc, ← hd, ← he]⟩
+    intro a b c h1 h2
+    obtain ⟨d, hd⟩ := h1
+    obtain ⟨e, he⟩ := h2
+    use d + e
+    rw [he, hd, add_assoc]
   le_antisymm := by
-    intros a b hab hba
-    obtain ⟨c, hc⟩ := hab
-    obtain ⟨d, hd⟩ := hba
-    rw [hc, Nat.add_assoc, ← Nat.add_zero a] at hd
-    rw [Nat.eq_zero_of_add_eq_zero_right
-      (Nat.add_left_cancel hd).symm] at hc
-    exact hc.symm
-  mul_assoc₃ := fun a b c ↦ Nat.mul_assoc a b c
-  one_mul := fun a ↦ a.one_mul
-  mul_one := fun a ↦ a.mul_one
-  mul_comm := fun a b ↦ Nat.mul_comm a b
+    intro a b h1 h2
+    obtain ⟨d, hd⟩ := h1
+    obtain ⟨e, he⟩ := h2
+    rw [he, add_assoc, self_eq_add_right, add_eq_zero] at hd
+    rwa [hd.1, add_zero] at he
+
+instance : CommMonoid₃ ℕ where
+  mul_assoc₃ := by
+    intro a b c
+    rw [Nat.mul_assoc]
+  one_mul := by simp
+  mul_one := by simp
+  mul_comm := by
+    intro a b
+    exact Nat.mul_comm a b
+
+instance : OrderedCommMonoid₁ ℕ :=
+{ (inferInstance : CommMonoid₃ ℕ), (inferInstance : PartialOrder₁ ℕ) with
   mul_of_le := by
-    intros a b hab c
-    obtain ⟨d, hd⟩ := hab
-    exact ⟨c * d, by rw [← Nat.left_distrib, ← hd]⟩
+    intro a b h c
+    obtain ⟨d, hd⟩ := h
+    use c * d
+    rw [hd, mul_add]
+}
 
 -- We now discuss algebraic structures involving several types. The prime example is modules over rings.
 -- Those are commutative additive groups equipped with a scalar multiplication by elements of some ring.
 
-class SMul₃ (α : Type) (β : Type) where
+class SMul₃ (α : Type*) (β : Type*) where
   /-- Scalar multiplication -/
   smul : α → β → β
 
 infixr:73 " • " => SMul₃.smul
 
-class Module₁ (R : Type) [Ring₃ R] (M : Type) [AddCommGroup₃ M] extends SMul₃ R M where
+class Module₁ (R : Type*) [Ring₃ R] (M : Type*) [AddCommGroup₃ M] extends SMul₃ R M where
   zero_smul : ∀ m : M, (0 : R) • m = 0
   one_smul : ∀ m : M, (1 : R) • m = m
   mul_smul : ∀ (a b : R) (m : M), (a * b) • m = a • (b • m)
@@ -402,9 +402,8 @@ class Module₁ (R : Type) [Ring₃ R] (M : Type) [AddCommGroup₃ M] extends SM
 
 -- Note that the following does not work:
 
-class Module₂ (R : Type) [Ring₃ R] (M : Type) extends SMul₃ R M, AddCommGroup₃ M where
+class Module₂ (R : Type*) [Ring₃ R] (M : Type*) extends SMul₃ R M, AddCommGroup₃ M where
 
--- Remember that such an extends clause would lead to a field `Module₂.toAddCommGroup₃` marked as an
 -- Remember that such an extends clause would lead to a field `Module₂.toAddCommGroup₃` marked as an
 -- instance. This instance would have the signature:
 -- `(R : Type) → [inst : Ring₃ R] → {M : Type} → [self : Module₁ R M] → AddCommGroup₃ M`.
@@ -424,7 +423,7 @@ class Module₂ (R : Type) [Ring₃ R] (M : Type) extends SMul₃ R M, AddCommGr
 -- Our first module instance is that a ring is a module over itself using its multiplication
 -- as a scalar multiplication.
 
-instance selfModule (R : Type) [Ring₃ R] : Module₁ R R where
+instance selfModule (R : Type*) [Ring₃ R] : Module₁ R R where
   smul := fun r s ↦ r*s
   zero_smul := zero_mul
   one_smul := one_mul
@@ -450,7 +449,7 @@ def zsmul₁ {M : Type*} [Zero M] [Add M] [Neg M] : ℤ → M → M
 -- *You are not asked to replace those sorries with proofs.* If you insist on doing it then you
 -- will probably want to state and prove several intermediate lemmas about `nsmul₁` and `zsmul₁`.
 
-instance abGrpModule (A : Type) [AddCommGroup₃ A] : Module₁ ℤ A where
+instance abGrpModule (A : Type*) [AddCommGroup₃ A] : Module₁ ℤ A where
   smul := zsmul₁
   zero_smul := sorry
   one_smul := sorry
@@ -485,7 +484,7 @@ instance abGrpModule (A : Type) [AddCommGroup₃ A] : Module₁ ℤ A where
 -- In our case, we can modify the definition of `AddMonoid₃` to include a `nsmul` data field and
 -- some Prop-valued fields ensuring this operation is provably the one we constructed above.
 
-class AddMonoid₄ (M : Type) extends AddSemigroup₃ M, AddZeroClass M where
+class AddMonoid₄ (M : Type*) extends AddSemigroup₃ M, AddZeroClass M where
   /-- Multiplication by a natural number. -/
   nsmul : ℕ → M → M := nsmul₁
   /-- Multiplication by `(0 : ℕ)` gives `0`. -/
@@ -493,7 +492,7 @@ class AddMonoid₄ (M : Type) extends AddSemigroup₃ M, AddZeroClass M where
   /-- Multiplication by `(n + 1 : ℕ)` behaves as expected. -/
   nsmul_succ : ∀ (n : ℕ) (x), nsmul (n + 1) x = x + nsmul n x := by intros; rfl
 
-instance mySMul {M : Type} [AddMonoid₄ M] : SMul ℕ M := ⟨AddMonoid₄.nsmul⟩
+instance mySMul {M : Type*} [AddMonoid₄ M] : SMul ℕ M := ⟨AddMonoid₄.nsmul⟩
 
 -- We can now handle the special case of `ℤ` where we want to build `nsmul` using the coercion
 -- of `ℕ` to `ℤ` and the multiplication on `ℤ`.
