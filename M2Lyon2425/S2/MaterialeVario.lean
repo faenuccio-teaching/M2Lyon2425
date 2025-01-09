@@ -8,6 +8,15 @@ open Classical
 
 noncomputable section
 
+/- ## Sections:
+1. FunnyBracket
+2. Extends
+3. ForgetfulInheritance -- In Structures2
+4. LocalInstances
+5. Synonyms
+6. OutParam
+-/
+
 section FunnyBracket
 
 /- Some examples of the interest of ⦃
@@ -176,6 +185,7 @@ the *duplication* is not what you're looking for. **ADD HERE SOPHIE'S EXAMPLES**
 
 end Extends
 
+--added to Structures2
 section ForgetfulInheritance
 
 class NormedModule_long (M : Type*) [AddCommGroup M] where
@@ -213,7 +223,7 @@ example (hp : ∀ M : Type, [NormedModule₁ M] → ∀ m : M, p (rel m))
   -- exact hp
   sorry
 
-/- Let's try again! The problem is that passing from `NormedModule₁` to `ModuleWithRel₁`
+/- Let's try again! The problem is that passing from `NormedModule₁` to `ModuleWithRel`
 is not a pure "erasure", because we are not simply throwing away a field, but using some
 field in the first to construct the term of the second: this yields to the problem we have
 just witnessed, and the slogan is that only "forgetful inheritance" is allowed (an idea initially
