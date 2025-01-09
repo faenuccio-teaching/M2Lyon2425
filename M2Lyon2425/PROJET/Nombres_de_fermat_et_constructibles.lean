@@ -586,16 +586,62 @@ constructor
     simp at h31
     rw[<-zpow_add] at h31
     simp
-    --by_contra h32
-    --rw [@Subgroup.mem_zpowers_iff] at h32
     rw [@Subgroup.mem_zpowers_iff] at h31
-    --rw [@zpow_mul] at h32 h31
     obtain ⟨k1, hk1⟩ := h31
-    --obtain ⟨k2, hk2⟩ := h32
-    --rw [@zpow_add,<-hk2,<-zpow_mul',<-zpow_mul',<-zpow_mul',<-zpow_mul',<-zpow_add] at hk1
-    --rw[<-zpow_mul',<-zpow_mul'] at hk2
     rw[zpow_add] at hk1
     apply mul_inv_eq_of_eq_mul at hk1
+    rw[hk1.symm]
+    by_contra hhh
+    have hh1 :  (ζ ^ (2 ^ i * 2)) ^ k1 ∈ Subgroup.zpowers (ζ ^ (2 ^ i * 2)) :=by
+      use k1
+    have hh3 := Subgroup.isSubgroup (Subgroup.zpowers (ζ ^ (2 ^ i * 2)))
+    have hh2 := @IsSubgroup.mul_mem_cancel_left G ((ζ ^ (2 ^ i * 2)) ^ k1) ((ζ ^ 2 ^ i)⁻¹) inst1 _ hh3 hh1
+    have hh2 := hh2.mp
+    have hh4 :  (ζ ^ 2 ^ i)⁻¹ ∈ Subgroup.zpowers (ζ ^ (2 ^ i * 2)) :=by
+      apply hh2
+      sorry
+    apply inv_mem at hh4
+    simp at hh4
+    obtain ⟨u,hu⟩:= hh4
+    simp at hu
+    rw [@npow_mul] at hu
+    have huu : (ζ ^ (2 ^ (i+1) * u)) = ζ ^ 2 ^ i :=by
+      rw [@zpow_mul]
+      nth_rewrite 1 [<-hu]
+      group
+      simp
+    have huuu : (ζ ^ (2 ^ i * (2*u -1))) = 1 :=by
+      rw [Int.mul_sub]
+      simp
+      rw [@zpow_sub]
+      rw [@mul_inv_eq_one]
+      rw [@npow_add] at huu
+      simp at huu
+      rw [Int.mul_assoc] at huu
+      rw[huu]
+      --DIAMOND
+      sorry
+    apply (@orderOf_dvd_iff_zpow_eq_one G _ ζ (2 ^ i * (2*u -1))).mpr at huuu
+    have ord : orderOf ζ = p-1 :=by
+      have h41 : Nat.card G = (p-1) := by
+        have h411 := jacobiSym.proof_1 p fermatp.1
+        have h412 := ZMod.card_units p
+        have h413 := Nat.card_congr h.toEquiv
+        have h414 := @Nat.card_eq_fintype_card ((ZMod ↑p)ˣ) _
+        rwa[<-h414,<-h413] at h412
+      rw[<-h41,<-Nat.card_zpowers]
+      have h415 := orderOf_generator_eq_natCard hypζgen
+      rw[<-h415]
+      simp
+    rw[ord] at huuu
+    have fermeq := (premierfermat_eq p).mp
+    apply fermeq at fermatp
+    obtain ⟨mm,hmm⟩ := fermatp.2
+    have hmmm := hmm.2
+    apply Nat.sub_eq_of_eq_add at hmmm
+    rw[hmmm] at huuu
+
+
     sorry
   · intro h41
     simp at h41
@@ -663,6 +709,7 @@ cases h with
         obtain ⟨TSG,TSGproof⟩ := TowSGgal
         have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) sorry sorry sorry sorry
         simp at hsub
+
         sorry
         sorry
         sorry
