@@ -534,11 +534,7 @@ structure TowerOfGroup2 {G : Type*} [Group G] where
 theorem TowSG (G : Type*) (p : ℕ) [inst1 : Group G] : premierfermat p → (G ≃* (ZMod (p))ˣ → ∃ (ζ : @TowerOfGroup2 G inst1), ∀ (i : ℕ), (@Subgroup.relindex G inst1 (ζ.1 (i+1)) (ζ.1 i)) = 2 ∧ ζ.H 0 = ⊤ ∧ ∃ (m : ℕ), ζ.H m = IsSubgroup.trivial G ):= by
 intro fermatp
 intro h
-have h1 : IsCyclic G := by
-  have h10 : IsCyclic ((ZMod p)ˣ):=by
-    have h101 := fermatp.1
-    exact ZModx_cyclic (↑p) h101
-  exact cyclic_iso G ((ZMod p)ˣ) h h10
+have h1 := cyclic_iso G ((ZMod p)ˣ) h (ZModx_cyclic (↑p) fermatp.1)
 have h1bis := h1
 apply IsCyclic.exists_generator at h1
 obtain ⟨ ζ, hypζgen ⟩ := h1
@@ -563,6 +559,12 @@ have normalSubGroupH : ∀ i, @IsNormalSubgroup (H i) _ (Subgroup.inclusion (inc
 let hh : @TowerOfGroup2 G inst1 := by
   constructor
   · use normalSubGroupH
+have cardG : Nat.card G = (p-1) := by
+        have h411 := jacobiSym.proof_1 p fermatp.1
+        have h412 := @ZMod.card_units p (jacobiSym.proof_1 p fermatp.1)
+        have h413 := Nat.card_congr h.toEquiv
+        have h414 := @Nat.card_eq_fintype_card ((ZMod ↑p)ˣ) _
+        rwa[<-h414,<-h413] at h412
 use hh
 intro i
 constructor
@@ -570,8 +572,7 @@ constructor
   change ((Subgroup.zpowers (ζ ^ 2 ^ (i+1))).relindex (Subgroup.zpowers (ζ ^ 2 ^ i)) = 2)
   rw [Nat.pow_add']
   simp
-  rw [@npow_mul',Subgroup.relindex]
-  rw[Subgroup.index_eq_two_iff]
+  rw [@npow_mul',Subgroup.relindex,Subgroup.index_eq_two_iff]
   simp
   use 1
   intro m
@@ -596,9 +597,9 @@ constructor
       use k1
     have hh3 := Subgroup.isSubgroup (Subgroup.zpowers (ζ ^ (2 ^ i * 2)))
     have hh2 := @IsSubgroup.mul_mem_cancel_left G ((ζ ^ (2 ^ i * 2)) ^ k1) ((ζ ^ 2 ^ i)⁻¹) inst1 _ hh3 hh1
-    have hh2 := hh2.mp
     have hh4 :  (ζ ^ 2 ^ i)⁻¹ ∈ Subgroup.zpowers (ζ ^ (2 ^ i * 2)) :=by
-      apply hh2
+      apply hh2.mp
+      --exact hhh, problème coercion ?
       sorry
     apply inv_mem at hh4
     simp at hh4
@@ -623,13 +624,7 @@ constructor
       sorry
     apply (@orderOf_dvd_iff_zpow_eq_one G _ ζ (2 ^ i * (2*u -1))).mpr at huuu
     have ord : orderOf ζ = p-1 :=by
-      have h41 : Nat.card G = (p-1) := by
-        have h411 := jacobiSym.proof_1 p fermatp.1
-        have h412 := ZMod.card_units p
-        have h413 := Nat.card_congr h.toEquiv
-        have h414 := @Nat.card_eq_fintype_card ((ZMod ↑p)ˣ) _
-        rwa[<-h414,<-h413] at h412
-      rw[<-h41,<-Nat.card_zpowers]
+      rw[<-cardG,<-Nat.card_zpowers]
       have h415 := orderOf_generator_eq_natCard hypζgen
       rw[<-h415]
       simp
@@ -640,8 +635,7 @@ constructor
     have hmmm := hmm.2
     apply Nat.sub_eq_of_eq_add at hmmm
     rw[hmmm] at huuu
-
-
+    simp at huuu
     sorry
   · intro h41
     simp at h41
@@ -650,6 +644,14 @@ constructor
     rw [@Subgroup.mem_subgroupOf]
     simp
     simp at h41
+    rw[Subgroup.mem_zpowers_iff]
+    rw [← @zpow_add]
+    by_cases hm : Odd m
+    · use (m+1)/2
+      rw[<-@zpow_mul]
+
+    · sorry
+
 
     sorry
 · constructor
@@ -658,12 +660,6 @@ constructor
     exact (Subgroup.eq_top_iff' (Subgroup.zpowers ζ)).mpr hypζgen
   · cases h with
   | mk toEquiv map_mul' =>
-    have h41 : Nat.card G = (p-1) := by
-      have h411 := jacobiSym.proof_1 p fermatp.1
-      have h412 := ZMod.card_units p
-      have h413 := Nat.card_congr toEquiv
-      have h414 := @Nat.card_eq_fintype_card ((ZMod ↑p)ˣ) _
-      rwa[<-h414,<-h413] at h412
     rw[premierfermat_eq] at fermatp
     obtain ⟨m,hm⟩ := fermatp.2
     use m
@@ -676,7 +672,7 @@ constructor
       rw[hmm]
     rw[h51]
     have h52 : ↑(Subgroup.zpowers (ζ ^ (p - 1))) = ↑(Subgroup.zpowers (ζ ^ (Nat.card G))) :=by
-      rw [h41]
+      rw [cardG]
     rw[h52]
     simp
     trivial
