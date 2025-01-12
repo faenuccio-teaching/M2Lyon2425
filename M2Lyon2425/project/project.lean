@@ -289,7 +289,9 @@ def ordinals_lt (o : Ordinal) : Set Ordinal := setOf (· < o)
 def ordinals_le (o : Ordinal) : Set Ordinal := setOf (· ≤ o)
 
 def fae_NoThreeColinearPoints (s : Set (ℝ × ℝ)) : Prop :=
-  ¬ (∃ a b c, a ∈ s ∧ b ∈ s ∧ c ∈ s ∧ IsColinear a b ∧ IsColinear b c)
+  ¬ (∃ a b c, a ∈ s ∧ b ∈ s ∧ c ∈ s ∧ a ≠ b ∧ b ≠ c ∧ a ≠ c
+  ∧ ∃ a' b' c', a ∈ Line a' b' c' ∧ b ∈ Line a' b' c'
+  ∧ c ∈ Line a' b' c')
 
 noncomputable
 abbrev c := Cardinal.continuum.ord
@@ -391,6 +393,10 @@ theorem exists_of_two_lt_card {α : Type*} {S : Set α} (h : 2 < Nat.card S) : �
   · intro he
     exact two_ne_zero (Fin.mk.inj_iff.1 (e_inj (Subtype.eq he))).symm
 
+theorem two_le_card_of_exists {α : Type*} {S : Set α} (h : ∃ a b, a ≠ b ∧
+    a ∈ S ∧ b ∈ S) : 2 ≤ Nat.card S ∨ S.Infinite := by
+  sorry
+
 /- We show that if three points belong to the union of A₀ (up to a certain rank ξ), then
 there exists a rank ζ such that a, b and c belong to the union of A₀ up to the rank ζ.
 This rank ζ is the maximum of the indices of the sets to which a, b and c belong. -/
@@ -449,13 +455,12 @@ theorem contradiction_of_exists (ξ : ordinals_lt c) (A₀ : ordinals_lt c → S
     ∧ b ∈ ((⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) ∩ Lines ξ)
     ∧ c ∈ ((⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) ∩ Lines ξ)) := by
   intro h
-  obtain ⟨a, b, c, _, _, _, ⟨ha₁, ha₂⟩, ⟨hb₁, hb₂⟩, ⟨hc₁, hc₂⟩⟩ := h
+  obtain ⟨a, b, c, ha, hb, hc, ⟨ha₁, ha₂⟩, ⟨hb₁, hb₂⟩, ⟨hc₁, hc₂⟩⟩ := h
   obtain ⟨ζ, h'⟩ := mem_union_le_fae ξ A₀ a b c ha₁ hb₁ hc₁
   apply (H ζ).2.1
-  refine ⟨a, b, c, h'.1, h'.2.1, h'.2.2, ?_⟩
+  refine ⟨a, b, c, h'.1, h'.2.1, h'.2.2, ha, hb, hc, ?_⟩
   obtain ⟨a', b', c', h''⟩ := (Lines ξ).2
-  exact ⟨⟨a', b', c', by rwa [h''] at ha₂, by rwa [h''] at hb₂⟩, ⟨a', b', c',
-    by rwa [h''] at hb₂, by rwa [h''] at hc₂⟩⟩
+  exact ⟨a', b', c', by rwa [h''] at ha₂, by rwa [h''] at hb₂, by rwa [h''] at hc₂⟩
 
 /- We reformulate the statement above so it fits in the
 proof of the main result "fae". To be precise, the following statement is weaker than the one above :
@@ -847,6 +852,153 @@ lemma union_le_fae_eq_iUnion (x : ℝ × ℝ) (ξ : ordinals_lt c) (ζ : ordinal
   exact ⟨fun hy ↦ mem_iUnion_of_mem_union_le_fae x y ξ ζ eq_ξ A₀ A A_def hy,
     fun hy ↦ mem_union_le_fae_of_mem_iUnion ξ ζ eq_ξ A₀ x y hy A A_def⟩
 
+lemma case_a_eq_x (ξ : ordinals_lt c)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (B : Set (ℝ × ℝ))
+    (hB : B = ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (𝒢 : Set (Set (ℝ × ℝ)))
+    (𝒢_def : 𝒢 = {S | (2 ≤ Nat.card (S ∩ B : Set (ℝ × ℝ)) ∨ ¬(S ∩ B).Finite)
+    ∧ ∃ a b c, S = Line a b c}) (x : ℝ × ℝ) (hx : x ∈ (Lines ξ).1 \ ⋃₀ 𝒢) :
+    ¬(∃ a b c, (a ≠ b ∧ b ≠ c ∧ a ≠ c ∧ ∃ a' b' c',
+    a ∈ Line a' b' c' ∧ b ∈ Line a' b' c' ∧ c ∈ Line a' b' c') ∧ a = x
+    ∧ (∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), b ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩) ∧
+    (∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), c ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩)) := by
+  intro h
+  obtain ⟨a, b, c, h, ha₁, hb₂, hc₂⟩ := h
+  have hx₂ : x ∈ ⋃₀ 𝒢 := by
+    simp only [Set.mem_sUnion]
+    obtain ⟨a', b', c', hline⟩ := h.2.2.2
+    refine ⟨Line a' b' c', ?_, ?_⟩
+    · rw [𝒢_def]
+      refine ⟨two_le_card_of_exists
+        ⟨b, c, h.2.1, ⟨hline.2.1, ?_⟩, ⟨hline.2.2, ?_⟩⟩, a', b', c', by rfl⟩
+      · rw [hB]
+        simp only [Set.sUnion_range, Set.iUnion_coe_set, Set.mem_iUnion]
+        exact hb₂
+      · rw [hB]
+        simp only [Set.sUnion_range, Set.iUnion_coe_set, Set.mem_iUnion]
+        exact hc₂
+    · rw [ha₁] at hline
+      exact hline.1
+  exact hx.2 hx₂
+
+lemma case_b_eq_x (ξ : ordinals_lt c)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (B : Set (ℝ × ℝ))
+    (hB : B = ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (𝒢 : Set (Set (ℝ × ℝ)))
+    (𝒢_def : 𝒢 = {S | (2 ≤ Nat.card (S ∩ B : Set (ℝ × ℝ)) ∨ ¬(S ∩ B).Finite)
+    ∧ ∃ a b c, S = Line a b c}) (x : ℝ × ℝ) (hx : x ∈ (Lines ξ).1 \ ⋃₀ 𝒢) :
+    ¬(∃ a b c, (a ≠ b ∧ b ≠ c ∧ a ≠ c ∧ ∃ a' b' c',
+    a ∈ Line a' b' c' ∧ b ∈ Line a' b' c' ∧ c ∈ Line a' b' c') ∧ b = x
+    ∧ (∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), a ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩) ∧
+    (∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), c ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩)) := by
+  intro h
+  obtain ⟨a, b, c, h, hb₁, ha₂, hc₂⟩ := h
+  have hx₂ : x ∈ ⋃₀ 𝒢 := by
+    simp only [Set.mem_sUnion]
+    obtain ⟨a', b', c', hline⟩ := h.2.2.2
+    refine ⟨Line a' b' c', ?_, ?_⟩
+    · rw [𝒢_def]
+      refine ⟨two_le_card_of_exists
+        ⟨a, c, h.2.2.1, ⟨hline.1, ?_⟩, ⟨hline.2.2, ?_⟩⟩, a', b', c', by rfl⟩
+      · rw [hB]
+        simp only [Set.sUnion_range, Set.iUnion_coe_set, Set.mem_iUnion]
+        exact ha₂
+      · rw [hB]
+        simp only [Set.sUnion_range, Set.iUnion_coe_set, Set.mem_iUnion]
+        exact hc₂
+    · rw [hb₁] at hline
+      exact hline.2.1
+  exact hx.2 hx₂
+
+lemma case_c_eq_x (ξ : ordinals_lt c)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (B : Set (ℝ × ℝ))
+    (hB : B = ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (𝒢 : Set (Set (ℝ × ℝ)))
+    (𝒢_def : 𝒢 = {S | (2 ≤ Nat.card (S ∩ B : Set (ℝ × ℝ)) ∨ ¬(S ∩ B).Finite)
+    ∧ ∃ a b c, S = Line a b c}) (x : ℝ × ℝ) (hx : x ∈ (Lines ξ).1 \ ⋃₀ 𝒢) :
+    ¬(∃ a b c, (a ≠ b ∧ b ≠ c ∧ a ≠ c ∧ ∃ a' b' c',
+    a ∈ Line a' b' c' ∧ b ∈ Line a' b' c' ∧ c ∈ Line a' b' c') ∧ c = x
+    ∧ (∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), a ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩) ∧
+    (∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), b ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩)) := by
+  intro h
+  obtain ⟨a, b, c, h, hc₁, ha₂, hb₂⟩ := h
+  have hx₂ : x ∈ ⋃₀ 𝒢 := by
+    simp only [Set.mem_sUnion]
+    obtain ⟨a', b', c', hline⟩ := h.2.2.2
+    refine ⟨Line a' b' c', ?_, ?_⟩
+    · rw [𝒢_def]
+      refine ⟨two_le_card_of_exists
+        ⟨a, b, h.1, ⟨hline.1, ?_⟩, ⟨hline.2.1, ?_⟩⟩, a', b', c', by rfl⟩
+      · rw [hB]
+        simp only [Set.sUnion_range, Set.iUnion_coe_set, Set.mem_iUnion]
+        exact ha₂
+      · rw [hB]
+        simp only [Set.sUnion_range, Set.iUnion_coe_set, Set.mem_iUnion]
+        exact hb₂
+    · rw [hc₁] at hline
+      exact hline.2.2
+  exact hx.2 hx₂
+
+lemma case_not_x (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (hA₀ : ∀ (ζ : ordinals_lt ξ.1), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩) :
+    ¬(∃ a b c, (a ≠ b ∧ b ≠ c ∧ a ≠ c ∧ ∃ a' b' c', a ∈ Line a' b' c'
+    ∧ b ∈ Line a' b' c' ∧ c ∈ Line a' b' c')
+    ∧ (∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), a ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩)
+    ∧ (∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), b ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩)
+    ∧ (∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), c ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩)) := by
+  intro h
+  obtain ⟨a, b, c, h, ha₂, hb₂, hc₂⟩ := h
+  have ha₃ :
+      a ∈ ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩ := by
+    simp only [Set.sUnion_range, Set.iUnion_coe_set, Set.mem_iUnion]
+    exact ha₂
+  have hb₃ :
+      b ∈ ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩ := by
+    simp only [Set.sUnion_range, Set.iUnion_coe_set, Set.mem_iUnion]
+    exact hb₂
+  have hc₃ :
+      c ∈ ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩ := by
+    simp only [Set.sUnion_range, Set.iUnion_coe_set, Set.mem_iUnion]
+    exact hc₂
+  have := mem_union_le_fae ξ A₀ a b c ha₃ hb₃ hc₃
+  apply (hA₀ this.choose).2.1
+  exact ⟨a, b, c, this.choose_spec.1, this.choose_spec.2.1, this.choose_spec.2.2,
+    h.1, h.2.1, h.2.2.1, h.2.2.2⟩
+
+lemma proof_by_cases (ξ : ordinals_lt c) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (hA₀ : ∀ (ζ : ordinals_lt ξ.1), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (B : Set (ℝ × ℝ))
+    (hB : B = ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (𝒢 : Set (Set (ℝ × ℝ)))
+    (𝒢_def : 𝒢 = {S | (2 ≤ Nat.card (S ∩ B : Set (ℝ × ℝ)) ∨ ¬(S ∩ B).Finite)
+    ∧ ∃ a b c, S = Line a b c}) (x : ℝ × ℝ) (hx : x ∈ (Lines ξ).1 \ ⋃₀ 𝒢) :
+    ¬(∃ a b c, (a ≠ b ∧ b ≠ c ∧ a ≠ c ∧ ∃ a' b' c', a ∈ Line a' b' c'
+    ∧ b ∈ Line a' b' c' ∧ c ∈ Line a' b' c')
+    ∧ (a = x ∨ ∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), a ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩)
+    ∧ (b = x ∨ ∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), b ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩)
+    ∧ (c = x ∨ ∃ i, ∃ (i_1 : i ∈ ordinals_lt ξ), c ∈ A₀ ⟨i, i_1.trans ξ.2.out⟩)) := by
+  intro h
+  obtain ⟨a, b, c, h, ha, hb, hc⟩ := h
+  cases' ha with ha₁ ha₂
+  · cases' hb with hb₁ hb₂
+    · cases' hc with hc₁ hc₂
+      · rw [ha₁, hb₁] at h
+        exact h.1 (by rfl)
+      · rw [ha₁, hb₁] at h
+        exact h.1 (by rfl)
+    · cases' hc with hc₁ hc₂
+      · rw [ha₁, hc₁] at h
+        exact h.2.2.1 (by rfl)
+      · exact case_a_eq_x ξ A₀ B hB 𝒢 𝒢_def x hx ⟨a, b, c, h, ha₁, hb₂, hc₂⟩
+  · cases' hb with hb₁ hb₂
+    · cases' hc with hc₁ hc₂
+      · rw [hb₁, hc₁] at h
+        exact h.2.1 (by rfl)
+      · exact case_b_eq_x ξ A₀ B hB 𝒢 𝒢_def x hx ⟨a, b, c, h, hb₁, ha₂, hc₂⟩
+    · cases' hc with hc₁ hc₂
+      · exact case_c_eq_x ξ A₀ B hB 𝒢 𝒢_def x hx ⟨a, b, c, h, hc₁, ha₂, hb₂⟩
+      · exact case_not_x ξ A₀ hA₀ ⟨a, b, c, h, ha₂, hb₂, hc₂⟩
+
 lemma P_true_card1 (ξ : ordinals_lt c) (ζ : ordinals_le ξ.1)
     (A₀ : ordinals_lt c → Set (ℝ × ℝ))
     (hA₀ : ∀ (ζ : ordinals_lt ξ.1), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
@@ -859,11 +1011,7 @@ lemma P_true_card1 (ξ : ordinals_lt c) (ζ : ordinals_le ξ.1)
     (A_def : A = fun α ↦ if α = ξ then {x} else A₀ α) :
     fae_NoThreeColinearPoints (union_le_fae A ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩) := by
   by_cases hζ : ζ.1 < ξ.1
-  · have h : ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ ≠ ξ := ne_of_lt hζ
-    have hf : (fun α ↦ if α = ξ then {x} else A₀ α) ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ =
-        A₀ ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ := by
-      simp only [h, ↓reduceIte]
-    have hunion := rw_union_le_fae ξ ζ hζ x A₀
+  · have hunion := rw_union_le_fae ξ ζ hζ x A₀
     rw [A_def, hunion]
     exact (hA₀ ⟨ζ.1, hζ⟩).2.1
   · rw [union_le_fae_eq_iUnion x ξ ζ (eq_of_le_of_not_lt ζ.2 hζ) A₀ A A_def,
@@ -872,23 +1020,7 @@ lemma P_true_card1 (ξ : ordinals_lt c) (ζ : ordinals_le ξ.1)
     obtain ⟨a, b, c, ha, hb, hc, h⟩ := h
     simp only [Set.iUnion_coe_set, Set.union_singleton,
       Set.mem_insert_iff, Set.mem_iUnion] at ha hb hc
-    cases' ha with ha₁ ha₂
-    · cases' hb with hb₁ hb₂
-      · cases' hc with hc₁ hc₂
-        · --fae_NoThreeColinearPoints might be wrong. We might have to impose that
-          --the points are different from each other.
-          sorry
-        · sorry
-      · cases' hc with hc₁ hc₂
-        · sorry
-        · sorry
-    · cases' hb with hb₁ hb₂
-      · cases' hc with hc₁ hc₂
-        · sorry
-        · sorry
-      · cases' hc with hc₁ hc₂
-        · sorry
-        · sorry
+    exact proof_by_cases ξ A₀ hA₀ B hB 𝒢 𝒢_def x hx ⟨a, b, c, h, ha, hb, hc⟩
 
 /- To construct a two-point set, we will start by building a sequence {A_ξ | ξ < c}
 of subsets of the Euclidean plane. This sequence will be such that ⋃ δ ≤ ξ, A_δ
@@ -962,7 +1094,43 @@ theorem fae (ξ : ordinals_lt c)
         exact A₀ α with A_def
       refine ⟨A, fun ζ ↦ ⟨I_true_card1 x ξ A₀ hA₀ A A_def ζ,
         P_true_card1 ξ ζ A₀ hA₀ B hB 𝒢 (by rfl) x hn_ne_two.1 A A_def, ?_⟩⟩
-      sorry
+      by_cases hζ : ζ.1 < ξ.1
+      · have hunion : union_le_fae A ⟨ζ.1, lt_of_le_of_lt ζ.2 ξ.2.out⟩ =
+            union_le_fae A₀ ⟨ζ.1, lt_of_le_of_lt ζ.2 ξ.2.out⟩ := by
+          simp only [union_le_fae]
+          ext y
+          refine ⟨fun hy ↦ ?_, fun hy ↦ ?_⟩
+          · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hy ⊢
+            obtain ⟨i, hi, hi₂⟩ := hy
+            have : ⟨i, (lt_of_le_of_lt hi hζ).trans ξ.2⟩ ≠ ξ := by
+              have := (lt_of_le_of_lt hi.out hζ)
+              exact ne_of_lt this
+            simp only [A_def, this, ↓reduceDIte] at hi₂
+            exact ⟨i, hi, hi₂⟩
+          · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hy ⊢
+            obtain ⟨i, hi, hi₂⟩ := hy
+            refine ⟨i, hi, ?_⟩
+            have : ⟨i, (lt_of_le_of_lt hi hζ).trans ξ.2⟩ ≠ ξ := by
+              have := (lt_of_le_of_lt hi.out hζ)
+              exact ne_of_lt this
+            simp only [A_def, this, ↓reduceDIte]
+            exact hi₂
+        rw [hunion]
+        exact (hA₀ ⟨ζ.1, hζ⟩).2.2
+      · rw [union_le_fae_eq_iUnion x ξ ζ (eq_of_le_of_not_lt ζ.2 hζ) A₀ A A_def]
+        simp only [eq_of_le_of_not_lt ζ.2 hζ]
+        have : Nat.card ((⋃ (b : ordinals_lt ξ), A₀ ⟨b, b.2.trans ξ.2.out⟩) ∩ (Lines ξ).1 :
+            Set (ℝ × ℝ)) = n := sorry
+        rw [← this, Nat.card_eq_one_iff_exists] at hn₁
+        obtain ⟨z, hz⟩ := hn₁
+        have hz₂ :
+            z.1 ∈ ((⋃ (b : ordinals_lt ξ), A₀ ⟨b, b.2.trans ξ.2.out⟩) ∪ {x})
+            ∩ (Lines ξ).1 := sorry
+        have hx₂ : x ∈ ((⋃ (b : ordinals_lt ξ), A₀ ⟨b, b.2.trans ξ.2.out⟩) ∪ {x})
+            ∩ (Lines ξ).1 := sorry
+        rw [Nat.card_eq_two_iff]
+        refine ⟨⟨z.1, hz₂⟩, ⟨x, hx₂⟩, ?_⟩
+        sorry
     · let Aξ : Set (ℝ × ℝ) := {x, y}
       sorry
 
