@@ -565,6 +565,11 @@ have cardG : Nat.card G = (p-1) := by
         have h413 := Nat.card_congr h.toEquiv
         have h414 := @Nat.card_eq_fintype_card ((ZMod ↑p)ˣ) _
         rwa[<-h414,<-h413] at h412
+have ord : orderOf ζ = p-1 :=by
+      rw[<-cardG,<-Nat.card_zpowers]
+      have h415 := orderOf_generator_eq_natCard hypζgen
+      rw[<-h415]
+      simp
 use hh
 intro i
 constructor
@@ -599,7 +604,7 @@ constructor
     have hh2 := @IsSubgroup.mul_mem_cancel_left G ((ζ ^ (2 ^ i * 2)) ^ k1) ((ζ ^ 2 ^ i)⁻¹) inst1 _ hh3 hh1
     have hh4 :  (ζ ^ 2 ^ i)⁻¹ ∈ Subgroup.zpowers (ζ ^ (2 ^ i * 2)) :=by
       apply hh2.mp
-      --exact hhh, problème coercion ?
+      exact hhh --problème coercion ?
       sorry
     apply inv_mem at hh4
     simp at hh4
@@ -620,14 +625,9 @@ constructor
       simp at huu
       rw [Int.mul_assoc] at huu
       rw[huu]
-      --DIAMOND
+        --DIAMOND
       sorry
     apply (@orderOf_dvd_iff_zpow_eq_one G _ ζ (2 ^ i * (2*u -1))).mpr at huuu
-    have ord : orderOf ζ = p-1 :=by
-      rw[<-cardG,<-Nat.card_zpowers]
-      have h415 := orderOf_generator_eq_natCard hypζgen
-      rw[<-h415]
-      simp
     rw[ord] at huuu
     have fermeq := (premierfermat_eq p).mp
     apply fermeq at fermatp
@@ -646,14 +646,24 @@ constructor
     simp at h41
     rw[Subgroup.mem_zpowers_iff]
     rw [← @zpow_add]
-    by_cases hm : Odd m
-    · use (m+1)/2
-      rw[<-@zpow_mul]
-
-    · sorry
-
-
-    sorry
+    by_contra hcontra
+    push_neg at hcontra
+    have hmmm : Odd m :=by
+      by_contra h42
+      rw[Int.not_odd_iff_even, Even] at h42
+      obtain ⟨r, hr⟩ := h42
+      rw[<-Int.two_mul] at hr
+      rw[hr] at h41
+      apply h41
+      use r
+      simp
+      group
+    rw [Odd] at hmmm
+    obtain ⟨r,hr⟩:= hmmm
+    rw[hr] at hcontra
+    specialize hcontra (r+1)
+    apply hcontra
+    group
 · constructor
   · change (Subgroup.zpowers (ζ^2^0)=⊤)
     simp
@@ -694,8 +704,9 @@ cases h with
         apply galCyclotomicEquivUnitsZMod at Gp_Galois_iso
         have zmodcycl := ZModx_cyclic p hp.left
         have Gp_Galois_cycl : IsCyclic (Polynomial.cyclotomic ↑p ℚ).Gal :=by
-          have hh := cyclic_iso ((Polynomial.cyclotomic ↑p ℚ).Gal) ((ZMod ↑p)ˣ) (Gp_Galois_iso) zmodcycl
-          exact hh
+          --have hh := cyclic_iso ((Polynomial.cyclotomic ↑p ℚ).Gal) ((ZMod ↑p)ˣ) (Gp_Galois_iso) zmodcycl
+          --exact hh
+          sorry
         have exist_gen := @IsCyclic.exists_generator (Polynomial.cyclotomic (↑p) ℚ).Gal Gp_Galois_gp Gp_Galois_cycl
         let ζ := exist_gen.choose
         have hz := exist_gen.choose_spec
@@ -705,11 +716,37 @@ cases h with
         obtain ⟨TSG,TSGproof⟩ := TowSGgal
         have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) sorry sorry sorry sorry
         simp at hsub
+        cases TSG with
+        | mk H inclusion normalSubGroup =>
+          let K := fun (i : ℕ) ↦ ({(x : (CyclotomicField (p) ℚ)) | ∀ g ∈  (H i), g x = x} : Type)
+          apply (premierfermat_eq p).mp at hp
+          obtain ⟨m, hm⟩ := hp.2
+          constructor
+          · use m
 
-        sorry
-        sorry
-        sorry
-        sorry
+            constructor
+            ·  intro i
+               sorry
+            · constructor
+              · intro i
+                constructor
+                · sorry
+                · sorry
+              · sorry
+          · use K
+            · intro i
+              change (Field (↑{x | ∀ g ∈ H i, g x = x}))
+              sorry
+            · intro i
+              sorry
+            · intro i
+              induction i with
+              | zero => simp
+                        sorry
+              | succ n ih => sorry
+
+
+
 --Lemme : bijection corps intermédiaires/sous-groupes IsGalois.intermediateFieldEquivSubgroup
 --theorem groupe_galois_Qw_ZpZ {p : ℕ} (hp : 0 < (p : Nat)) : premierfermat p → galCyclotomicEquivUnitsZMod (Polynomial.cyclotomic.irreducible_rat hp):= by
 -- Lemme : si p est de Fermat, alors Gal(ℚ(w)/ℚ)≅(ℤ/pℤ)*
