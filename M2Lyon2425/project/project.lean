@@ -395,7 +395,60 @@ theorem exists_of_two_lt_card {α : Type*} {S : Set α} (h : 2 < Nat.card S) : �
 
 theorem two_le_card_of_exists {α : Type*} {S : Set α} (h : ∃ a b, a ≠ b ∧
     a ∈ S ∧ b ∈ S) : 2 ≤ Nat.card S ∨ S.Infinite := by
-  sorry
+  by_cases hS : Finite S
+  · left
+    have : Nat.card ({0,1} : Set ℕ) = 2 := by
+      rw [Nat.card_eq_two_iff]
+      exact ⟨⟨0, Set.mem_insert 0 {1}⟩, ⟨1, Set.mem_insert_of_mem 0 rfl⟩, ne_of_beq_false rfl,
+        Set.toFinset_eq_univ.mp rfl⟩
+    rw [← this]
+    obtain ⟨a, b, hab, ha, hb⟩ := h
+    set f : ({0,1} : Set ℕ) → S :=
+      fun n ↦ if n = ⟨0, Set.mem_insert 0 {1}⟩ then ⟨a, ha⟩ else ⟨b, hb⟩ with f_def
+    refine @Nat.card_le_card_of_injective ({0,1} : Set ℕ) S hS f (fun x y hxy ↦ ?_)
+    by_contra h
+    have h₂ : (x.1 = 0 ∧ y.1 = 1)
+        ∨ (x.1 = 1 ∧ y.1 = 0) := by
+      have hx := x.2
+      simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hx
+      cases' hx with hx₁ hx₂
+      · have hy := y.2
+        simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hy
+        cases' hy with hy₁ hy₂
+        · exfalso
+          rw [Subtype.ext_iff_val, hx₁, hy₁] at h
+          exact h (by rfl)
+        · left
+          exact ⟨hx₁, hy₂⟩
+      · have hy := y.2
+        simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hy
+        cases' hy with hy₁ hy₂
+        · right
+          exact ⟨hx₂, hy₁⟩
+        · exfalso
+          rw [Subtype.ext_iff_val, hx₂, hy₂] at h
+          exact h (by rfl)
+    cases' h₂ with h₂ h₃
+    · have hx : x = ⟨0, Set.mem_insert 0 {1}⟩ := by
+        rw [Subtype.ext_iff_val]
+        exact h₂.1
+      have hy : y = ⟨1, Set.mem_insert_of_mem 0 rfl⟩ := by
+        rw [Subtype.ext_iff_val]
+        exact h₂.2
+      rw [hx, hy, f_def] at hxy
+      simp only [↓reduceIte, Subtype.mk.injEq, one_ne_zero] at hxy
+      exact hab hxy
+    · have hx : x = ⟨1, Set.mem_insert_of_mem 0 rfl⟩ := by
+        rw [Subtype.ext_iff_val]
+        exact h₃.1
+      have hy : y = ⟨0, Set.mem_insert 0 {1}⟩ := by
+        rw [Subtype.ext_iff_val]
+        exact h₃.2
+      rw [hx, hy, f_def] at hxy
+      simp only [Subtype.mk.injEq, one_ne_zero, ↓reduceIte] at hxy
+      exact hab hxy.symm
+  · right
+    exact hS
 
 /- We show that if three points belong to the union of A₀ (up to a certain rank ξ), then
 there exists a rank ζ such that a, b and c belong to the union of A₀ up to the rank ζ.
