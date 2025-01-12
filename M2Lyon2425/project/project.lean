@@ -753,6 +753,142 @@ theorem h𝒢_le (B : Set (ℝ × ℝ)) (𝒢 : Set (Set (ℝ × ℝ)))
       · sorry
     · sorry
 
+lemma I_true_card1 (x : ℝ × ℝ) (ξ : ordinals_lt c)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (hA₀ : ∀ (ζ : ordinals_lt ξ.1), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (A : ordinals_lt c → Set (ℝ × ℝ))
+    (A_def : A = fun α ↦ if α = ξ then {x} else A₀ α)
+    (ζ : ordinals_le ξ.1)
+    : Cardinal.mk (A ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩) ≤ 2 := by
+  by_cases h : ζ < ξ.1
+  · have hζ : ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ ≠ ξ := ne_of_lt h
+    simp only [A_def, hζ, ↓reduceDIte, ge_iff_le]
+    exact (hA₀ ⟨ζ.1, h⟩).1
+  · have hζ : ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ = ξ := eq_of_le_of_not_lt ζ.2 h
+    simp only [A_def, hζ, ↓reduceIte, Cardinal.mk_fintype,
+      Fintype.card_ofSubsingleton, Nat.cast_one, Nat.one_le_ofNat]
+
+lemma rw_union_le_fae (ξ : ordinals_lt c) (ζ : ordinals_le ξ.1)
+    (hζ : ζ.1 < ξ.1) (x : ℝ × ℝ) (A₀ : ordinals_lt c → Set (ℝ × ℝ)) :
+    union_le_fae (fun α ↦ if α = ξ then {x} else A₀ α)
+    ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ = union_le_fae A₀
+    ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ := by
+  simp only [union_le_fae]
+  ext x
+  refine ⟨fun hx ↦ ?_, fun hx ↦ ?_⟩
+  · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+    obtain ⟨i, hi, hi₂⟩ := hx
+    have hi₃ : ⟨i, (lt_of_le_of_lt hi hζ).trans ξ.2⟩ ≠ ξ := by
+      have := lt_of_le_of_lt hi.out hζ
+      exact ne_of_lt this
+    simp only [hi₃, ↓reduceIte] at hi₂
+    exact ⟨i, hi, hi₂⟩
+  · simp only [Set.iUnion_coe_set, Set.mem_iUnion] at hx ⊢
+    obtain ⟨i, hi, hi₂⟩ := hx
+    refine ⟨i, hi, ?_⟩
+    have hi₃ : ⟨i, (lt_of_le_of_lt hi hζ).trans ξ.2⟩ ≠ ξ := by
+      have := lt_of_le_of_lt hi.out hζ
+      exact ne_of_lt this
+    simp only [hi₃, ↓reduceIte]
+    exact hi₂
+
+lemma mem_iUnion_of_mem_union_le_fae (x y : ℝ × ℝ) (ξ : ordinals_lt c)
+    (ζ : ordinals_le ξ) (eq_ξ : ζ.1 = ξ.1)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (A : ordinals_lt c → Set (ℝ × ℝ))
+    (A_def : A = fun α ↦ if α = ξ then {x} else A₀ α)
+    (hy : y ∈ union_le_fae A ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩) :
+    y ∈ (⋃ (b : ordinals_lt ξ), A₀ ⟨b, b.2.trans ξ.2.out⟩) ∪ {x} := by
+  rw [union_le_fae] at hy
+  simp only [Set.iUnion_coe_set, Set.mem_iUnion,
+    Set.union_singleton, Set.mem_insert_iff] at hy ⊢
+  obtain ⟨i, hi, hi₂⟩ := hy
+  by_cases hi₃ : i < ζ
+  · have hi₄ : ⟨i, lt_of_le_of_lt (hi.trans ζ.2) ξ.2.out⟩ ≠ ξ := by
+      have := lt_of_lt_of_le hi₃ ζ.2
+      exact ne_of_lt this
+    simp only [A_def, hi₄, ↓reduceIte] at hi₂
+    right
+    refine ⟨i, lt_of_lt_of_le hi₃ ζ.2, hi₂⟩
+  · have := (eq_of_le_of_not_lt hi hi₃).trans eq_ξ
+    simp only [A_def, this, ↓reduceIte, Set.mem_singleton_iff] at hi₂
+    left
+    exact hi₂
+
+lemma mem_union_le_fae_of_mem_iUnion (ξ : ordinals_lt c) (ζ : ordinals_le ξ)
+    (eq_ξ : ζ.1 = ξ.1) (A₀ : ordinals_lt c → Set (ℝ × ℝ)) (x y : ℝ × ℝ)
+    (hy : y ∈ (⋃ (b : ordinals_lt ξ), A₀ ⟨b, b.2.trans ξ.2.out⟩) ∪ {x})
+    (A : ordinals_lt c → Set (ℝ × ℝ))
+    (A_def : A = fun α ↦ if α = ξ then {x} else A₀ α) :
+    y ∈ union_le_fae A ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ := by
+  rw [union_le_fae]
+  simp only [Set.iUnion_coe_set, Set.mem_iUnion,
+    Set.union_singleton, Set.mem_insert_iff] at hy ⊢
+  cases' hy with hy₁ hy₂
+  · refine ⟨ζ, Preorder.le_refl ζ, ?_⟩
+    simp only [A_def, eq_ξ, ↓reduceIte, Set.mem_singleton_iff]
+    exact hy₁
+  · obtain ⟨i, hi, hi₂⟩ := hy₂
+    rw [← eq_ξ] at hi
+    refine ⟨i, le_of_lt hi.out, ?_⟩
+    have hi₃ : ⟨i, lt_of_le_of_lt (le_of_lt hi.out) (lt_of_le_of_lt ζ.2 ξ.2)⟩ ≠ ξ := by
+      have := lt_of_lt_of_le hi.out ζ.2.out
+      exact ne_of_lt this
+    simp only [A_def, hi₃, ↓reduceIte]
+    exact hi₂
+
+lemma union_le_fae_eq_iUnion (x : ℝ × ℝ) (ξ : ordinals_lt c) (ζ : ordinals_le ξ)
+    (eq_ξ : ζ.1 = ξ.1) (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (A : ordinals_lt c → Set (ℝ × ℝ))
+    (A_def : A = fun α ↦ if α = ξ then {x} else A₀ α) :
+    union_le_fae A ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ =
+    (⋃ (b : ordinals_lt ξ.1), A₀ ⟨b, b.2.out.trans ξ.2⟩) ∪ {x} := by
+  ext y
+  exact ⟨fun hy ↦ mem_iUnion_of_mem_union_le_fae x y ξ ζ eq_ξ A₀ A A_def hy,
+    fun hy ↦ mem_union_le_fae_of_mem_iUnion ξ ζ eq_ξ A₀ x y hy A A_def⟩
+
+lemma P_true_card1 (ξ : ordinals_lt c) (ζ : ordinals_le ξ.1)
+    (A₀ : ordinals_lt c → Set (ℝ × ℝ))
+    (hA₀ : ∀ (ζ : ordinals_lt ξ.1), prop_fae A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (B : Set (ℝ × ℝ))
+    (hB : B = ⋃₀ Set.range fun (ζ : ordinals_lt ξ) ↦ A₀ ⟨ζ, ζ.2.out.trans ξ.2⟩)
+    (𝒢 : Set (Set (ℝ × ℝ)))
+    (𝒢_def : 𝒢 = {S | (2 ≤ Nat.card (S ∩ B : Set (ℝ × ℝ)) ∨ ¬(S ∩ B).Finite)
+    ∧ ∃ a b c, S = Line a b c}) (x : ℝ × ℝ) (hx : x ∈ (Lines ξ).1 \ ⋃₀ 𝒢)
+    (A : ordinals_lt c → Set (ℝ × ℝ))
+    (A_def : A = fun α ↦ if α = ξ then {x} else A₀ α) :
+    fae_NoThreeColinearPoints (union_le_fae A ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩) := by
+  by_cases hζ : ζ.1 < ξ.1
+  · have h : ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ ≠ ξ := ne_of_lt hζ
+    have hf : (fun α ↦ if α = ξ then {x} else A₀ α) ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ =
+        A₀ ⟨ζ, lt_of_le_of_lt ζ.2.out ξ.2⟩ := by
+      simp only [h, ↓reduceIte]
+    have hunion := rw_union_le_fae ξ ζ hζ x A₀
+    rw [A_def, hunion]
+    exact (hA₀ ⟨ζ.1, hζ⟩).2.1
+  · rw [union_le_fae_eq_iUnion x ξ ζ (eq_of_le_of_not_lt ζ.2 hζ) A₀ A A_def,
+      fae_NoThreeColinearPoints]
+    intro h
+    obtain ⟨a, b, c, ha, hb, hc, h⟩ := h
+    simp only [Set.iUnion_coe_set, Set.union_singleton,
+      Set.mem_insert_iff, Set.mem_iUnion] at ha hb hc
+    cases' ha with ha₁ ha₂
+    · cases' hb with hb₁ hb₂
+      · cases' hc with hc₁ hc₂
+        · --fae_NoThreeColinearPoints might be wrong. We might have to impose that
+          --the points are different from each other.
+          sorry
+        · sorry
+      · cases' hc with hc₁ hc₂
+        · sorry
+        · sorry
+    · cases' hb with hb₁ hb₂
+      · cases' hc with hc₁ hc₂
+        · sorry
+        · sorry
+      · cases' hc with hc₁ hc₂
+        · sorry
+        · sorry
 
 /- To construct a two-point set, we will start by building a sequence {A_ξ | ξ < c}
 of subsets of the Euclidean plane. This sequence will be such that ⋃ δ ≤ ξ, A_δ
@@ -819,6 +955,13 @@ theorem fae (ξ : ordinals_lt c)
     obtain ⟨x, y, hn_ne_two⟩ := hn_ne_two
     by_cases hn₁ : n = 1
     · let Aξ : Set (ℝ × ℝ) := {x}
+      set A : ordinals_lt c → Set (ℝ × ℝ) := by
+        intro α
+        by_cases hα : α = ξ
+        exact Aξ
+        exact A₀ α with A_def
+      refine ⟨A, fun ζ ↦ ⟨I_true_card1 x ξ A₀ hA₀ A A_def ζ,
+        P_true_card1 ξ ζ A₀ hA₀ B hB 𝒢 (by rfl) x hn_ne_two.1 A A_def, ?_⟩⟩
       sorry
     · let Aξ : Set (ℝ × ℝ) := {x, y}
       sorry
