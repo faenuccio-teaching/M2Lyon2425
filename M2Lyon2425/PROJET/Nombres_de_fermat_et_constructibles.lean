@@ -604,14 +604,18 @@ constructor
     have hh2 := @IsSubgroup.mul_mem_cancel_left G ((ζ ^ (2 ^ i * 2)) ^ k1) ((ζ ^ 2 ^ i)⁻¹) inst1 _ hh3 hh1
     have hh4 :  (ζ ^ 2 ^ i)⁻¹ ∈ Subgroup.zpowers (ζ ^ (2 ^ i * 2)) :=by
       apply hh2.mp
-      exact hhh --problème coercion ?
+      obtain ⟨r,hr⟩ := hhh
+      use r
+      simp at hr
+      simp
+        --problème coercion ? hr est exactement le goal
       sorry
     apply inv_mem at hh4
     simp at hh4
     obtain ⟨u,hu⟩:= hh4
     simp at hu
     rw [@npow_mul] at hu
-    have huu : (ζ ^ (2 ^ (i+1) * u)) = ζ ^ 2 ^ i :=by
+    have huu : (ζ ^ (2 ^ (i+1) * u)) = ζ ^ (2 ^ i) :=by
       rw [@zpow_mul]
       nth_rewrite 1 [<-hu]
       group
@@ -621,11 +625,11 @@ constructor
       simp
       rw [@zpow_sub]
       rw [@mul_inv_eq_one]
-      rw [@npow_add] at huu
+      rw [@pow_add] at huu
       simp at huu
       rw [Int.mul_assoc] at huu
       rw[huu]
-        --DIAMOND
+        --DIAMOND pb coercion
       sorry
     apply (@orderOf_dvd_iff_zpow_eq_one G _ ζ (2 ^ i * (2*u -1))).mpr at huuu
     rw[ord] at huuu
@@ -636,6 +640,7 @@ constructor
     apply Nat.sub_eq_of_eq_add at hmmm
     rw[hmmm] at huuu
     simp at huuu
+    --je vais avoir un problème car dans ma construction i n'est pas borné, alors qu'il doit être inférieur à m
     sorry
   · intro h41
     simp at h41
