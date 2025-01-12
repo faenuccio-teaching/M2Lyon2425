@@ -159,6 +159,7 @@ example {n m : ℕ} : Nat_smul n m = HasNat_smul.smul n m := by
     -- simp
     -- sorry
 
+-- Say a word about priorities, and the fact that they're in general the wrong way to solve these issues
 
 -- In our case, we can modify the definition of `AddMonoid₃` to include a `nsmul` data field and
 -- some Prop-valued fields ensuring this operation is provably the one we constructed above.
