@@ -49,6 +49,9 @@ lemma F2_Nonempty : F2.Nonempty := ⟨⟨0, 0⟩, by rfl⟩
 noncomputable instance : Dist (ℝ × ℝ) where
   dist := fun p q ↦ ((q.1 - p.1)^(2 : ℕ) + (q.2 - p.2)^(2 : ℕ))^(1/(2 : ℝ))
 
+lemma dist_def {p q : ℝ × ℝ} :
+    dist p q = ((q.1 - p.1)^(2 : ℕ) + (q.2 - p.2)^(2 : ℕ))^(1/(2 : ℝ)) := by rfl
+
 /- The Euclidean distance is symmetric. -/
 lemma Euclidean_dist_comm : ∀ (p q : ℝ × ℝ), dist p q = dist q p := by
   intros p q
@@ -184,14 +187,9 @@ def IsClosedDisk (D : Set (ℝ × ℝ)) (h k r : ℝ) (_ : 0 < r) : Prop :=
 is a closed disk containing A and contained in all closed disks containing A. -/
 def IsMinimumClosedDisk {A D : Set (ℝ × ℝ)} {h k r : ℝ} {hr : 0 < r}
     (_ : IsClosedDisk D h k r hr ∧ A ⊆ D) : Prop :=
-    ∀ D', ∃ h' k' r', (hr' : 0 < r') → IsClosedDisk D' h' k' r' hr' ∧ A ⊆ D' → D ⊆ D'
+    ∀ D' h' k' r', (hr' : 0 < r') → IsClosedDisk D' h' k' r' hr' ∧ A ⊆ D' → D ⊆ D'
 
 def Line (a b c : ℝ) : Set (ℝ × ℝ) := setOf (fun x ↦ a*x.1 + b*x.2 = c)
-
-/- A two-point set is a subset of the Euclidean plane which intersects
-every line in exactly two points. -/
-def IsTwoPointSet (S : Set (ℝ × ℝ)) : Prop :=
-  ∀ (a b c : ℝ), Cardinal.mk (Line a b c ∩ S : Set (ℝ × ℝ)) = 2
 
 /- Given a closed disk D, we find a line which doesn't intersect it. -/
 lemma line_inter_disk {D : Set (ℝ × ℝ)} {h k r : ℝ} {hr : 0 < r}
@@ -210,24 +208,6 @@ lemma line_inter_disk {D : Set (ℝ × ℝ)} {h k r : ℝ} {hr : 0 < r}
   · exfalso
     exact hx
 
-example {S : Set (ℝ × ℝ)} (hS : IsTwoPointSet S) :
-    ¬(∃ D h k r, ∃ (hr : 0 < r) (hD : IsClosedDisk D h k r hr ∧ S ⊆ D),
-    IsMinimumClosedDisk hD) := by
-  intro h
-  obtain ⟨D, h, k, r, hr, ⟨hD, hD₂⟩, hD₃⟩ := h
-  have := line_inter_disk hD
-  have : Line 1 0 (h + r + 1) ∩ S = ∅ := by
-    ext x
-    refine ⟨fun h' ↦ ?_, fun h' ↦ ?_⟩
-    · rw [Set.ext_iff] at this
-      exact (this x).1 ⟨h'.1, hD₂ h'.2⟩
-    · exfalso
-      exact h'
-  specialize hS 1 0 (h + r + 1)
-  apply_fun Cardinal.mk at this
-  rw [hS, Cardinal.mk_eq_zero] at this
-  exact two_ne_zero this
-
 /- Let A ⊆ ℝ × ℝ. A is bounded if ∃ r > 0 such that
 ∀ a₁, a₂ ∈ A, dist a₁ a₂ < r. We use this definition
 to define a bornology on ℝ × ℝ. This allows us to later
@@ -235,7 +215,7 @@ use Bornology.IsBounded. -/
 def bornology_plane : Bornology (ℝ × ℝ) :=
     Bornology.ofDist dist Euclidean_dist_comm Euclidean_dist_triangle
 
-/- A two-point set is a counterexample for the following statement :
+/- A set containing exactly two points is a counterexample for the following statement :
 A subset of the Euclidean plane is bounded if and only if it is
 contained in a minimum closed disk. However, one implication of this
 statement is true and is proven below. -/
@@ -268,7 +248,79 @@ lemma bounded_of_exists_MinimumClosedDisk (A : Set (ℝ × ℝ)) : (∃ D h k r 
     exact lt_add_of_lt_add_right (lt_add_of_lt_add_left hr₂ hcd₂) hab₂
   exact (lt_self_iff_false (r * 2)).1 (by rwa [(mul_two r).symm] at this)
 
--- Construction of the two-point set
+lemma not_exists_MinimumClosedDisk :
+    ¬(∃ D h k r, ∃ (hr : 0 < r) (hD : IsClosedDisk D h k r hr ∧ {(0,0), (1,0)} ⊆ D),
+    IsMinimumClosedDisk hD) := by
+  intro h
+  obtain ⟨D, h, k, r, hr, ⟨hD, hD₂⟩, hD₃⟩ := h
+  set D' : Set (ℝ × ℝ) := setOf (fun x ↦ (x.1 - 1/(2 : ℝ))^2 + x.2^2 ≤ (1/(2 : ℝ))^2) with D'_def
+  have hD' : IsClosedDisk D' (1/2) 0 (1/2) one_half_pos := by
+    intros x hx
+    rw [sub_zero]
+    exact hx
+  have hD'₂ : {(0, 0), (1, 0)} ⊆ D' := by
+    intros x hx
+    simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hx
+    cases' hx with hx₁ hx₂
+    · rw [hx₁, D'_def]
+      simp only [Prod.mk_zero_zero, one_div, inv_pow, Set.mem_setOf_eq, Prod.fst_zero, zero_sub,
+        even_two, Even.neg_pow, Prod.snd_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+        zero_pow, add_zero, le_refl]
+    · rw [hx₂, D'_def]
+      norm_num
+  have hD₄ := hD₃ D' (1/2) 0 (1/2) one_half_pos ⟨hD', hD'₂⟩
+  have hh : h = 1/2 := sorry
+  have hk : k = 0 := sorry
+  have hr₂ : r = 1/2 := sorry
+  set D'' : Set (ℝ × ℝ) := setOf (fun x ↦ (x.1 - 1/(2 : ℝ))^2 + (x.2 + 1)^2 ≤ (Real.sqrt (3/2))^2)
+    with D''_def
+  have : 0 < Real.sqrt (3/2) := by field_simp
+  have hD'' : IsClosedDisk D'' (1/2) (-1) (Real.sqrt (3/2)) this := by
+    intros x hx
+    rw [sub_neg_eq_add]
+    exact hx
+  have hD''₂ : {(0, 0), (1, 0)} ⊆ D'' := by
+    intros x hx
+    cases' hx with hx₁ hx₂
+    · rw [hx₁, D''_def]
+      norm_num
+    · rw [hx₂, D''_def]
+      norm_num
+  have hD₄ := hD₃ D'' (1/2) (-1) (Real.sqrt (3/2)) this ⟨hD'', hD''₂⟩
+  have hx : (1/2, 1/2) ∈ D := sorry
+  have hx₂ := hD₄ hx
+  rw [D''_def] at hx₂
+  norm_num at hx₂
+
+lemma TPS_bounded : @Bornology.IsBounded _ bornology_plane {(0,0), (1,0)} := by
+  rw [Bornology.isBounded_def, Bornology.cobounded, Bornology.cobounded', bornology_plane,
+  Bornology.ofDist, Bornology.ofBounded]
+  simp only [Prod.mk_zero_zero, Prod.forall, Set.mem_setOf_eq, Filter.mem_comk, compl_compl,
+    Set.mem_insert_iff, Prod.mk_eq_zero, Set.mem_singleton_iff, Prod.mk.injEq]
+  use 1
+  intros a₁ b₁ h₁ a₂ b₂ h₂
+  cases' h₁ with h₁ h₁'
+  · cases' h₂ with h₂ h₂'
+    · rw [h₁.1, h₁.2, h₂.1, h₂.2, dist_def]
+      norm_num
+    · rw [h₁.1, h₁.2, h₂'.1, h₂'.2, dist_def]
+      norm_num
+  · cases' h₂ with h₂ h₂'
+    · rw [h₁'.1, h₁'.2, h₂.1, h₂.2, dist_def]
+      norm_num
+    · rw [h₁'.1, h₁'.2, h₂'.1, h₂'.2, dist_def]
+      norm_num
+
+-- Construction of a two-point set
+
+-- We first define a two-point set.
+
+/- A two-point set is a subset of the Euclidean plane which intersects
+every line in exactly two points. -/
+def IsTwoPointSet (S : Set (ℝ × ℝ)) : Prop :=
+  ∀ (a b c : ℝ), Cardinal.mk (Line a b c ∩ S : Set (ℝ × ℝ)) = 2
+
+-- We now construct a two-point set.
 
 -- This is proven in mathlib4.
 universe v u
@@ -278,8 +330,6 @@ theorem Cardinal.mk_iUnion_Ordinal_lift_le_of_le {β : Type v} {o : Ordinal.{u}}
     (A : Ordinal.{u} → Set β) (hA : ∀ j < o, Cardinal.mk ↑(A j) ≤ c) :
     Cardinal.mk ↑(⋃ (j : Ordinal.{u}), ⋃ (_ : j < o), A j) ≤ c := sorry
 --
-
--- Definitions
 
 def IsColinear (a b : ℝ × ℝ) : Prop :=
   ∃ a' b' c', a ∈ Line a' b' c' ∧ b ∈ Line a' b' c'
