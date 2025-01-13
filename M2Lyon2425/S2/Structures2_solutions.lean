@@ -3,7 +3,11 @@ import Mathlib.Topology.UniformSpace.Basic
 
 noncomputable section
 
-section ForgetfulInheritance
+--  # Forgetful Innheritance
+namespace ForgetfulInheritance
+
+-- ## An Example
+section AnExample
 
 class NormedModule_bad (M : Type*) [AddCommGroup M] where
   norm_b : M → ℝ
@@ -123,59 +127,78 @@ example (hp : ∀ M : Type, [NormedModule₂ M] → ∀ m : M, p (rel m))
 -- We'll see more details about this `extend` construction and its syntax later on.
 
 
--- `⌘ `
+-- `⌘`
+end AnExample
 
+/- ## In Mathlib-/
+section InMathlib
 
--- We can now go back to what we saw last week: remember that we defined
-class AddMonoid_bad (M : Type) extends AddSemigroup M, AddZeroClass M
+class AddMonoidBad (M : Type) extends AddSemigroup M, AddZeroClass M
 
-@[simp]
-instance : AddMonoid_bad ℕ := {zero_add := Nat.zero_add, add_zero := by simp}
-
-@[simp]
-def Nat_smul {M : Type} [Zero M] [Add M] : ℕ → M → M
-  | 0, _ => 0
-  | n + 1, a => a + Nat_smul n a
-
-class HasNat_smul (M : Type) [Zero M] [Add M] where
+class HasNatSmul (M : Type) [Zero M] [Add M] where
   smul : ℕ → M → M
 
+-- A recursive definition of `n • x = x + x + ... + x` (`n` times).
 @[simp]
-instance (priority := 10000) (M : Type) [AddMonoid_bad M] : HasNat_smul M := ⟨Nat_smul⟩
+-- These `@[simp]` help the inductive proof below: remove and see...
+def nsmul_rec {M : Type} [Zero M] [Add M] : ℕ → M → M
+  | 0, _ => 0
+  | n + 1, a => a + nsmul_rec n a
 
-@[simp] -- make some comments here and above on why these `@[simp]` help the proof below?
-instance (priority := 10001) : HasNat_smul ℕ := ⟨fun n m ↦ n * m⟩
 
--- devo capire meglio
+@[simp]
+instance AddMndB_to_NatSmul (M : Type) [AddMonoidBad M] : HasNatSmul M := ⟨nsmul_rec⟩
 
-example {n m : ℕ} : Nat_smul n m = HasNat_smul.smul n m := by
-  by_cases hn : n = 0
-  · rw [hn]
-    simp
-  · obtain ⟨k, hk⟩ := Nat.exists_eq_succ_of_ne_zero hn
-    rw [hk]
-    simp
-    -- rw [add_one_mul, add_comm]--funzionava prima di commentare la `instance HasNat_smul ℕ`
-    -- simp
-    -- sorry
+@[simp]
+instance /- (priority := low) -/ SmulEqMul_on_Nat : HasNatSmul ℕ := ⟨fun n m ↦ n * m⟩
 
--- Say a word about priorities, and the fact that they're in general the wrong way to solve these issues
+@[simp]
+instance : AddMonoidBad ℕ := {zero_add := Nat.zero_add, add_zero := by simp}
+-- We'll come back later on and discuss why these two fields are needed.
 
--- In our case, we can modify the definition of `AddMonoid₃` to include a `nsmul` data field and
--- some Prop-valued fields ensuring this operation is provably the one we constructed above.
 
-class AddMonoid_good (M : Type) extends AddSemigroup M, AddZeroClass M where
-  /-- Multiplication by a natural number. -/
-  smul : ℕ → M → M := Nat_smul
-  /-- Multiplication by `(0 : ℕ)` gives `0`. -/
-  smul_zero : ∀ x, smul 0 x = 0 := by intros; rfl
-  /-- Multiplication by `(n + 1 : ℕ)` behaves as expected. -/
-  smul_succ : ∀ (n : ℕ) (x), smul (n + 1) x = x + smul n x := by intros; rfl
+example : HasNatSmul ℕ := AddMndB_to_NatSmul ℕ
+example : HasNatSmul ℕ := SmulEqMul_on_Nat
+example : AddMndB_to_NatSmul ℕ = SmulEqMul_on_Nat := sorry--rfl does not work
 
-instance (M : Type) [AddMonoid_good M] : HasNat_smul M := ⟨Nat_smul⟩
+example {n m : ℕ} : HasNatSmul.smul n m = nsmul_rec n m := by
+  -- rfl -- does not work, look at the infoview!
+  induction' n with k hk
+  · simp
+  · simp_all
+    rw [← hk, add_one_mul, add_comm]
+  -- rfl
 
--- instance mySMul {M : Type*} [AddMonoid₄ M] : SMul ℕ M := ⟨AddMonoid₄.nsmul⟩
 
--- **ADD** the `TopologicalSpace` in `UniformSpace`).
+-- `⌘`
+
+
+class AddMonoidGood (M : Type) extends AddSemigroup M, AddZeroClass M where
+  smul : ℕ → M → M := nsmul_rec
+
+@[simp]
+instance AddMndG_to_NatSmul (M : Type) [AddMonoidGood M] : HasNatSmul M := ⟨AddMonoidGood.smul⟩
+
+@[simp]
+instance : AddMonoidGood ℕ where
+ zero_add := Nat.zero_add
+ add_zero := by simp
+ smul := fun n m ↦ n * m -- this is the same as `fun m n ↦ m * n`.
+-- One more field is needed, of course.
+
+example : HasNatSmul ℕ := AddMndG_to_NatSmul ℕ
+example : HasNatSmul ℕ := SmulEqMul_on_Nat
+example : AddMndG_to_NatSmul ℕ = SmulEqMul_on_Nat := rfl
+-- does not work if we comment `smul` in `AddMonoidGood ℕ`.
+
+example {n m : ℕ} : HasNatSmul.smul n m = n * m := by rfl
+-- this is not affected by priorities.
+
+end InMathlib
 
 end ForgetfulInheritance
+
+namespace Extends
+
+
+end Extends

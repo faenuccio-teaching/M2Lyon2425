@@ -62,7 +62,7 @@ product, whereas the `rel` in `hp` comes from the `Rel` instance *deduced* from 
 `NormedModule_bad` instance on the product (it suffices to hover on the terms to see this).
 +++
 
-+++ A way out?
++++ A tentative solution
 One (wrong, but instructive) solution would be to avoid declaraing a
 `ModuleWithRel` instance on `M × N` 
 
@@ -86,7 +86,7 @@ field in the first (namely `‖ ⬝ ‖`) to construct the term `rel` of the sec
 problem we have just witnessed.
 +++
 
-### The correct way (using forgetful inheritance)
++++ The correct way (using forgetful inheritance)
 Instead of *deducing* the `ModuleWithRel` instance on any `NormedModule`, we *include* the poorer
 structure in the richer one (the slogan...).
 
@@ -111,6 +111,7 @@ product, and the `rel` in `hp` still comes from the `ModuleWithRel` instance ded
 obtained from the first by forgetting a field, so in particular it *coincides definitionally* with
 the previous one. This is another way of looking at why the seemingly odd declaration `rel := rel`
 in the `NormedModule` instance on `M × N` makes sense.
++++
 
 +++ A drawback
 
@@ -124,5 +125,63 @@ second" be simply a projection.
 
 * For an example of this, together with the description of the pain it caused, see
 https://github.com/leanprover-community/mathlib3/pull/7084 (it's Lean3, but you can see the point): 117 files were changed.
++++
 
+## In Mathlib
 
+Remember that we defined the "bad version" of additive monoids as
+    
+    class AddMonoidBad (M : Type) extends AddSemigroup M, AddZeroClass M
+
+We want to inspect why this is *bad*. 
+
+The reason is the existence of a more general class, that of
+types endowed with a `0`, a `+` and a scalar multiplication by `ℕ`:
+
+    class HasNatSmul (M : Type) [Zero M] [Add M] where
+    smul : ℕ → M → M
+
+Every additive monoid has a scalar multiplication by `ℕ` given by `n • x := x + x + ... + x`
+(`n` times), so `HasNat_smul` is more general than `AddMonoidBad`, but the instance `AddMonoidBad →
+HasNat_smul` is not given by "pure erasure": there is no `smul` field in `AddMonoidBad`. That's against our slogan! 
+
+* Example: `ℕ` is an `AddSemigroup` and `AddZeroClass`, so it will have an instance of `AddMonoidBad`. But `ℕ` is closed under multiplication, so given `n d : ℕ` we can do
+1. `n • d := d + d + ... + d` (`n` times)
+1. `n • d := n * d`.
+
++++ Are they `defeq`?
+No... `⌘`
++++
+
++++ The solution
+As before, it goes through forgetful inheritance: define `AddMonoidGood` to have a `smul` field.
+
+    class AddMonoidGood (M : Type) extends AddSemigroup M, AddZeroClass M where
+        smul : ℕ → M → M := nsmul_rec
+
+* The `:= nsmul_rec` command instructs Lean about the *default* value to assign. This can be modified
+when declaring specific instances, and it takes this value if nothing is specified.
++++
+
++++ Priorities
+There is also another solution, that plays with *priorities*, but it is like playing with fire. 
+
+The problem comes from Lean being allowed to choose between `AddMndB_to_NatSmul ℕ`
+and `SmulEqMul_on_Nat` to obtain the `smul` on `ℕ`. So,
+
+    example {n m : ℕ} : HasNatSmul.smul n m = nsmul_rec n m := by
+
+depends on **its** choice.
+
+By default, instances are navigated in reverse order: the latest to be defined is used
+first (with some *caveat* when parameters are involved), so what it picks is `SmulEqMul_on_Nat` and
+for this the `smul` is `n * m`.
+
+We can change this, and doing
+
+    instance (priority := low) SmulEqMul_on_Nat ..
+
+fixes the problem, but clearly this is tremendously *fragile*... `⌘`.
++++
+
+# Extends

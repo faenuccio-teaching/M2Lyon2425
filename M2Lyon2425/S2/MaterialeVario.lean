@@ -179,8 +179,15 @@ instance : GeThree' ℤ where
 
 
 /- ### In True Math
-OK, so everything seems marvellous with this `extend` and `with`. But it can lead to problems if
-the *duplication* is not what you're looking for. **ADD HERE SOPHIE'S EXAMPLES**-/
+Remember the piece of code-/
+
+-- We can now go back to what we saw last week: remember that we defined
+class AddMonoid_bad (M : Type) extends AddSemigroup M, AddZeroClass M
+
+@[simp]
+instance : AddMonoid_bad ℕ := {zero_add := Nat.zero_add, add_zero := by simp}
+
+/-Why do we need to add these fields? Let's see...-/
 
 
 end Extends
