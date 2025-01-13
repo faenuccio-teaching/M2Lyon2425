@@ -109,7 +109,7 @@ constructor
 
 --Definition de la structure d'une tour de corps.
 structure TowerOfFields where
-  K : ℕ → Type*
+  K : ℕ → Type
   instField : ∀ i, Field (K i)
   instChar : ∀ i, CharZero (K i)
   instAlgebra : ∀ i, Algebra (K i) (K (i + 1))
@@ -530,7 +530,9 @@ structure TowerOfGroup2 {G : Type*} [Group G] where
   normalSubGroup : ∀ i, @IsNormalSubgroup (H i) _ (Subgroup.inclusion (inclusion i)).range
 
 --Construction d'une tour de sous-groupe distingué d'indice 2 :  si G iso à ℤ/pℤˣ, alors on a une tour de sg Gi de G telle que Gi+1 est d'indice
---2 dans Gi et G0=G et Gm={1}, avec m tel que p=2^m+1.
+--2 dans Gi et G0=G et Gm={1}, avec m tel que p=2^m+1. En fait ce thm est inutile
+--car il ne transporte pas de data explicite. J'adapte sa preuve à ma tambouille dans
+-- le théorème d'après
 theorem TowSG (G : Type*) (p : ℕ) [inst1 : Group G] : premierfermat p → (G ≃* (ZMod (p))ˣ → ∃ (ζ : @TowerOfGroup2 G inst1), ∀ (i : ℕ), (@Subgroup.relindex G inst1 (ζ.1 (i+1)) (ζ.1 i)) = 2 ∧ ζ.H 0 = ⊤ ∧ ∃ (m : ℕ), ζ.H m = IsSubgroup.trivial G ):= by
 intro fermatp
 intro h
@@ -608,7 +610,7 @@ constructor
       use r
       simp at hr
       simp
-        --problème coercion ? hr est exactement le goal
+        --problème coercion, hr est exactement le goal mais en GZG alors qu'on veut GNG. Vient de la def de Subgroup.zpowers
       sorry
     apply inv_mem at hh4
     simp at hh4
@@ -693,7 +695,6 @@ constructor
     trivial
 
 
-
 theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
 intro h
 cases h with
@@ -721,34 +722,30 @@ cases h with
         obtain ⟨TSG,TSGproof⟩ := TowSGgal
         have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) sorry sorry sorry sorry
         simp at hsub
-        cases TSG with
-        | mk H inclusion normalSubGroup =>
-          let K := fun (i : ℕ) ↦ ({(x : (CyclotomicField (p) ℚ)) | ∀ g ∈  (H i), g x = x} : Type)
-          apply (premierfermat_eq p).mp at hp
-          obtain ⟨m, hm⟩ := hp.2
-          constructor
-          · use m
-
+        let fG := fun (i : ℕ ) ↦ Subgroup.zpowers (ζ ^(2 ^ i))
+        let Towsousgroup : TowerOfGroup2 := by
+          use fG
+          · intro i
+            change (Subgroup.zpowers (ζ ^ 2 ^ (i+1)) ≤ Subgroup.zpowers (ζ ^ 2 ^ i))
+            intro x hx
+            obtain ⟨u, hu⟩ := hx
+            use 2*u
+            simp at hu
+            simp
+            rw[<-hu]
+            group
+          · intro i
             constructor
-            ·  intro i
-               sorry
-            · constructor
-              · intro i
-                constructor
-                · sorry
-                · sorry
-              · sorry
-          · use K
-            · intro i
-              change (Field (↑{x | ∀ g ∈ H i, g x = x}))
-              sorry
-            · intro i
-              sorry
-            · intro i
-              induction i with
-              | zero => simp
-                        sorry
-              | succ n ih => sorry
+            · simp
+              exact Subgroup.isSubgroup ((fG (i + 1)).subgroupOf (fG i))
+            · simp
+        have fGindice2 : ∀ (i : ℕ), (@Subgroup.relindex Gp_Galois Gp_Galois_gp (Towsousgroup.1 (i+1)) (Towsousgroup.1 i)) = 2 := by
+          sorry
+        have fg0top : Towsousgroup.H 0 = ⊤ := by
+          sorry
+        have fgMtrivial : ∃ (m : ℕ), Towsousgroup.H m = IsSubgroup.trivial Gp_Galois := by
+          sorry
+        let fK := fun (i : ℕ) ↦ ({(x : CyclotomicField (p) ℚ)  | ∀ (g : Towsousgroup.H i), g x = x} : Type)
 
 
 
