@@ -109,7 +109,7 @@ constructor
 
 --Definition de la structure d'une tour de corps.
 structure TowerOfFields where
-  K : ℕ → Type
+  K : ℕ → Type*
   instField : ∀ i, Field (K i)
   instChar : ∀ i, CharZero (K i)
   instAlgebra : ∀ i, Algebra (K i) (K (i + 1))
@@ -722,6 +722,18 @@ cases h with
         obtain ⟨TSG,TSGproof⟩ := TowSGgal
         have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) sorry sorry sorry sorry
         simp at hsub
+        have cardG : Nat.card (Polynomial.cyclotomic ↑p ℚ).Gal = (p-1) := by
+          have h411 := jacobiSym.proof_1 p hp.1
+          have h412 := @ZMod.card_units p (jacobiSym.proof_1 p hp.1)
+          --have h413 := Nat.card_congr Gp_Galois_iso.toEquiv
+          --have h414 := @Nat.card_eq_fintype_card ((ZMod ↑p)ˣ) _
+          --rwa[<-h414,<-h413] at h412
+          sorry
+        have ord : orderOf ζ = p-1 :=by
+          rw[<-cardG,<-Nat.card_zpowers]
+          have h415 := orderOf_generator_eq_natCard hz
+          rw[<-h415]
+          rw [@Nat.card_zpowers]
         let fG := fun (i : ℕ ) ↦ Subgroup.zpowers (ζ ^(2 ^ i))
         let Towsousgroup : TowerOfGroup2 := by
           use fG
@@ -740,12 +752,37 @@ cases h with
               exact Subgroup.isSubgroup ((fG (i + 1)).subgroupOf (fG i))
             · simp
         have fGindice2 : ∀ (i : ℕ), (@Subgroup.relindex Gp_Galois Gp_Galois_gp (Towsousgroup.1 (i+1)) (Towsousgroup.1 i)) = 2 := by
+          --cf thm inutile
           sorry
         have fg0top : Towsousgroup.H 0 = ⊤ := by
+          --cf thm inutile
           sorry
         have fgMtrivial : ∃ (m : ℕ), Towsousgroup.H m = IsSubgroup.trivial Gp_Galois := by
+          --cf thm inutile
           sorry
-        let fK := fun (i : ℕ) ↦ ({(x : CyclotomicField (p) ℚ)  | ∀ (g : Towsousgroup.H i), g x = x} : Type)
+        let fK := fun (i : ℕ) ↦ ({(x : CyclotomicField (p) ℚ)  | ∀ g ∈ Towsousgroup.H i, g x = x} : Type)
+        let Towofcorps : TowerOfFields :=by
+          constructor
+          · sorry
+          · sorry
+          · use fK
+          · intro i
+            sorry
+        rw [@premierfermat_eq p] at hp
+        obtain ⟨m, hm⟩ := hp.2
+        constructor
+        · use m
+          sorry
+        · use Towofcorps.1
+          exact Towofcorps.2
+          exact Towofcorps.3
+          exact Towofcorps.4
+        · sorry
+        · sorry
+        · sorry
+        · sorry
+
+
 
 
 
