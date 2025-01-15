@@ -218,4 +218,4 @@ same ball of radius `1`. Clearly the choice of `1` was arbitrary.
     
     * Keep `ρ` as a variable: this is much harder, both because Lean won't be very happy with a
     `class` depending on a variable and because there will *really* be different instances even with
-    good choices. Try it nonetheless!
+    good choices, so a kind of "double forgetfulness" is needed.
