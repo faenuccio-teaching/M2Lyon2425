@@ -1,4 +1,4 @@
-import Mathlib
+import Mathlib.Algebra.Order.Kleene
 
 /- On prouve ici le qu'étant donné un type `α`, on peut
 mettre une structure d'algèbre de Kleene sur `α → α → Prop`. -/

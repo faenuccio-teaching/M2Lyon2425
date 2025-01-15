@@ -1,4 +1,5 @@
-import Mathlib
+import Mathlib.Algebra.Order.Kleene
+
 
 /- Dans cette section, on établit quelques propriétés de élémentaires
 des algèbres de Kleene. Beaucoup sont déjà prouvées

@@ -1,6 +1,6 @@
 /- Résultats inutilisés. Je voulais l'utiliser à l'origine pour
 la preuve de l'induction noetherienne. -/
-import Mathlib
+import Mathlib.Algebra.Order.Ring.Nat
 
 /- On (re)définit une fonction `minSet {A : Set ℕ} : A.Nonempty → ℕ`
 et on prouve que cette fonction coincide bien avec le minimum de `A`.
