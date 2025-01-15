@@ -138,7 +138,7 @@ https://github.com/leanprover-community/mathlib3/pull/7084; it's Lean3, but you 
 
 Remember that we defined the "bad version" of additive monoids as
     
-    class AddMonoidBad (M : Type) extends AddSemigroup M, AddZeroClass M
+    class AddMonoidBad (M : Type) extends Add M, AddZeroClass M
 
 We want to inspect why this is *bad*. 
 
