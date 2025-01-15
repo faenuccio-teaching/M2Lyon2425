@@ -344,7 +344,7 @@ There are (at least) two ways:
 * Enrich the `NormedModule`'s structure with a `ρ`: this is straightforward.
 * Keep `ρ` as a variable: this is much harder, both because Lean won't be very happy with a
 `class` depending on a variable and because there will *really* be different instances even with
-good choices. Try it nonetheless!
+good choices, so a kind of "double forgetfulness" is needed.
 -/
 
 open scoped NNReal
@@ -366,8 +366,6 @@ example (ρ : ℝ≥0) (hp : ∀ M : Type, [NMB_r M] → ∀ m : M, p (rel m))
   specialize hp (M × M) v
   -- exact hp
   sorry
-
-#help tactic omega
 
 class NMG_r (M : Type) extends AddCommGroup M, NormedModuleGood M where
   ρ : ℝ≥0

@@ -205,7 +205,7 @@ There are (at least) two ways:
 * Enrich the `NormedModule`'s structure with a `ρ`: this is straightforward.
 * Keep `ρ` as a variable: this is much harder, both because Lean won't be very happy with a
 `class` depending on a variable and because there will *really* be different instances even with
-good choices. Try it nonetheless!
+good choices, so a kind of "double forgetfulness" is needed.
 -/
 
 
