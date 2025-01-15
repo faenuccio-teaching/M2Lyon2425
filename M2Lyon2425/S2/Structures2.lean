@@ -37,7 +37,7 @@ export ModuleWithRel (rel)
 
 -- The `ModuleWithRel` instance on every `NormedModuleBad`.
 instance (M : Type*) [AddCommGroup M] [NormedModuleBad M] : ModuleWithRel M where
-  rel := sorry
+  rel := fun x y ↦ ‖ x - y ‖₀ ≤ 1
 
 
 -- `⌘`
@@ -51,13 +51,14 @@ instance (M N : Type*) [AddCommGroup M] [AddCommGroup N] [NormedModuleBad M] [No
 -- The `ModuleWithRel` instance on a product
 instance (M N : Type*) [AddCommGroup M] [AddCommGroup N] [ModuleWithRel M] [ModuleWithRel N] :
     ModuleWithRel (M × N) where
-  rel := sorry
+  rel := fun ⟨m₁,n₁⟩ ⟨m₂, n₂⟩ ↦ (rel m₁ m₂) ∧ (rel n₁ n₂)
 
 variable (p : ∀ {T : Type}, (T → Prop) → Prop)
 
 example (hp : ∀ M : Type, [AddCommGroup M] → [NormedModuleBad M] → ∀ m : M, p (rel m))
-    (M : Type) [AddCommGroup M] [NormedModuleBad M] (v : M × M) : p (rel v) := by
-  sorry
+  (M : Type) [AddCommGroup M] [NormedModuleBad M] (v : M × M) : p (rel v) := by
+    specialize hp (M×M) v
+    sorry
 
 
 -- `⌘`
@@ -76,15 +77,15 @@ instance (M : Type*) [AddCommGroup M] [NormedModuleGood M] : ModuleWithRel M :=
 
 instance (M N : Type*) [AddCommGroup M] [NormedModuleGood M] [AddCommGroup N] [NormedModuleGood N] :
   NormedModuleGood (M × N) where
-  rel := sorry
-  norm_g := sorry
+  rel := rel --fun ⟨m1,n1⟩ ⟨m2,n2⟩ ↦ (rel m1 m2) ∧ (rel n1 n2)
+  norm_g  := fun ⟨m,n⟩ ↦ max ‖m‖₁ ‖n‖₁
 
 -- This would have worked before as well.
 example (M : Type) [AddCommGroup M] [NormedModuleGood M] : ModuleWithRel (M × M) := inferInstance
 
 example (hp : ∀ M : Type, [AddCommGroup M] → [NormedModuleGood M] → ∀ m : M, p (rel m))
-    (M : Type) [AddCommGroup M] [NormedModuleGood M] (v : M × M) : p (rel v) := by
-  sorry
+  (M : Type) [AddCommGroup M] [NormedModuleGood M] (v : M × M) : p (rel v) := by
+    exact hp (M×M) v
 
 /- The **same example** can be constructed using the `extend` construction:-/
 -- whatsnew in --(see the last non-proteced `def`, whose name ends with `...toModuleWithRel`)
@@ -146,8 +147,11 @@ example : AddMndB_to_NatSmul ℕ = SmulEqMul_on_Nat := sorry
 
 -- This induction proof owes a lot to the `@[simp]` in the previous definitions: remove and see...
 example {n m : ℕ} : HasNatSmul.smul n m = nsmul_rec n m := by
-  sorry
-
+  induction' n with k hk
+  · simp only [instAddMonoidBadNat, SmulEqMul_on_Nat, zero_mul, nsmul_rec]
+  · simp only [instAddMonoidBadNat, SmulEqMul_on_Nat, nsmul_rec] at hk ⊢
+    rw [right_distrib, add_comm, one_mul, add_right_inj]
+    exact hk
 
 -- `⌘`
 
@@ -170,7 +174,7 @@ example : HasNatSmul ℕ := SmulEqMul_on_Nat
 example : AddMndG_to_NatSmul ℕ = SmulEqMul_on_Nat := rfl
 -- does not work if we comment `smul` in `AddMonoidGood ℕ`: why?
 
-example {n m : ℕ} : HasNatSmul.smul n m = n * m := by sorry
+example {n m : ℕ} : HasNatSmul.smul n m = n * m := by rfl
 
 -- `⌘`
 
@@ -180,9 +184,14 @@ namespace Exercises
 
 /- ## Exercise 1
 Produce instances of `ModuleWithRel, NormedModuleBad, NormedModuleGood` on the type `M → M` and
-show, using the same "universal term" `p` used above, that this yields to conflicting instances
+show, using the same "universal term" `p` used above, that this yields two conflicting instances
 for `NormedModuleBad` but not for `NormedModuleGood`. -/
 
+
+#check ModuleWithRel
+
+instance (M :Type*) [AddCommGroup M] : ModuleWithRel (M → M) where
+  rel := fun f g ↦ sorry
 
 
 /- ## Exercice 2
@@ -190,8 +199,31 @@ Define the class of metric spaces (but call them `SpaceWithMetric` to avoid conf
 existing library) as defined in https://en.wikipedia.org/wiki/Metric_space#Definition, and deduce
 an instance of `TopologicalSpace` on every `SpaceWithMetric`.
 
+
+
 Explain why this is the *wrong* choice, on an explicit example, and fix this.
 -/
+
+class SpaceWithMetric (M : Type*) where
+  dist : M → M → ℝ
+  sep : ∀ x, dist x x = 0
+  pos : ∀ x y, x ≠ y → dist x y > 0
+  symm : ∀ x y, dist x y = dist y x
+  ineq_trig : ∀ x y z, dist x z ≤ dist x y + dist y z
+
+instance (M :Type*) [i : SpaceWithMetric M] : TopologicalSpace M where
+  IsOpen U := ∀ x ∈ U, ∃ c, ∃ ρ : ℝ, i.dist c x < ρ ∧ ∀ y, i.dist c y < ρ → y ∈ U
+  isOpen_univ := by
+    simp
+    intro x
+    use x
+    use 1
+    rw [i.sep]
+    simp
+  isOpen_inter := sorry
+  isOpen_sUnion := by
+    simp only [Set.mem_sUnion, forall_exists_index, and_imp]
+    sorry
 
 
 /- ## Exercise 3
