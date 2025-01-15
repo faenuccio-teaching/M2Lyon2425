@@ -181,7 +181,7 @@ lemma dist_eq_zero_of_inter (A B : Set (ℝ × ℝ)) :
 -- Counterexample 2: A bounded plane set contained in no minimum closed disk
 
 def IsClosedDisk (D : Set (ℝ × ℝ)) (h k r : ℝ) (_ : 0 < r) : Prop :=
-    ∀ x ∈ D, (x.1 - h)^2 + (x.2 - k)^2 ≤ r^2
+    ∀ x, x ∈ D ↔ (x.1 - h)^2 + (x.2 - k)^2 ≤ r^2
 
 /- Given a bounded subset A of the Euclidean plane, a minimum closed disk for A
 is a closed disk containing A and contained in all closed disks containing A. -/
@@ -199,7 +199,7 @@ lemma line_inter_disk {D : Set (ℝ × ℝ)} {h k r : ℝ} {hr : 0 < r}
   refine ⟨fun ⟨hw, hw₂⟩ ↦ ?_, fun hx ↦ ?_⟩
   · replace hw := hw.out
     rw [one_mul, zero_mul, add_zero] at hw
-    specialize hD w hw₂
+    replace hD := (hD w).1 hw₂
     rw [hw, add_sub_right_comm, add_sub_right_comm, sub_self, zero_add] at hD
     have : r ^ 2 < (r + 1) ^ 2 + (w.2 - k) ^ 2 := by
       rw [add_comm]
@@ -237,12 +237,12 @@ lemma bounded_of_exists_MinimumClosedDisk (A : Set (ℝ × ℝ)) : (∃ D h k r 
     rw [Euclidean_dist_comm (a, b) (h, k)]
     have : (((a, b).1 - h) ^ 2 + ((a, b).2 - k) ^ 2)^(1/(2 : ℝ)) ≤ (r ^ 2)^(1/(2 : ℝ)) := by
       simp only [← Real.sqrt_eq_rpow]
-      exact Real.sqrt_le_sqrt (hD.1 (a, b) (hD.2 hab))
+      exact Real.sqrt_le_sqrt ((hD.1 (a, b)).1 (hD.2 hab))
     rwa [hr₃] at this
   have hcd₂ : dist (h, k) (c, d) ≤ r := by
     have : (((c, d).1 - h) ^ 2 + ((c, d).2 - k) ^ 2)^(1/(2 : ℝ)) ≤ (r ^ 2)^(1/(2 : ℝ)) := by
       simp only [← Real.sqrt_eq_rpow]
-      exact Real.sqrt_le_sqrt (hD.1 (c, d) (hD.2 hcd))
+      exact Real.sqrt_le_sqrt ((hD.1 (c, d)).1 (hD.2 hcd))
     rwa [hr₃] at this
   have : r * 2 < r + r := by
     exact lt_add_of_lt_add_right (lt_add_of_lt_add_left hr₂ hcd₂) hab₂
@@ -255,9 +255,12 @@ lemma not_exists_MinimumClosedDisk :
   obtain ⟨D, h, k, r, hr, ⟨hD, hD₂⟩, hD₃⟩ := h
   set D' : Set (ℝ × ℝ) := setOf (fun x ↦ (x.1 - 1/(2 : ℝ))^2 + x.2^2 ≤ (1/(2 : ℝ))^2) with D'_def
   have hD' : IsClosedDisk D' (1/2) 0 (1/2) one_half_pos := by
-    intros x hx
-    rw [sub_zero]
-    exact hx
+    intro x
+    refine ⟨fun hx ↦ ?_, fun hx ↦ ?_⟩
+    · rw [sub_zero]
+      exact hx
+    · rw [sub_zero] at hx
+      exact hx
   have hD'₂ : {(0, 0), (1, 0)} ⊆ D' := by
     intros x hx
     simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hx
@@ -276,9 +279,12 @@ lemma not_exists_MinimumClosedDisk :
     with D''_def
   have : 0 < Real.sqrt (3/2) := by field_simp
   have hD'' : IsClosedDisk D'' (1/2) (-1) (Real.sqrt (3/2)) this := by
-    intros x hx
-    rw [sub_neg_eq_add]
-    exact hx
+    intro x
+    refine ⟨fun hx ↦ ?_, fun hx ↦ ?_⟩
+    · rw [sub_neg_eq_add]
+      exact hx
+    · rw [sub_neg_eq_add] at hx
+      exact hx
   have hD''₂ : {(0, 0), (1, 0)} ⊆ D'' := by
     intros x hx
     cases' hx with hx₁ hx₂
@@ -287,7 +293,9 @@ lemma not_exists_MinimumClosedDisk :
     · rw [hx₂, D''_def]
       norm_num
   have hD₄ := hD₃ D'' (1/2) (-1) (Real.sqrt (3/2)) this ⟨hD'', hD''₂⟩
-  have hx : (1/2, 1/2) ∈ D := sorry
+  have hx : (1/2, 1/2) ∈ D := by
+    rw [hD (1/2, 1/2), hh, hk, hr₂]
+    norm_num
   have hx₂ := hD₄ hx
   rw [D''_def] at hx₂
   norm_num at hx₂
