@@ -397,37 +397,6 @@ theorem ZModx_cyclic (p : ℕ) : Nat.Prime p → IsCyclic (ZMod p)ˣ := by
 --preuve dans Perrin, à voir si j'implémente modulo le temps restant.
   sorry
 
---theorem tower_normal (m : ℕ) (G : Type*) [inst1 : Group G] [inst2 : IsCyclic G] : G ≃* ZMod (2^m) → ∃ (ζ : G), ((Subgroup.zpowers ζ = G) ∧ (Subgroup.zpowers (ζ^(2^m))=IsSubgroup.trivial G) ∧ (∀ k < m, @IsNormalSubgroup (Subgroup.zpowers (ζ^(2^k))) ) := by
-/-
-theorem adjoin_is_cyclo (p : ℕ+) (α : ℕ): Nat.Prime p ∧ 0 < α  → IsCyclotomicExtension {p^α} ℚ (Algebra.adjoin ℚ {Complex.exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))}) := by
-intro h
-rw[IsCyclotomicExtension.iff_singleton]
-constructor
-· let ζ := (Complex.exp (2 * ↑Real.pi * Complex.I/ ↑(p^α)))
-  use ⟨ζ, Algebra.self_mem_adjoin_singleton ℚ ζ⟩
-  have h3 := Complex.isPrimitiveRoot_exp (p^α) (pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
-  exact IsPrimitiveRoot.coe_submonoidClass_iff.mp h3
-· intro x
-  have hh : {Complex.exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))} ⊆ {b | b ^ ↑↑(p ^ α) = 1} := by
-    intro xx hx
-    simp at hx
-    have hxx := Complex.isPrimitiveRoot_exp (p^α) (Nat.pos_iff_ne_zero.mp (@Nat.pow_pos p α (Nat.Prime.pos h.left)))
-    dsimp
-    rw[IsPrimitiveRoot.iff_def] at hxx
-    have hxx := hxx.left
-    rw[hx]
-    simp at hxx
-    exact hxx
-  apply @Algebra.adjoin_mono ℚ at hh
-  simp at hh
-  obtain ⟨x, bx⟩ := x
-  have cx : x ∈ Algebra.adjoin ℚ {b | b ^ ↑↑(p ^ α) = 1} := by
-    apply hh
-    simp at bx
-    exact bx
-  by_contra hf
-  sorry
--/
 theorem adjoin_is_cyclo (p : ℕ+) (α : ℕ) (_: Nat.Prime p) (_ : 0 < α) :
   IsCyclotomicExtension {p^α} ℚ (Algebra.adjoin ℚ
     {exp (2 * ↑Real.pi * Complex.I/ ↑(p^α))}) :=
@@ -837,8 +806,8 @@ cases h with
                 push_neg at hdiv3
                 rw[Int.gcd] at hdiv3
                 have hdiv6 : (Int.natAbs 2).gcd (2 * u - 1).natAbs ≤ 2 :=by
-                  exact (Nat.le_of_dvd (sorry) (Nat.gcd_dvd_left (Int.natAbs 2) (2 * u - 1).natAbs))
-                have hdive7 : 1 ≤ (Int.natAbs 2).gcd (2 * u - 1).natAbs :=by
+                  exact (Nat.le_of_dvd (Nat.zero_lt_two) (Nat.gcd_dvd_left (Int.natAbs 2) (2 * u - 1).natAbs))
+                have hdiv7 : 1 ≤ (Int.natAbs 2).gcd (2 * u - 1).natAbs :=by
                   by_contra hdiv8
                   push_neg at hdiv8
                   have hdiv9 : (Int.natAbs 2) ≠ 0 :=by
@@ -846,10 +815,19 @@ cases h with
                   apply @Nat.gcd_ne_zero_left (Int.natAbs 2) ((2 * u - 1).natAbs) at hdiv9
                   apply Nat.zero_lt_of_ne_zero at hdiv9
                   apply Nat.one_le_of_lt at hdiv9
-
+                  apply LE.le.not_lt at hdiv9
+                  contradiction
+                have hdiv8 := Ne.lt_of_le' hdiv3 hdiv7
+                rw[<-Nat.add_one_le_iff] at hdiv8
+                simp at hdiv8
+                have hdiv9 := Nat.le_antisymm hdiv6 hdiv8
+                have hdiv10 :=  Nat.gcd_dvd_right (Int.natAbs 2) ((2 * u - 1).natAbs)
+                rw[hdiv9,<-even_iff_two_dvd] at hdiv10
+                apply Odd.natAbs at hdiv2
+                rw[<-Nat.not_odd_iff_even] at hdiv10
+                contradiction
+              exact IsCoprime.pow_left hdiv1
             have huuuu := IsCoprime.dvd_of_dvd_mul_right hdiv huuu
-
-
             --je vais avoir un problème car dans ma construction i n'est pas borné, alors qu'il doit être inférieur à m
             sorry
           · intro h41
