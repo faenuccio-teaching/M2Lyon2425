@@ -31,7 +31,7 @@ example (α : Type*) [One₁ α] : α := One₁.one
 
 -- Lean cannot figure out what is the type of the output
 
-example (α : Type) [One₁ α] := One₁.one
+example (α : Type*) [One₁ α] : α := One₁.one
 
 -- Given the type explicitly fixes the issue
 
@@ -132,7 +132,7 @@ example {α : Type} [Monoid₁ α] :
 
 example  {α : Type} [Monoid₁ α] (a : α) : 𝟙 ⋄ a = a := by exact?
 
-example  {α : Type} [Monoid₂ α] (a : α) : 𝟙 ⋄ a = a := by exact?
+example  {α : Type} [Monoid₂ α] (a : α) : Monoid₂.toDiaOneClass₁.dia (𝟙 : α) a = a := by exact?
 
 -- We are now very close to defining groups. We could add to the monoid structure a field asserting
 -- the existence of an inverse for every element. But then we would need to work to access these inverses.
@@ -156,9 +156,23 @@ class Group₁ (G : Type) extends Monoid₁ G, Inv₁ G where
 #check DiaOneClass₁.one_dia
 #check Semigroup₁.dia_assoc
 
-lemma left_inv_eq_right_inv₁ {M : Type} [Monoid₁ M] {a b c : M} (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) :
+lemma left_inv_eq_right_inv₁ {M : Type} [Monoid₁ M] {a b c : M}
+  (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) :
     b = c := by
-  sorry
+      have : 𝟙 ⋄ c = c:= by exact DiaOneClass₁.one_dia c
+      rw [←hba, Semigroup₁.dia_assoc, hac, DiaOneClass₁.dia_one] at this
+      exact this
+
+lemma left_inv_eq_right_inv₁' {M : Type} [Monoid₁ M] {a b c : M}
+  (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) :
+    b = c := by
+    exact symm  (by calc
+      c = 𝟙 ⋄ c := Eq.symm (DiaOneClass₁.one_dia c)
+      _ = (b ⋄ a) ⋄ c := by rw [hba]
+      _ = b ⋄ (a ⋄ c) := Semigroup₁.dia_assoc b a c
+      _ = b ⋄ 𝟙 := by rw [hac]
+      _ = b := Monoid₁.dia_one b)
+
 
 -- It is pretty annoying to give full names of the lemma. One way to fix this is to use the export
 -- command to copy those facts as lemmas in the root name space.
@@ -170,14 +184,22 @@ export Group₁ (inv_dia)
 -- Then we can rewrite the proof.
 
 example {M : Type} [Monoid₁ M] {a b c : M} (hba : b ⋄ a = 𝟙) (hac : a ⋄ c = 𝟙) : b = c := by
-  sorry
+    exact symm  (by calc
+      c = 𝟙 ⋄ c := symm (one_dia c)
+      _ = (b ⋄ a) ⋄ c := by rw [hba]
+      _ = b ⋄ (a ⋄ c) := dia_assoc b a c
+      _ = b ⋄ 𝟙 := by rw [hac]
+      _ = b := dia_one b)
 
 -- Now, let's prove things about our algebraic structures.
 
 lemma inv_eq_of_dia {G : Type} [Group₁ G] {a b : G} (h : a ⋄ b = 𝟙) : a⁻¹ = b :=
-  sorry
+  left_inv_eq_right_inv₁ (inv_dia a) h
 
-lemma dia_inv {G : Type} [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 :=
+lemma dia_inv {G : Type} [Group₁ G] (a : G) : a ⋄ a⁻¹ = 𝟙 := by
+  have h : a⁻¹ ⁻¹  = a :=  by
+    apply inv_eq_of_dia
+    apply inv_dia
   sorry
 
 -- We would like to move on to define rings, but there is a serious issue. A ring structure on a
@@ -335,7 +357,24 @@ class OrderedCommMonoid₁ (α : Type)
   extends PartialOrder₁ α, CommMonoid₃ α where
   mul_of_le : ∀ a b : α, a ≤₁ b → ∀ c : α, c * a ≤₁ c * b
 
+/- Better to do it part by part -/
 instance : OrderedCommMonoid₁ ℕ where
+  le a b := ∃ c, b = a + c
+  le_refl a := by
+    use 0
+    simp only [add_zero]
+  le_trans a b c hab hbc := by
+    use (hab.choose + hbc.choose)
+    rw [←add_assoc, ←hab.choose_spec, ←hbc.choose_spec]
+  le_antisymm a b hab hba := by
+    sorry
+  mul_assoc₃ := Nat.mul_assoc
+  one_mul := by simp only [one_mul, implies_true]
+  mul_one := by simp only [mul_one, implies_true]
+  mul_comm := Nat.mul_comm
+  mul_of_le := by
+    intro a b hab c
+    sorry
 
 -- We now discuss algebraic structures involving several types. The prime example is modules over rings.
 -- Those are commutative additive groups equipped with a scalar multiplication by elements of some ring.
