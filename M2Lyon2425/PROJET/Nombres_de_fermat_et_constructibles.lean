@@ -695,7 +695,7 @@ constructor
     trivial
 
 
-theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : Nat) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
+theorem Gauss_Wantzel_p_sens_reciproque (p : ℕ+) (α : ℕ) : (premierfermat p ∧ α =1) → (Nat.Prime p ∧ 0 < α ∧ nombre_constructible (Complex.exp (2*Complex.I*↑Real.pi/(p^α)))) := by
 intro h
 cases h with
 | intro hp ha =>
@@ -706,10 +706,10 @@ cases h with
       · rw[ha]; simp
         have Gp_Galois_gp := Polynomial.Gal.instGroup (Polynomial.cyclotomic (↑p) ℚ)
         let Gp_Galois := Polynomial.Gal (Polynomial.cyclotomic (↑p) ℚ)
-        have Gp_Galois_iso := (Polynomial.cyclotomic.irreducible_rat (Nat.Prime.pos hp.left))
+        have Gp_Galois_iso :=  (Polynomial.cyclotomic.irreducible_rat (Nat.Prime.pos hp.left))
         apply galCyclotomicEquivUnitsZMod at Gp_Galois_iso
         have zmodcycl := ZModx_cyclic p hp.left
-        have Gp_Galois_cycl : IsCyclic (Polynomial.cyclotomic ↑p ℚ).Gal :=by
+        have Gp_Galois_cycl : IsCyclic (Polynomial.cyclotomic ↑p ℚ).Gal := by
           --have hh := cyclic_iso ((Polynomial.cyclotomic ↑p ℚ).Gal) ((ZMod ↑p)ˣ) (Gp_Galois_iso) zmodcycl
           --exact hh
           sorry
@@ -722,14 +722,17 @@ cases h with
         obtain ⟨TSG,TSGproof⟩ := TowSGgal
         have hsub := @IsGalois.intermediateFieldEquivSubgroup ℚ Rat.instField (Algebra.adjoin ℚ { (Complex.exp (2*Complex.I*↑Real.pi/(p))) }) sorry sorry sorry sorry
         simp at hsub
-        have cardG : Nat.card (Polynomial.cyclotomic ↑p ℚ).Gal = (p-1) := by
+        obtain ⟨⟨ Gal11, Gal12,Gal13,Gal14 ⟩ ,Gal2⟩ := hsub
+        have cardG : Nat.card (Polynomial.cyclotomic ↑p ℚ).Gal = (↑p-1) := by
           have h411 := jacobiSym.proof_1 p hp.1
           have h412 := @ZMod.card_units p (jacobiSym.proof_1 p hp.1)
-          --have h413 := Nat.card_congr Gp_Galois_iso.toEquiv
-          --have h414 := @Nat.card_eq_fintype_card ((ZMod ↑p)ˣ) _
-          --rwa[<-h414,<-h413] at h412
-          sorry
-        have ord : orderOf ζ = p-1 :=by
+          cases Gp_Galois_iso with
+          | mk toEquiv map_mul' =>
+            have h413 := Nat.card_congr toEquiv
+            have h414 := @Nat.card_eq_fintype_card ((ZMod ↑p)ˣ) _
+            rw[<-h414,<-h413] at h412
+            exact h412
+        have ord : orderOf ζ = (↑p-1) :=by
           rw[<-cardG,<-Nat.card_zpowers]
           have h415 := orderOf_generator_eq_natCard hz
           rw[<-h415]
@@ -752,14 +755,155 @@ cases h with
               exact Subgroup.isSubgroup ((fG (i + 1)).subgroupOf (fG i))
             · simp
         have fGindice2 : ∀ (i : ℕ), (@Subgroup.relindex Gp_Galois Gp_Galois_gp (Towsousgroup.1 (i+1)) (Towsousgroup.1 i)) = 2 := by
-          --cf thm inutile
-          sorry
+          intro i
+          simp
+          change ((Subgroup.zpowers (ζ ^ 2 ^ (i+1))).relindex (Subgroup.zpowers (ζ ^ 2 ^ i)) = 2)
+          rw [Nat.pow_add']
+          simp
+          rw [@npow_mul',Subgroup.relindex,Subgroup.index_eq_two_iff]
+          simp
+          use 1
+          intro m
+          group
+          refine xor_iff_iff_not.mpr ?h.a
+          constructor
+          · intro h31
+            simp at h31
+            simp
+            rw [@Subgroup.mem_subgroupOf] at h31
+            rw[@Subgroup.mem_subgroupOf]
+            simp at h31
+            rw[<-zpow_add] at h31
+            simp
+            rw [@Subgroup.mem_zpowers_iff] at h31
+            obtain ⟨k1, hk1⟩ := h31
+            rw[zpow_add] at hk1
+            apply mul_inv_eq_of_eq_mul at hk1
+            rw[hk1.symm]
+            by_contra hhh
+            have hh1 :  (ζ ^ (2 ^ i * 2)) ^ k1 ∈ Subgroup.zpowers (ζ ^ (2 ^ i * 2)) :=by
+              use k1
+            have hh3 := Subgroup.isSubgroup (Subgroup.zpowers (ζ ^ (2 ^ i * 2)))
+            have hh2 := @IsSubgroup.mul_mem_cancel_left Gp_Galois ((ζ ^ (2 ^ i * 2)) ^ k1) ((ζ ^ 2 ^ i)⁻¹) Gp_Galois_gp _ hh3 hh1
+            have hh4 :  (ζ ^ 2 ^ i)⁻¹ ∈ Subgroup.zpowers (ζ ^ (2 ^ i * 2)) :=by
+              apply hh2.mp
+              obtain ⟨r,hr⟩ := hhh
+              use r
+              simp at hr
+              simp
+                --problème coercion, hr est exactement le goal mais en GZG alors qu'on veut GNG. Vient de la def de Subgroup.zpowers
+              sorry
+            apply inv_mem at hh4
+            simp at hh4
+            obtain ⟨u,hu⟩:= hh4
+            simp at hu
+            rw [@npow_mul] at hu
+            have huu : (ζ ^ (2 ^ (i+1) * u)) = ζ ^ (2 ^ i) :=by
+              rw [@zpow_mul]
+              nth_rewrite 1 [<-hu]
+              group
+              simp
+            have huuu : (ζ ^ (2 ^ i * (2*u -1))) = 1 :=by
+              rw [Int.mul_sub]
+              simp
+              rw [@zpow_sub]
+              rw [@mul_inv_eq_one]
+              rw [@pow_add] at huu
+              simp at huu
+              rw [Int.mul_assoc] at huu
+              rw[huu]
+                --DIAMOND pb coercion
+              sorry
+            apply (@orderOf_dvd_iff_zpow_eq_one Gp_Galois _ ζ (2 ^ i * (2*u -1))).mpr at huuu
+            rw[ord] at huuu
+            have fermeq := (premierfermat_eq p).mp
+            apply fermeq at hp
+            obtain ⟨mm,hmm⟩ := hp.2
+            have hmmm := hmm.2
+            apply Nat.sub_eq_of_eq_add at hmmm
+            rw[hmmm] at huuu
+            simp at huuu
+            have hdiv : IsCoprime (2^mm) (2*u-1):= by
+              have hdiv1 : IsCoprime 2 (2*u-1):=by
+                have hdiv2 : Odd (2*u-1):=by
+                  refine Int.odd_sub'.mpr ?_
+                  constructor
+                  · intro _
+                    exact even_two_mul u
+                  · intro _
+                    exact Int.odd_iff.mpr rfl
+                apply Int.isCoprime_iff_gcd_eq_one.mpr
+                by_contra hdiv3
+                push_neg at hdiv3
+                rw[Int.gcd] at hdiv3
+                have hdiv6 : (Int.natAbs 2).gcd (2 * u - 1).natAbs ≤ 2 :=by
+                  exact (Nat.le_of_dvd (sorry) (Nat.gcd_dvd_left (Int.natAbs 2) (2 * u - 1).natAbs))
+                have hdive7 : 1 ≤ (Int.natAbs 2).gcd (2 * u - 1).natAbs :=by
+                  by_contra hdiv8
+                  push_neg at hdiv8
+                  have hdiv9 : (Int.natAbs 2) ≠ 0 :=by
+                    exact Ne.symm (Nat.zero_ne_add_one 1)
+                  apply @Nat.gcd_ne_zero_left (Int.natAbs 2) ((2 * u - 1).natAbs) at hdiv9
+                  apply Nat.zero_lt_of_ne_zero at hdiv9
+                  apply Nat.one_le_of_lt at hdiv9
+
+            have huuuu := IsCoprime.dvd_of_dvd_mul_right hdiv huuu
+
+
+            --je vais avoir un problème car dans ma construction i n'est pas borné, alors qu'il doit être inférieur à m
+            sorry
+          · intro h41
+            simp at h41
+            simp
+            rw [@Subgroup.mem_subgroupOf] at h41
+            rw [@Subgroup.mem_subgroupOf]
+            simp
+            simp at h41
+            rw[Subgroup.mem_zpowers_iff]
+            rw [← @zpow_add]
+            by_contra hcontra
+            push_neg at hcontra
+            have hmmm : Odd m :=by
+              by_contra h42
+              rw[Int.not_odd_iff_even, Even] at h42
+              obtain ⟨r, hr⟩ := h42
+              rw[<-Int.two_mul] at hr
+              rw[hr] at h41
+              apply h41
+              use r
+              simp
+              group
+            rw [Odd] at hmmm
+            obtain ⟨r,hr⟩:= hmmm
+            rw[hr] at hcontra
+            specialize hcontra (r+1)
+            apply hcontra
+            group
         have fg0top : Towsousgroup.H 0 = ⊤ := by
-          --cf thm inutile
-          sorry
+          change (Subgroup.zpowers (ζ^2^0)=⊤)
+          simp
+          exact (Subgroup.eq_top_iff' (Subgroup.zpowers ζ)).mpr hz
         have fgMtrivial : ∃ (m : ℕ), Towsousgroup.H m = IsSubgroup.trivial Gp_Galois := by
-          --cf thm inutile
-          sorry
+          cases Gp_Galois_iso with
+          | mk toEquiv map_mul' =>
+            rw[premierfermat_eq] at hp
+            obtain ⟨m,hm⟩ := hp.2
+            use m
+            change ((Subgroup.zpowers (ζ ^ (2 ^ m)))= IsSubgroup.trivial Gp_Galois)
+            have hmm : 2^m = ↑↑(p-1) :=by
+              have hm := (hm.right)
+              apply Nat.sub_eq_of_eq_add at hm
+              rw[<-hm]
+              sorry
+            --have h51 : ↑(Subgroup.zpowers (ζ ^ 2 ^ m)) = ↑(Subgroup.zpowers (ζ ^ ↑↑(p-1) )) :=by
+              --rw[hmm]
+            have h52 : ↑(Subgroup.zpowers (ζ ^ ↑↑(p - 1))) = ↑(Subgroup.zpowers (ζ ^ (Nat.card Gp_Galois))) :=by
+              rw [cardG]
+              --refine Subgroup.ext_iff.mpr ?_
+              --intro x
+            rw[hmm,h52]
+            simp
+            trivial
         let fK := fun (i : ℕ) ↦ ({(x : CyclotomicField (p) ℚ)  | ∀ g ∈ Towsousgroup.H i, g x = x} : Type)
         let Towofcorps : TowerOfFields :=by
           constructor
