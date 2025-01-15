@@ -301,9 +301,32 @@ def σ_bar2 (i j : ℕ) : p𝓑𝓦 :=
 termination_by max (i - j) (j - i)
 
 lemma σ_bar_eq (i j : ℕ) : σ_bar i j = σ_bar2 i j := by
-  sorry
+  induction i,j using σ_bar.induct with
+  | case1 =>
+    unfold σ_bar
+    unfold σ_bar2
+    simp
+  | case2 i j hneq hinf ih1 =>
+    unfold σ_bar at ih1
+    unfold σ_bar2 at ih1
+    simp at ih1
+    split at ih1
+    · case case2.isTrue heq =>
+      unfold σ_bar
+      unfold σ_bar2
+      simp [hneq, hinf]
+      delta p𝓑𝓦_mul
+      unfold σ_bar
+      unfold σ_bar2
+      have : i = j - 1 := by exact Nat.eq_sub_of_add_eq heq
+      rw [heq, this]
+      simp
+    · case case2.isFalse hneq2 =>
+      sorry
+  | case3 =>
+    sorry
 
-lemma σ_bar_n (n : ℕ) (i j : ℕ) : (i < n) → (j < n) → (σ_bar i j) ∈ (p𝓑𝓦ₙ n) := by
+ lemma σ_bar_n (n : ℕ) (i j : ℕ) : (i ≤ (n + 1)) → (j ≤ (n + 1)) → (σ_bar i j) ∈ (p𝓑𝓦ₙ n) := by
   intro hi hj
   rw [p𝓑𝓦ₙ_charac (σ_bar i j) n]
   intro x
@@ -317,9 +340,7 @@ lemma σ_bar_n (n : ℕ) (i j : ℕ) : (i < n) → (j < n) → (σ_bar i j) ∈ 
     unfold σ_bar
     simp only [hneq, hinf, if_false, if_true]
     change (i :: (σ_bar i.succ j)).contains x → x ≤ n
-    have : i.succ < n := by
-      exact Nat.lt_of_le_of_lt hinf hj
-    simp only [this, hj, true_implies, true_implies] at ih
+    simp only [Nat.le_trans hinf hj, hj, true_implies, true_implies] at ih
     unfold List.contains
     unfold List.elem
     split
@@ -328,30 +349,30 @@ lemma σ_bar_n (n : ℕ) (i j : ℕ) : (i < n) → (j < n) → (σ_bar i j) ∈ 
         simp_all only [Nat.succ_eq_add_one, List.elem_eq_mem, decide_eq_true_eq, beq_iff_eq]
       simp
       rw [this]
-      exact Nat.le_of_succ_le hi
+      exact Nat.le_of_lt_succ (LT.lt.trans_le hinf hj)
     · case case2.h_2 _ _ => apply ih
   | case3 i j hneq h ih =>
     unfold σ_bar
     simp only [hneq, h, if_false]
     change (List.append (σ_bar i j.succ) (FreeMonoid.of j)).contains x → x ≤ n
     simp
-    have : j.succ < n := by
-      have : j ≤ i := by exact Nat.le_of_not_lt h
-      have : j < i := by exact Nat.lt_of_le_of_ne this fun a ↦ hneq (id (Eq.symm a))
-      exact Nat.lt_of_le_of_lt this hi
-    simp only [hi, this, true_implies] at ih
+    simp only [hi, hj, true_implies] at ih
     intro hx
+    rw [Nat.not_lt_eq] at h
+    have : j < i := by
+      exact Nat.lt_of_le_of_ne h fun a ↦ hneq (id (Eq.symm a))
+    have hj : j ≤ n := by
+      exact Nat.le_of_lt_succ (LE.le.trans_lt' hi this)
     cases hx
     · case case3.inl hx =>
-      have : (σ_bar i (j + 1)).contains x := by
-        exact List.elem_eq_true_of_mem hx
-      exact (ih this)
+      simp at ih
+      exact ih hj hx
     · case case3.inr hx =>
         have : x = j := by
           change x ∈ [j] at hx
           simp_all only [not_lt, Nat.succ_eq_add_one, List.elem_eq_mem, decide_eq_true_eq, List.mem_singleton]
         rw [this]
-        exact Nat.le_of_succ_le hj
+        exact hj
 
 /-- σₖ σ̠ᵢⱼ ≃  σ̠ᵢⱼ σₖ₋₁ -/
 lemma σ_bar_swap_plus (i j k : ℕ) : (j ≥ i + 2) → (i < k) → (k < j)
@@ -383,17 +404,25 @@ lemma σ_bar_swap_plus (i j k : ℕ) : (j ≥ i + 2) → (i < k) → (k < j)
     | succ l ih =>
       have h4 : j ≥ i + 3 := by
         rw [hl]
-        sorry -- uninteresting and should be easy
-        -- change i + 3 <= i + 3 + l
+        conv =>
+          lhs
+          rw [add_assoc]
+          right
+          rw [add_comm, add_assoc]
+          right
+          simp
+        rw [add_comm]
+        exact Nat.le_add_right (i + 3) l
       obtain pdef : ∃ p : ℕ, k = p + i + 1 := by
         use k - (i + 1)
-        sorry -- this too
+        exact (Nat.sub_eq_iff_eq_add h2).mp rfl
       cases pdef
       · case succ.intro p hp =>
         induction p with
         | zero =>
           simp at hp
           have : braid_congruence ((.of i.succ) * (σ_bar2 i (j - 1))) ((σ_bar2 i (j - 1)) * (.of i)) := by
+            simp_all
             sorry -- TODO: involves ih
           rw [hp]
           simp
@@ -413,16 +442,14 @@ lemma σ_bar_swap_plus (i j k : ℕ) : (j ≥ i + 2) → (i < k) → (k < j)
               left
               change slide [i, j-1] [j-1, i]
               delta slide
-              simp
-              right
-              sorry -- very simple
+              omega
             exact (braid_congruence.mul (braid_congruence.toSetoid.iseqv.refl _) this )
           exact (braid_congruence.trans trans1 trans2)
         | succ => sorry
 
 lemma σ_bar_swap_minus (i j k : ℕ) : (j ≥ i + 2) → (i < k) → (k < j)
   → braid_congruence (p𝓑𝓦_mul (.of (k - 1)) (σ_bar j i)) (p𝓑𝓦_mul (σ_bar j i) (.of k)) := by
-  sorry -- same thing as before, quite long
+   sorry -- same thing as before, quite long
 
 /-- Δ_bar n is a common right multiple to all small enough positive braids. -/
 def Δ_bar (n : ℕ) : p𝓑𝓦 :=
@@ -430,7 +457,7 @@ def Δ_bar (n : ℕ) : p𝓑𝓦 :=
   | 0 => 1
   | n + 1 => (σ_bar 0 (n+1)) * (Δ_bar n)
 
-#eval σ_bar 0 1
+#eval σ_bar 1 2
 #eval Δ_bar 0
 #eval Δ_bar 1
 #eval Δ_bar 2
@@ -438,10 +465,66 @@ def Δ_bar (n : ℕ) : p𝓑𝓦 :=
 
 /-- This result lets us see that (Δ_bar n+1) is in p𝓑𝓦ₙ and that σᵢ can slide through if i is big enough. -/
 lemma Δ_n (n : ℕ) : ∀ x, ((Δ_bar n).contains x) → (x < n ) := by
-  sorry
+  intro x h
+  induction n with
+  | zero =>
+    unfold Δ_bar at h
+    trivial
+  | succ n ih =>
+    unfold Δ_bar at h
+    change (List.append (σ_bar 0 (n + 1)) (Δ_bar n)).contains x at h
+    simp at h
+    cases h
+    · case succ.inl hin =>
+      have : (σ_bar 0 (n+1)) ∈ (p𝓑𝓦ₙ n) := by
+        exact σ_bar_n n 0 (n+1) (Nat.le_add_left 0 (n + 1)) (Nat.le_refl (n + 1))
+      apply Nat.lt_add_one_of_le
+      exact (p𝓑𝓦ₙ_charac (σ_bar 0 (n+1)) n).1 this x (List.elem_eq_true_of_mem hin)
+    · case succ.inr hin =>
+      trans n
+      simp at ih
+      exact ih hin
+      exact lt_add_one n
+
 
 lemma slide_through_word (i : ℕ) (w : p𝓑𝓦) : (∀ x, w.contains x → x < i ) → braid_congruence ((.of (i + 1)) * w) (w * (.of (i + 1))) := by
-  sorry
+  induction w with
+  | nil =>
+    intros
+    change braid_congruence [i + 1] [i + 1]
+    exact (Con.eq braid_congruence).mp rfl
+  | cons hd tl ih =>
+    intro h
+    simp at h
+    cases' h with hl hr
+    change braid_congruence (p𝓑𝓦_mul [i + 1]  (p𝓑𝓦_mul (.of hd) tl)) (p𝓑𝓦_mul (hd :: tl) [i + 1])
+    have trans1 : braid_congruence (p𝓑𝓦_mul [i + 1]  (p𝓑𝓦_mul (.of hd) tl)) (p𝓑𝓦_mul [hd] (p𝓑𝓦_mul [i + 1] tl)) := by
+      conv in (p𝓑𝓦_mul [i + 1] (p𝓑𝓦_mul (FreeMonoid.of hd) tl)) =>
+        delta p𝓑𝓦_mul
+        rw [←mul_assoc]
+      conv in (p𝓑𝓦_mul [hd] (p𝓑𝓦_mul [i + 1] tl)) =>
+        delta p𝓑𝓦_mul
+        rw [←mul_assoc]
+      change braid_congruence (p𝓑𝓦_mul [i + 1, hd] tl) (p𝓑𝓦_mul [hd, i + 1] tl)
+      have : braid_congruence [i+1, hd] [hd, i+1] := by
+        apply ConGen.Rel.of
+        delta braid_relations
+        left
+        delta slide
+        simp
+        left
+        rw [@Nat.succ_le_iff,@Nat.lt_sub_iff_add_lt']
+        exact Nat.add_lt_add_right hl 1
+      exact braid_congruence.mul
+        this
+        ((by exact braid_congruence.toSetoid.iseqv.refl tl))
+    have trans2 : braid_congruence (p𝓑𝓦_mul [hd]  (p𝓑𝓦_mul [i+1] tl)) (p𝓑𝓦_mul [hd] (p𝓑𝓦_mul tl [i + 1])) := by
+      simp_all
+      exact braid_congruence.mul
+        (braid_congruence.toSetoid.iseqv.refl [hd])
+        (ih)
+    exact braid_congruence.toSetoid.iseqv.trans trans1 trans2
+
 
 lemma Δ_swap (n : ℕ) : braid_congruence (Δ_bar (n+1)) ((Δ_bar n) * σ_bar (n + 1) 0) := by
   induction n with
