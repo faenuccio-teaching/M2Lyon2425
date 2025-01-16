@@ -1,8 +1,8 @@
 # Local Instances
 
 # Structures
-The usual way to define a `structure` is to write its name, then `where` and then the list of
-fields that we want a term of the structure be made of
+The usual way to define a `structure` is to write its name, then `where` (or `:=`) and then the
+list of fields that we want a term of the structure be made of
 
     structure MyStructure where
         firstfield : firstType
@@ -40,23 +40,18 @@ reverse implication.
 created as well so that `instance : MyStructure := someterm` become accessible. 
 
 
-We can define a structure `OneNat`, that "packs" a single natural number; or the structure
-`TwoNat` that packs to numbers;  or the structure of order pairs that pack two numbers where the
-second is larger or equal than the first : this is called a *mixin*.
+We can define a structure `OneNat`, that "packs" a single natural number; or the structures
+`TwoNat` and `Couple` that pack to numbers;  or the structure of order pairs that pack two numbers
+where the second is larger or equal than the first : this is called a *mixin*.
 
+
+
++++ Use of parameters
+It is also possible to define structures that depend on parameters. The syntax is the usual as for 
+`def` or `theorem`.
++++
 
  `⌘`
-
-
-The big difference between `TwoNat`, and `Couple` are the names of the fields. These
-name **are relevant**! You might think of a term of type `TwoNat` as a pair of *labelled* naturals,
-and that a structure is a collection of labelled terms.
-
-It is also possible to define structures that depend on parameters.
-
-**TO DO SO...**
-
-## Extends
 
 ## Constructing terms
 
@@ -70,9 +65,36 @@ several arguments), we can type
     _
 
 (beware that the underscore `_` **must not be indented**), and a (blue) bulb💡appears. Click on it 
-to  generate a *skeleton* of the structure at hand, so you do not need to remember all fields by
-heart.
+to  generate a *skeleton* of the structure at hand (transforming `:=` into `where`), so you do not
+need to remember all fields by heart.
+
 
 **SAY THAT WE CAN USE ⟨ and ⟩** : anonymous constructors (3.4.1.3)
 
-** SAY THAT ALL THIS BECOMES VERY IMPORTANT IF STRUCTURES ARE CLASSES WHEN DECLARING ISNTANCES**
+
+** SAY THAT ALL THIS BECOMES VERY IMPORTANT IF STRUCTURES ARE CLASSES WHEN DECLARING INSTANCES**
+e finire con un esempio con `AddMonoid`, tipo
+`⌘`
+
+
++++ Labels Matter
+The big difference between `TwoNat`, and `Couple` are the names of the fields: `⌘`.
+
+These names **are relevant**! You might think of a term of type `TwoNat` (or `Couple`) as a pair of
+*labelled* naturals, and that a structure is a collection of *labelled* terms. So, a term of `TwoNat` 
++++
+
+
+* Mention `with`
+* Mention `__`
+
+## Extends
+
+If the parent structure types have overlapping field names, then all overlapping field names must
+have the same type. If the overlapping fields have different default values, then the default value
+from the last parent structure that includes the field is used. New default values in the child
+structure take precedence over default values from the parent structures.
+
+### Constructing terms when there is `extend`
+
+
