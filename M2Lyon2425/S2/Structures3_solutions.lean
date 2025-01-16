@@ -1,6 +1,45 @@
 import Mathlib.Data.Real.Basic
-import Mathlib.Tactic.Linarith.Frontend
+import Mathlib.Topology.MetricSpace.Cauchy
+-- import Mathlib.Tactic.Linarith.Frontend
+import Mathlib.Topology.UniformSpace.Basic
 
+noncomputable section LocalInstances
+
+#print UniformSpace
+-- One constructor and four fields
+
+#synth UniformSpace ℕ -- instUniformSpaceNat
+
+example : instUniformSpaceNat = ⊥ := rfl
+
+open scoped Filter Uniformity
+
+example : (uniformity ℕ) = (𝓟 idRel) := rfl -- this is the "trivial" or "discrete" uniformity.
+
+attribute [- instance] instUniformSpaceNat --this is local, it only applies to the current section
+
+-- #synth UniformSpace ℕ -- failed to synthesize
+
+local instance : PseudoMetricSpace ℕ where
+  dist := fun n m ↦ |2 ^ (- n : ℤ) - 2 ^ (- m : ℤ)|
+  dist_self := by simp only [zpow_neg, zpow_natCast, sub_self, abs_zero, implies_true]
+  dist_comm := fun _ _ ↦ abs_sub_comm ..
+  dist_triangle := fun _ _ _ ↦ abs_sub_le .. -- do you know these two dots?
+
+
+#synth UniformSpace ℕ -- PseudoMetricSpace.toUniformSpace
+
+/- Now suppose that we prove a statement about `ℕ`endowed with this uniformity induced from
+the metric. Can we access it at a later stage outside this section? -/
+
+/-! This is actually true! See
+-- `Counterexamples/DiscreteTopologyNonDiscreteUniformity.lean`-/
+lemma idIsCauchy : CauchySeq (id : ℕ → ℕ) := by sorry
+
+
+example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
+
+end LocalInstances
 
 section Extends
 
@@ -22,6 +61,13 @@ structure TwoNat where
 have the same type. If the overlapping fields have different default values, then the default value
 from the last parent structure that includes the field is used. New default values in the child
 structure take precedence over default values from the parent structures.-/
+
+structure OneNatOneInt where
+  fst : Nat
+  snd : Int
+
+-- structure Blob extends OneNatOneInt, OneNat
+-- structure Blob' extends OneNatOneInt, TwoNat
 
 structure TwoNatExt extends OneNat where
   snd : Nat

@@ -12,7 +12,7 @@ noncomputable section
 1. FunnyBracket
 2. Extends -- In Structures3
 3. ForgetfulInheritance -- In Structures2
-4. LocalInstances
+4. LocalInstances -- InStructures3
 5. Synonyms
 6. OutParam
 -/
