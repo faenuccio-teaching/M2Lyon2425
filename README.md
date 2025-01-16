@@ -47,7 +47,7 @@ Classes are on Wednesday, from 9.45AM to 12.45PM, at <a href="https://www.ens-ly
 |-----------|---------------|---------|---------------
 | **Jan 5th** | **Deadline for project submissions** | --- | 
 | Jan 8th | Structures | X. Roblot | **The class will finish at 12PM**
-| Jan 15th | Inductive Types | F. Nuccio | **The class will finish at 12PM**
+| Jan 15th | Inductive Types | F. Nuccio | Accompanying <a href="https://github.com/faenuccio/M2Lyon2425/blob/094259206fa74c94e94913475dd3759715eb9244/M2Lyon2425/Lectures/Structures2_lecture.pdf">pdf file</a>
 | **Jan 15th** | **Projects presentations** | Starting 1PM
 | Jan 22nd | Classes and Instances 1 | F. Nuccio |
 | Jan 29th | Classes and Instances 2 | F. Nuccio |
