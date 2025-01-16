@@ -1,8 +1,15 @@
+name: Build documentation
+
 on:
   push:
     branches:
     - master
 
+# Cancel previous runs if a new commit is pushed to the same PR or branch
+concurrency:
+  group: ${{ github.ref }}  # Group runs by the ref (branch or PR)
+  cancel-in-progress: true  # Cancel any ongoing runs in the same group
+    
   # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
@@ -19,50 +26,62 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Print files to upstream
-        run: |
-          mkdir -p docs/_includes
-
       - name: Install elan
         run: curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:4.5.0
 
       - name: Get cache
         run: ~/.elan/bin/lake exe cache get || true
 
-      - name: Build project
-        run: ~/.elan/bin/lake build M2Lyon2425
-
       - name: Cache mathlib docs
         uses: actions/cache@v4
         with:
-          path: |
-            .lake/build/doc/Init
-            .lake/build/doc/Lake
-            .lake/build/doc/Lean
-            .lake/build/doc/Std
-            .lake/build/doc/Mathlib
-            .lake/build/doc/declarations
+          path: .lake/build/doc
           key: MathlibDoc-${{ hashFiles('lake-manifest.json') }}
           restore-keys: |
             MathlibDoc-
 
+      - name: Build project
+        run: ~/.elan/bin/lake build M2Lyon2425
+      
       - name: Build documentation
         run: |
           mkdir -p docs
           ~/.elan/bin/lake -R -Kenv=dev build M2Lyon2425:docs
 
-
-      - name: Move documentation to `docs/docs`
+      - name: Check for `home_page` folder # this is meant to detect a Jekyll-based website
+        id: check_home_page
         run: |
-          mkdir -p docs/docs
-          mkdir -p docs/_site
-          mv .lake/build/doc docs/docs
+          if [ -d home_page ]; then
+            echo "The 'home_page' folder exists in the repository."
+            echo "HOME_PAGE_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "The 'home_page' folder does not exist in the repository."
+            echo "HOME_PAGE_EXISTS=false" >> $GITHUB_ENV
+          fi
 
-      - name: Upload docs & blueprint artifact
+      - name: Copy API documentation to `home_page/docs`
+        run: cp -r .lake/build/doc home_page/docs
+
+      - name: Bundle dependencies
+        if: github.event_name == 'push'
+        uses: ruby/setup-ruby@v1
+        with:
+          working-directory: home_page
+          ruby-version: "3.0"  # Specify Ruby version
+          bundler-cache: true  # Enable caching for bundler
+
+      - name: Build website using Jekyll
+        if: github.event_name == 'push' && env.HOME_PAGE_EXISTS == 'true'
+        working-directory: home_page
+        run: JEKYLL_ENV=production bundle exec jekyll build  # Note this will also copy the blueprint and API doc into home_page/_site
+
+      - name: "Upload website (API documentation, blueprint and any home page)"
+        if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/_site
+          path: ${{ env.HOME_PAGE_EXISTS == 'true' && 'home_page/_site' || 'home_page/' }}
 
-      - name: Make sure the cache works
-        run: |
-          mv docs/docs .lake/build/doc
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push'
+        id: deployment
+        uses: actions/deploy-pages@v4
