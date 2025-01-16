@@ -2,23 +2,6 @@
 ---
 
 /* Import the CSS from the specified theme */
-@import "minima";
+@import "{{ site.theme }}";
 
 /* Custom styles go below this line */
-body {
-  font-family: "Arial", sans-serif;
-  line-height: 1.6;
-}
-
-h1 {
-  color: #333333;
-}
-
-a {
-  color: #0066cc;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
