@@ -1,7 +1,7 @@
 # M2Lyon2425
 This is the webpage for the Lean courses of the program <a href="http://mathematiques.ens-lyon.fr/parcours-2024-2025-394652.kjsp">"Higher Algebra and Formalised Mathematics"</a> of the Advanced Master in Mathematics in Lyon for 2024/25. For the original `git` repository, click <a href="https://github.com/faenuccio-teaching/M2Lyon2425">here</a>.
 
-## Prerequisites
+## Prerequisites 
 
 You will need to do the following tasks before the start of the course. We will help you do these tasks during the "Installation party" on September 4th.
 * Make sure that you have a working wifi, usually via Eduroam.
@@ -34,19 +34,21 @@ Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/
 | Oct 30th | _Holidays_ | ---
 | Nov 6th | Rings and Fields 2 | X. Roblot
 | Nov 13th | Topological Spaces 1 | S. Morel
-| **Nov 15th** | **Deadline for project proposal** | --- | **Upload it to your** **`git branch`**
+| **Nov 17th** | **Deadline for project proposal** | --- | **Upload it to your** **`git branch`**
 | Nov 20th | Topological Spaces 2 | S. Morel
 | Nov 27th | Calculus 1 | X. Roblot
 | Dec 4th | Calculus 2 | X. Roblot
 
 ### Second Term
 
-Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a>. The schedule for the second term is as follows:
+Classes are on Wednesday, from 9.45AM to 12.45PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a>, in room M7-411. The schedule for the second term is as follows:
 
-| Date      | Topic         | Teacher | Optional Link
+| Date      | Topic         | Teacher | Notes
 |-----------|---------------|---------|---------------
-| Jan 8th | Structures | X. Roblot |
-| Jan 15th | Inductive Types | F. Nuccio |
+| **Jan 5th** | **Deadline for project submissions** | --- | 
+| Jan 8th | Structures | X. Roblot | **The class will finish at 12PM**
+| Jan 15th | Inductive Types | F. Nuccio | Accompanying <a href="https://github.com/faenuccio/M2Lyon2425/blob/094259206fa74c94e94913475dd3759715eb9244/M2Lyon2425/Lectures/Structures2_lecture.pdf">pdf file</a>
+| **Jan 15th** | **Projects presentations** | Starting 1PM
 | Jan 22nd | Classes and Instances 1 | F. Nuccio |
 | Jan 29th | Classes and Instances 2 | F. Nuccio |
 | Feb 5th | Categories in Lean 1 | S. Morel
