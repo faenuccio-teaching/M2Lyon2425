@@ -79,9 +79,10 @@ jobs:
         # if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ env.HOME_PAGE_EXISTS == 'true' && 'home_page/_site' || 'home_page/' }}
-
+          # path: ${{ env.HOME_PAGE_EXISTS == 'true' && 'home_page/_site' || 'home_page/' }}
+          path: home_page/_site
+          
       - name: Deploy to GitHub Pages
         # if: github.event_name == 'push'
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
