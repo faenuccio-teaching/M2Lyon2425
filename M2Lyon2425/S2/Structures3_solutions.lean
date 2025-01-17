@@ -1,6 +1,6 @@
 import Mathlib.Data.Real.Basic
 import Mathlib.Topology.MetricSpace.Cauchy
--- import Mathlib.Tactic.Linarith.Frontend
+import Mathlib.Topology.Instances.Real
 import Mathlib.Topology.UniformSpace.Basic
 
 noncomputable section LocalInstances
@@ -82,11 +82,11 @@ structure TwoTerms (α : Type) where
 
 structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace γ] :=--where or := are intercheangeable
   a : α := 0
-  f : α → β → γ
+  f : α → β → γ → γ
   cont : Continuous (f a)
 
--- `⌘`
 
+-- `⌘`
 
 
 -- ## Constructing terms
@@ -95,8 +95,25 @@ structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace �
 
 example : TwoNat := sorry --farlo con `:=`, poi aggiungere _, lampadina, etc...
 
+open Real
+
 -- What happens if we have a default value?
-example : Mess ℕ ℝ ℝ := sorry
+example : Mess ℕ ℝ ℝ where
+  f := fun n x y ↦ n + x + y
+  cont := by
+    simp only [CharP.cast_eq_zero, zero_add]
+    apply continuous_pi
+    exact fun i ↦ continuous_add_right i
+
+example : Mess ℕ ℝ ℝ where
+  a := 37
+  f := fun n x y ↦ n + x + y
+  cont := by
+    apply continuous_pi
+    intro i
+    apply Continuous.add
+    · apply continuous_add_left
+    · apply continuous_const
 
 
 example (x : TwoNat) : Couple where
@@ -106,6 +123,12 @@ example (x : TwoNat) : Couple where
 -- Same construction, different syntax
 example (x : TwoNat) : Couple := {left := x.fst, right := x.snd}
 
+example : Couple := ⟨3, 2⟩
+
+example (x : OneNat) : Couple :=
+  {left := x.1, right := x.1}
+
+-- `⌘` **REMOVE** `with` and `__`
 
 /- The syntax `with` instructs Lean to take all possible labels from that term and to only ask
 for the remaining-/
@@ -119,8 +142,6 @@ example (x : OneNat) : Couple := sorry
   -- {x with left := x.1} fields missing: 'right'
 --so, it does not "populate missing fields with the first available type-correct term: labels matter"
 
-example (x : OneNat) : Couple :=
-  {left := x.1, right := x.1}
 
 example (x : TwoNat) : OneNat := {x with} --without the `with` the extra-field is not thrown away
 

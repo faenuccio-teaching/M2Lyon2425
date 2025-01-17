@@ -68,12 +68,33 @@ several arguments), we can type
 to  generate a *skeleton* of the structure at hand (transforming `:=` into `where`), so you do not
 need to remember all fields by heart.
 
+Either using💡or not, there are three ways to define a term of a structure:
 
-**SAY THAT WE CAN USE ⟨ and ⟩** : anonymous constructors (3.4.1.3)
+1. `MyTerm : MyStructure :=`, followed either by `by → constructor` or `{firstfield := firstterm, secondfield := secondterm, ..., lastfield := lastterm}`. 
+
+1. `MyTerm : MyStructure where` and then the list `nthfield := nthterm`, each one a new (indented) line (observe that the💡help replaces `:=` with `where` automatically).
+
+1. Using the so-called *anonymous constructor* provided by `⟨` and `⟩`: just insert the list of terms `⟨firstterm, secondterm, ..., lastterm⟩` and Lean will understand.
 
 
-** SAY THAT ALL THIS BECOMES VERY IMPORTANT IF STRUCTURES ARE CLASSES WHEN DECLARING INSTANCES**
+* Remember that `class`es are a special case of `structure`s: so, definining an `instance` as we did last week really means constructing a term of a certain `structure`. Points 1. − 3. above are particularly useful for this.
+
+
+`⌘`
+
+
+Now, constructing terms of a structure with many fields is particularly 
+1. boring,
+1. error-prone,
+1. far from mathematical usage: to construct a term of a complicated structure I might want to 
+use a term of a simpler one and "only add what is necessary".
+
+There are two ways, somewhat parallel to the `MyStructure := ...` *vs* `Mystructure where ...` syntaxes.
+* Mention `with`
+* Mention `__`
 e finire con un esempio con `AddMonoid`, tipo
+
+
 `⌘`
 
 
@@ -85,16 +106,24 @@ These names **are relevant**! You might think of a term of type `TwoNat` (or `Co
 +++
 
 
-* Mention `with`
-* Mention `__`
 
 ## Extends
 
+We have already seen the `extends` syntax before: let's try to analyze its behaviour in details
+knowing how `structures` work.
+
+The main point is to generalise to the whole type what we did for terms using `where` or `__`.
+
+* SAY SOMETHING HERE
+
+* THEN QUOTE
 If the parent structure types have overlapping field names, then all overlapping field names must
 have the same type. If the overlapping fields have different default values, then the default value
 from the last parent structure that includes the field is used. New default values in the child
 structure take precedence over default values from the parent structures.
 
+
++++ Interaction of `with` and `extend`
 ### Constructing terms when there is `extend`
 
 
