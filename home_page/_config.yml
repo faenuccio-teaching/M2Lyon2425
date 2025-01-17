@@ -30,5 +30,5 @@ repository: faenuccio-teaching/M2Lyon2425
 # Build settings
 theme: jekyll-theme-leap-day
 plugins:
-  - jekyll-remote-theme
-  - jekyll-github-metadata  
+  # - jekyll-remote-theme
+  # - jekyll-github-metadata  
