@@ -48,16 +48,16 @@ jobs:
           mkdir -p docs
           ~/.elan/bin/lake -R -Kenv=dev build M2Lyon2425:docs
 
-      - name: Check for `home_page` folder # this is meant to detect a Jekyll-based website
-        id: check_home_page
-        run: |
-          if [ -d home_page ]; then
-            echo "The 'home_page' folder exists in the repository."
-            echo "HOME_PAGE_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "The 'home_page' folder does not exist in the repository."
-            echo "HOME_PAGE_EXISTS=false" >> $GITHUB_ENV
-          fi
+      # - name: Check for `home_page` folder # this is meant to detect a Jekyll-based website
+      #   id: check_home_page
+      #   run: |
+      #     if [ -d home_page ]; then
+      #       echo "The 'home_page' folder exists in the repository."
+      #       echo "HOME_PAGE_EXISTS=true" >> $GITHUB_ENV
+      #     else
+      #       echo "The 'home_page' folder does not exist in the repository."
+      #       echo "HOME_PAGE_EXISTS=false" >> $GITHUB_ENV
+      #     fi
 
       - name: Copy API documentation to `home_page/docs`
         run: cp -r .lake/build/doc home_page/docs
@@ -71,17 +71,17 @@ jobs:
           bundler-cache: true  # Enable caching for bundler
 
       - name: Build website using Jekyll
-        if: github.event_name == 'push' && env.HOME_PAGE_EXISTS == 'true'
+        # if: github.event_name == 'push' && env.HOME_PAGE_EXISTS == 'true'
         working-directory: home_page
         run: JEKYLL_ENV=production bundle exec jekyll build  # Note this will also copy the blueprint and API doc into home_page/_site
 
       - name: "Upload website (API documentation, blueprint and any home page)"
-        if: github.event_name == 'push'
+        # if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ env.HOME_PAGE_EXISTS == 'true' && 'home_page/_site' || 'home_page/' }}
 
       - name: Deploy to GitHub Pages
-        if: github.event_name == 'push'
+        # if: github.event_name == 'push'
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v1

@@ -1,3 +1,3 @@
--- import Init.Prelude
+import Init.Prelude
 
 def hello := "world"

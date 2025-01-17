@@ -23,6 +23,3 @@ gem "http_parser.rb", "~> 0.6.0", :platforms => [:jruby]
 
 # Used for locally serving the website.
 gem "webrick", "~> 1.7"
-
-# The broccolini-swiss theme
-gem "github-pages", group: :jekyll_plugins
