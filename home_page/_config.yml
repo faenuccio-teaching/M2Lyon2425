@@ -28,7 +28,7 @@ github_username: faenuccio-teaching
 repository: faenuccio-teaching/M2Lyon2425
 
 # Build settings
-remote_theme: pages-themes/cayman@v0.2.0
+remote_theme: broccolini/swiss
 plugins:
   - jekyll-remote-theme
   - jekyll-github-metadata  
