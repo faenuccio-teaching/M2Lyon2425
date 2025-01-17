@@ -55,6 +55,7 @@ structure TwoNat where
   fst : ℕ
   snd : ℕ
 
+whatsnew in
 @[ext]
 structure Couple where
   left : Nat
@@ -67,41 +68,36 @@ structure OrderedPairs where
   snd : ℕ
   order : fst ≤ snd -- this field depends upon the previous two.
 
-instance : OrderedPairs := {fst := 1, snd := 2, order := by simp}
-
-#check OrderedPairs.ext
 #check OneNat.mk
 #check TwoNat.mk
 #check TwoNat.pair
 #check OrderedPairs.mk
 #check order
 #check OrderedPairs.order
-example (x : TwoNat) : Couple := x
 
+
+structure TwoTerms (α : Type) where
+  fst : α
+  snd : α
+
+structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace γ] :=--where or := are intercheangeable
+  a : α := 0
+  f : α → β → γ
+  cont : Continuous (f a)
+
+-- `⌘`
+
+
+
+-- ## Constructing terms
 
 -- `⌘`
 
+example : TwoNat := sorry --farlo con `:=`, poi aggiungere _, lampadina, etc...
 
-structure TwoNatExt extends OneNat where
-  snd : Nat
+-- What happens if we have a default value?
+example : Mess ℕ ℝ ℝ := sorry
 
-
-/-If the parent structure types have overlapping field names, then all overlapping field names must
-have the same type. If the overlapping fields have different default values, then the default value
-from the last parent structure that includes the field is used. New default values in the child
-structure take precedence over default values from the parent structures.-/
-structure OneNatOneInt where
-  fst : Nat
-  snd : Int
-
-structure Blob extends OneNatOneInt, OneNat
-structure Blob' extends OneNatOneInt, TwoNat
-
-
-
-
--- `⌘`
--- Mettere da qlc parte un esempio con un default value
 
 example (x : TwoNat) : Couple where
   left := x.fst
@@ -142,8 +138,25 @@ def mix1 (x : TwoNat) (y : Couple) : Mix :=
 def mix2 (x : TwoNat) (y : Couple) : Mix :=
   {y, x with}
 
+example (x : TwoNat) : Couple := x
+
+-- ## Extends
+
+structure TwoNatExt extends OneNat where
+  snd : Nat
+
+
+structure OneNatOneInt where
+  fst : Nat
+  snd : Int
+
+structure Blob extends OneNatOneInt, OneNat
+structure Blob' extends OneNatOneInt, TwoNat
+
+
 def mix3 (x : TwoNatExt) (y : Couple) : Mix :=
   {x, y with}
+
 
 
 def TwoToExt : TwoNat → TwoNatExt := fun x ↦ {x with}
