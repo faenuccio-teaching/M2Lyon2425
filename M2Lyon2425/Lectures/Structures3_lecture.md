@@ -59,16 +59,28 @@ usual setting where `UniformSpace ℕ := ⟨⊥⟩`?
 
 Another strategy that works more globally is to use *type synonyms*. The idea is to create a copy 
 of a type, in a way that this copy inherits some instances of the original type, but not all of 
-them.
+them. 
 
 +++ Difference between `abbrev` and `def`
+This is probably beyond what is meant for this course, and certainly beyond my paygrade. At any rate
+you can think that "`abbrev` is a reducible `def`", whatever this means.
 
+Concretely: Lean "looks deeper" inside the definition of an `abbrev` than a `def`.
 
+`⌘`
 +++
 
 Suppose `X` is a type, and that `instance : ClassOne X := ...` up to `instance : Class_n X := ...`.
-* The **wrong** way: `def newX_bad := X`. In this case, we're creating a completely new type 
++++ The **wrong** way: `abbrev newX_bad := X`.
+For Lean, `newX_bad` and `X` are **equal**: so, every declaration with variable `newX_bad` will
+accept a variable of type `X`. In particular, an `instance : MyClass newX_bad :=` will result in
+an `instance : MyClass X :=`. 
++++
 
++++ The **good** way: `def newX_good := X`.
+We're creating a completely new type `newX_good`. The problem is that it has no property at all, 
+whereas we might want to inherit some properties from `X` (although probably not all of them).
+**ARRIVATO QUI*: C'E' UN MODO PER EREDITARLE *tutte* ?
 
 # Structures
 * Main reference: [The Lean Language Reference](https://lean-lang.org/doc/reference/latest/), in particular [§ 3.4.2](https://lean-lang.org/doc/reference/latest/The-Type-System/Inductive-Types/#structures).

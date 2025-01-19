@@ -65,20 +65,17 @@ abbrev AbbNat := ℕ
 #check (37 : AbbNat)
 
 def DefNat := ℕ
--- #check (37 : DefNat)
+#check (37 : DefNat)
 
-def Dsucc (a : ℤ) := a + 1 --as in mathlib
-abbrev Asucc (a : ℤ) := a + 1 --
+def DefSucc (a : ℤ) := a + 1 --as in mathlib
+abbrev AbbSucc (a : ℤ) := a + 1 --
 
-example (a : ℤ) : Dsucc (Dsucc a) = a + 2 := by
-  -- simp [Dsucc]
-  -- rw [Dsucc]
-  ring
+example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
 
-example (a : ℤ) : Asucc (Asucc a) = a + 2 := by
-  -- simp [Asucc]
-  -- rw [Asucc]
-  ring
+example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
+
+
+-- `⌘`
 
 
 abbrev 𝓡 := ℝ --type 𝓡 with \MCR
@@ -87,11 +84,14 @@ abbrev 𝓡 := ℝ --type 𝓡 with \MCR
 -- attribute [-instance] UniformSpace.toTopologicalSpace
 -- #synth TopologicalSpace ℝ
 
-instance TopSpace𝓡 : TopologicalSpace 𝓡 := inferInstance
-attribute [-instance] TopSpace𝓡
-#synth TopologicalSpace ℝ
+instance TopSpace𝓡 : TopologicalSpace 𝓡 := ⊥
+-- attribute [-instance] TopSpace𝓡
+-- #synth TopologicalSpace ℝ
 #synth TopologicalSpace 𝓡
+#synth TopologicalSpace ℝ
 
+example : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
+  apply continuous_bot
 
 def ℛ := ℝ --type ℛ with \McR
 
