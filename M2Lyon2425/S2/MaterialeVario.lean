@@ -9,17 +9,22 @@ open Classical
 noncomputable section
 
 /- ## Sections:
-1. FunnyBracket
+1. FunnyBracket (& `..` syntax for exact)
 2. Extends -- In Structures3
 3. ForgetfulInheritance -- In Structures2
 4. LocalInstances -- InStructures3
-5. Synonyms
+5. Synonyms -- InStructures3
 6. OutParam
 -/
 
 section FunnyBracket
 
 /- Some examples of the interest of ⦃
+
+-/
+
+/- The `..` syntax for exact and its interaction with `⦃` (if they're not used there might be several
+remaining variables to discharge, albeit perhaps automatically).
 
 -/
 
