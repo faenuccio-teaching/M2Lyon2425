@@ -4,6 +4,8 @@ import Mathlib.Topology.Instances.Real
 import Mathlib.Topology.UniformSpace.Basic
 import Mathlib.Data.Complex.Exponential
 
+noncomputable section
+
 open Classical
 
 section LocalInstances
@@ -56,6 +58,7 @@ example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 
 -- `⌘`
 
+
 noncomputable section Synonyms
 
 notation "𝒩" => ℕ
@@ -74,10 +77,8 @@ example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := by simp only [add_assoc, Int.
 
 example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
 
-
 -- `⌘`
-
-
+private
 abbrev 𝓡 := ℝ --type 𝓡 with \MCR
 #synth TopologicalSpace 𝓡
 
@@ -86,7 +87,6 @@ abbrev 𝓡 := ℝ --type 𝓡 with \MCR
 
 instance TopSpace𝓡 : TopologicalSpace 𝓡 := ⊥
 -- attribute [-instance] TopSpace𝓡
--- #synth TopologicalSpace ℝ
 #synth TopologicalSpace 𝓡
 #synth TopologicalSpace ℝ
 
@@ -118,6 +118,7 @@ example : Continuous (fun x : ℛ × ℛ ↦ if x.1 < 0 then (0 : ℛ) else 1) :
   exact ContJump.comp continuous_fst
 
 end Synonyms
+
 
 example : Continuous (fun x : ℛ × ℛ ↦ if x.1 < 0 then (0 : ℛ) else 1) := by
   exact ContJump.comp continuous_fst
@@ -171,13 +172,13 @@ structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace �
 
 
 -- ## Constructing terms
-
+attribute [-instance] TopSpace𝓡
 
 example : TwoNat := sorry --farlo con `:=`, poi aggiungere _, lampadina, etc...
 
 open Real
 
--- What happens if we have a default value?
+-- What happens if we have a default value? **Comment
 def x1 : Mess ℕ ℝ ℝ where
   f := fun n x y ↦ n + x + y
   cont := by

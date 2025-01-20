@@ -344,7 +344,7 @@ There are (at least) two ways:
 * Enrich the `NormedModule`'s structure with a `ρ`: this is straightforward.
 * Keep `ρ` as a variable: this is much harder, both because Lean won't be very happy with a
 `class` depending on a variable and because there will *really* be different instances even with
-good choices, so a kind of "double forgetfulness" is needed.
+good choices, so a kind of "internal rewriting" is needed.
 -/
 
 open scoped NNReal
@@ -367,34 +367,54 @@ example (ρ : ℝ≥0) (hp : ∀ M : Type, [NMB_r M] → ∀ m : M, p (rel m))
   -- exact hp
   sorry
 
-class NMG_r (M : Type) extends AddCommGroup M, NormedModuleGood M where
+class NMG_r (M : Type) extends AddCommGroup M, NormedModuleBad M where
   ρ : ℝ≥0
-  rrel := fun x y ↦ norm_g (x - y) ≤ ρ
+  rel_ρ := fun x y ↦ norm_b (x - y) ≤ ρ
 
 instance (M : Type) [NMG_r M] : ModuleWithRel M where
-  rel := NMG_r.rrel--fun x y ↦ ‖x - y‖₁ ≤ NMG_r.ρ M
+  rel := NMG_r.rel_ρ--fun x y ↦ ‖x - y‖₁ ≤ NMG_r.ρ M
 
 instance (M N : Type) [NMG_r M] [NMG_r N] : NMG_r (M × N) where
   ρ := max (NMG_r.ρ M) (NMG_r.ρ N)
-  norm_g := fun ⟨m, n⟩ ↦ max ‖m‖₁ ‖n‖₁
-  rel := rel
+  norm_b := fun ⟨m, n⟩ ↦ max ‖m‖₀ ‖n‖₀
+  rel_ρ := rel
 
-example (ρ : ℝ≥0) (hp : ∀ M : Type, [NMG_r M] → ∀ m : M, p (rel m))
+example /- (ρ : ℝ≥0) -/ (hp : ∀ M : Type, [NMG_r M] → ∀ m : M, p (rel m))
     (M : Type) [NMG_r M] (v : M × M) : p (rel v) := by
   specialize hp (M × M) v
-  have prodRel : @rel (M × M) Prod.instAddCommGroup (instModuleWithRelProd M M) v 0 =
-    (rel v.1 0 ∧ rel v.2 0) := rfl
-  have prodNMG : @rel (M × M) NMG_r.toAddCommGroup (instModuleWithRel_2 (M × M)) v 0 =
-    (norm_g (v - 0) ≤ NMG_r.ρ (M × M)) := rfl
-  sorry
+  exact hp
 
+-- ### The hard approach
 
-abbrev BadR (M : Type) (ρ : ℝ≥0) [AddCommGroup M] [NormedModuleBad M] : Type := M
+@[nolint unusedArguments]
+def aliasR (M : Type*) (ρ : ℝ≥0) [AddCommGroup M] := M
 
+class AsAliasR (M : Type*) (ρ : ℝ≥0) [AddCommGroup M] :=
+  norm_R : M → ℝ≥0
+  rel_R : M → M → Prop := fun x y ↦ norm_R (x - y) ≤ ρ
+  equiv : M ≃ aliasR M ρ := Equiv.refl _
 
-instance (ρ : ℝ≥0) (M : Type) [AddCommGroup M] [NormedModuleBad M] : ModuleWithRel (BadR M ρ) where
-  rel := fun x y ↦ ‖x - y ‖₀ ≤ ρ
+instance (M M' : Type*) (ρ ρ' : ℝ≥0) [AddCommGroup M] [AddCommGroup M'] [AsAliasR M ρ]
+  [AsAliasR M' ρ']: AsAliasR (M × M') (max ρ ρ') where
+  norm_R := fun ⟨m₁, m₁'⟩ ↦ max (AsAliasR.norm_R ρ m₁) (AsAliasR.norm_R ρ' m₁')
 
+instance (M : Type*) (ρ : ℝ≥0) [AddCommGroup M] : AddCommGroup (aliasR M ρ) :=
+  inferInstanceAs (AddCommGroup M)
+
+-- The `ModuleWithRel` instance on every `aliasR`.
+@[nolint unusedArguments]
+instance (M : Type*) (ρ : ℝ≥0) [AddCommGroup M] [AsAliasR M ρ] : ModuleWithRel (aliasR M ρ) where
+  rel := @AsAliasR.rel_R M ρ _ _
+
+variable (p : ∀ {T : Type}, (T → Prop) → Prop)
+
+example (hp : ∀ M : Type, ∀ ρ : ℝ≥0, [AddCommGroup M] → [AsAliasR M ρ] →
+    ∀ m : aliasR M ρ, p (rel m))
+    (M : Type) (ρ : ℝ≥0) [AddCommGroup M] [AsAliasR M ρ] (v : aliasR (M × M) ρ) :
+      p (rel (max_self ρ ▸ v)) := by
+  specialize hp (M × M) (max ρ ρ) v
+  convert hp
+  simp only [eq_rec_constant]
 
 end Exercises
 

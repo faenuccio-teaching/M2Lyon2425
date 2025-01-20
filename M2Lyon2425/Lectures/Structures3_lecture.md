@@ -80,7 +80,14 @@ an `instance : MyClass X :=`.
 +++ The **good** way: `def newX_good := X`.
 We're creating a completely new type `newX_good`. The problem is that it has no property at all, 
 whereas we might want to inherit some properties from `X` (although probably not all of them).
-**ARRIVATO QUI*: C'E' UN MODO PER EREDITARLE *tutte* ?
+
+We can use the syntax
+
+    `instance : myClass newX_good := inferInstanceAs (myClass X)`
+
+that instructs Lean to *copy* the instance term from `X` to `newX_good`.
+
+`⌘`
 
 # Structures
 * Main reference: [The Lean Language Reference](https://lean-lang.org/doc/reference/latest/), in particular [§ 3.4.2](https://lean-lang.org/doc/reference/latest/The-Type-System/Inductive-Types/#structures).
