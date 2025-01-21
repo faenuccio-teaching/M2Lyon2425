@@ -4,25 +4,25 @@ We've seen that declaring instances has deep consequences: typically, there must
 instance of a certain class on a given type, and once we declare such an instance things are stuck
 forever.
 
-This might be too rigid. 
+This might be too rigid. Two ways out are *local instances* and *type synonyms*.
 
 ## Local Instances
-Inside a `section` we can use the `attribute [instance] foo` or
-`attribute [-instance] foo` to upgrade `foo` to an instance or remove it from the list of declared 
-instances. Finding who is `foo` in a specific use-case can be non-trivial (won't be too hard
-neither).
+Inside a `section` we can use the `attribute [instance] myStructure` or
+`attribute [-instance] myStructure` to upgrade `myStructure` to an instance or remove it from the 
+list of declared instances. Finding who is `myStructure` in a specific use-case can be non-trivial 
+(won't be too hard neither).
 
 An equivalent syntax is `local instance` instead of `instance` (but this does not work to *remove*
 instances).
 
-+++ An example
++++ An example from Mathlib
 In Mathlib, `ℕ` is endowed with the discrete uniformity, coming from the discrete metric:
-1. As a metric, it is such that `∀ n : ℕ, Metric.ball n (1/2 : ℝ) = {n}`.
-1. As a uniformity (*i. e.* a filter on `ℕ × ℕ`) it is the principal filter containing the
+1. The metric, induced from that on `ℝ`, satisfies `∀ n : ℕ, Metric.ball n (1/2 : ℝ) = {n}`.
+1. The uniformity (*i. e.* a filter on `ℕ × ℕ`) is the principal filter containing the
 diagonal: `Uniformity ℕ = 𝒫 (idRel)` where
     * `idRel` is the identity relation, so the subset `{p : ℕ × ℕ | p.1 = p.2}`;
-    * `𝒫 (idRel)` is the collection of all subsets in `ℕ × ℕ` that contain `idRel`;
-    * It can be proven that `PseudoMetricSpace.uniformity_dist` of the discrete metric is `𝒫 (idRel)`;
+    * `𝒫 (idRel)` is the collection of all subsets in `ℕ × ℕ` that contain `idRel`, seen as a filter;
+    * It can be proven that `PseudoMetricSpace.uniformity_dist` of the discrete metric is indeed `𝒫 (idRel)`;
     * Filters and uniformities are ordered, and one can prove that `𝒫 (idRel) = ⊥`, the bottom element.
 
 Since the discrete metric induces the discrete topology, `UniformSpace.toTopologicalSpace ℕ = ⊥`
@@ -45,9 +45,9 @@ actually Cauchy (Cauchy sequences in discrete uniform spaces are only the eventu
 
 +++ The problems
 * How can we "replace" the discrete uniformity on `ℕ` with another one? 
-* How can we check that our results (for instance about `id` being Caucy) re-become false in the 
+* How can we check that our results (for instance about `id` being Caucy) re-become *false* in the 
 usual setting where `UniformSpace ℕ := ⟨⊥⟩`?
-* How can we check that the topology has remained the same, namely the discrete one?
+* How can we check that the topology remained the same, namely the discrete one?
 
 
 **Solution** Use local instances.
@@ -62,19 +62,31 @@ of a type, in a way that this copy inherits some instances of the original type,
 them. 
 
 +++ Difference between `abbrev` and `def`
-This is probably beyond what is meant for this course, and certainly beyond my paygrade. At any rate
-you can think that "`abbrev` is a reducible `def`", whatever this means.
+This is probably beyond what is meant for this course, and certainly beyond my paygrade. 
 
-Concretely: Lean "looks deeper" inside the definition of an `abbrev` than a `def`.
+You can think that "`abbrev` is a reducible `def`", whatever this means.
+
+**Concretely**: Lean "looks deeper" inside the definition of an `abbrev` than a `def`.
 
 `⌘`
 +++
 
-Suppose `X` is a type, and that `instance : ClassOne X := ...` up to `instance : Class_n X := ...`.
+Suppose `X` is a type, and that
+    
+    instance : ClassOne X := ...
+
+up to 
+    
+    instance : Class_n X := ...`.
+
+We want a new type `newX` that has some of the above instances (and to perform this **fast**).
+
 +++ The **wrong** way: `abbrev newX_bad := X`.
 For Lean, `newX_bad` and `X` are **equal**: so, every declaration with variable `newX_bad` will
-accept a variable of type `X`. In particular, an `instance : MyClass newX_bad :=` will result in
-an `instance : MyClass X :=`. 
+accept a variable of type `X`. In particular, an `instance : MyClass newX_bad := ...` will result in
+an `instance : MyClass X := ...`.
+
+We are also changing the *old* type `X`.This is **not** what we wanted.
 +++
 
 +++ The **good** way: `def newX_good := X`.
@@ -83,9 +95,10 @@ whereas we might want to inherit some properties from `X` (although probably not
 
 We can use the syntax
 
-    `instance : myClass newX_good := inferInstanceAs (myClass X)`
+    instance : myClass newX_good := inferInstanceAs (myClass X)
 
-that instructs Lean to *copy* the instance term from `X` to `newX_good`.
+that instructs Lean to *copy* the instance term of `myClass` from `X` to `newX_good`.
++++
 
 `⌘`
 
@@ -93,9 +106,17 @@ that instructs Lean to *copy* the instance term from `X` to `newX_good`.
 * Main reference: [The Lean Language Reference](https://lean-lang.org/doc/reference/latest/), in particular [§ 3.4.2](https://lean-lang.org/doc/reference/latest/The-Type-System/Inductive-Types/#structures).
 
 The usual way to define a `structure` is to write its name, then `where` (or `:=`) and then the
-list of fields that we want a term of the structure be made of
+list of fields that we want a term of the structure to be made of
 
     structure MyStructure where
+        firstfield : firstType
+        secondfield : secondType
+        ...
+        lastfield : lastType
+
+or equivalently
+
+    structure MyStructure :=
         firstfield : firstType
         secondfield : secondType
         ...
@@ -121,21 +142,19 @@ starting the list of fields on the third line).
 1. If the attribute `@[ext]` is prepended on the line before the declaration, a theorem 
 `MyStructure.ext` is created, of type
 
-    ∀ {x y : MyStructure}, x.firstfield = y.firstfield → ... → x.lastfield = y.lastfield → x = y`
+    ∀ {x y : MyStructure}, x.firstfield = y.firstfield → ... → x.lastfield = y.lastfield → x = y
 
-saying that if all fields of two terms coincide, the terms themselves coincide. Actually, if
-`nthType = Prop`, the arrow `x.(n-1)stfield = y.(n-1)stfield → x.nthfield = y.nthfield → ` is skipped
-thanks to proof irrelevance. Another theorem `MyStructure.ext_iff` is also added, that adds the
-reverse implication.
-1. It the `@[class]` attribute is added (possibly with syntax `@[ext, class]`, a new class is
-created as well so that `instance : MyStructure := someterm` become accessible. 
+saying that if all fields of two terms coincide, the terms themselves coincide.
 
+* If `nthType = Prop`, the arrow `x.(n-1)stfield = y.(n-1)stfield → x.nthfield = y.nthfield → 
+is skipped thanks to proof irrelevance. Another theorem `MyStructure.ext_iff` is also added, 
+that adds the reverse implication.
 
-We can define a structure `OneNat`, that "packs" a single natural number; or the 
-structures `TwoNat` and `Couple` that pack to numbers;  or the structure of order 
-pairs that pack two numbers where the second is larger or equal than the first : 
-this is called a *mixin*.
+4. It the `@[class]` attribute is added (possibly with syntax `@[ext, class]`), a new class is
+created as well so that `instance : MyStructure := someterm` becomes accessible. 
 
+The call `whatsnew in` on the line preceeding the structure makes Lean shows all
+newly created declarations.
 
 +++ Use of parameters
 It is also possible to define structures that depend on parameters. The syntax is the usual as for 
@@ -144,11 +163,17 @@ It is also possible to define structures that depend on parameters. The syntax i
 
 The call `#print MyStructure` has Lean print all fields, parameters and constructors.
 
+#### Examples
+We will define a structure `OneNat`, that "packs" a single natural number; the structures `TwoNat` 
+and `Couple` that pack to numbers;  or the structure of order pairs that pack two numbers where the 
+second is larger or equal than the first, so it is a `Prop` : this is called a *mixin*.
+
+
  `⌘`
 
 ## Constructing terms
 
-To look at the details, let's try to buid some *terms* of the above structures.
+To look at the details, let's try to buid some terms of the above structures.
 
 When doing so, `VSCode` comes at rescue: once we declare that we are looking for a term in a
 structure `MyStructure` (*i. e.* in an inductive type with one constructor, itself a function with
@@ -163,11 +188,11 @@ you do not need to remember all fields by heart.
 
 Either using💡or not, there are three ways to define a term of a structure:
 
-1. `MyTerm : MyStructure :=`, followed either by
+1. `myTerm : MyStructure :=`, followed either by
     * `by constructor` and then you're in tactic mode; or 
     * `{firstfield := firstterm, secondfield := secondterm, ..., lastfield := lastterm}`. 
 
-1. `MyTerm : MyStructure where` and then the list `nthfield := nthterm`, each one a new (indented) line (observe that the💡help replaces `:=` with `where` automatically).
+1. `myTerm : MyStructure where` and then the list `nthfield := nthterm`, each one a new (indented) line (observe that the💡-action replaces `:=` with `where` automatically).
 
 1. Using the so-called *anonymous constructor* provided by `⟨` and `⟩`: just insert the list of terms `⟨firstterm, secondterm, ..., lastterm⟩` and Lean will understand.
 
@@ -281,6 +306,13 @@ so there all the fields we need are already them: use `with` or `_` to pick them
 need to find its name, for which we can do
 
     #synth AddMonoid ℕ -- Nat.instAddMonoid
++++
 
+# Exercises
 
+4. Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
+    * `PseudoMetricSpace.uniformity_dist = 𝒫 (idRel)` if the metric is discrete.
+    * As uniformities, `𝒫 (idRel) = ⊥`.
+    * Is the equality `𝒫 (idRel) = ⊥` true as filters?
+    * For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
 

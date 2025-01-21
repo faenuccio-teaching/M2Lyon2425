@@ -9,7 +9,7 @@ open Classical
 noncomputable section
 
 /- ## Sections:
-1. FunnyBracket (& `..` syntax for exact)
+1. FunnyBracket (& `..` syntax for exact) -- outdated?
 2. Extends -- In Structures3
 3. ForgetfulInheritance -- In Structures2
 4. LocalInstances -- InStructures3

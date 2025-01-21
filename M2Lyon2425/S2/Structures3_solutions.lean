@@ -17,7 +17,6 @@ open scoped Filter Uniformity
 
 example : instUniformSpaceNat = ⊥ := rfl
 
-
 example : (uniformity ℕ) = (𝓟 idRel) := rfl -- this is the "trivial" or "discrete" uniformity.
 
 #synth UniformSpace ℕ -- instUniformSpaceNat
@@ -25,11 +24,11 @@ attribute [- instance] instUniformSpaceNat --this is local, it only applies to t
 
 #synth UniformSpace ℕ -- failed to synthesize
 
-def PSM_Nat : PseudoMetricSpace ℕ where
+def PSM_Nat : PseudoMetricSpace ℕ where --use the 💡-action
   dist := fun n m ↦ |2 ^ (- n : ℤ) - 2 ^ (- m : ℤ)|
   dist_self := by simp only [zpow_neg, zpow_natCast, sub_self, abs_zero, implies_true]
-  dist_comm := fun _ _ ↦ abs_sub_comm ..
-  dist_triangle := fun _ _ _ ↦ abs_sub_le _ _ _
+  dist_comm := fun _ _ ↦ abs_sub_comm _ _
+  dist_triangle := fun _ _ _ ↦ abs_sub_le .. -- a word about `..`
 
 attribute [instance] PSM_Nat
 
@@ -41,11 +40,7 @@ attribute [instance] PSM_Nat
 
 #synth UniformSpace ℕ -- PseudoMetricSpace.toUniformSpace
 
-/- Now suppose that we prove a statement about `ℕ` endowed with this uniformity induced from
-the metric. Can we access it at a later stage outside this section? -/
-
-/-! This is actually true! See
--- `Counterexamples/DiscreteTopologyNonDiscreteUniformity.lean`-/
+/-! This is actually true! See `Counterexamples/DiscreteTopologyNonDiscreteUniformity.lean`-/
 lemma idIsCauchy : CauchySeq (id : ℕ → ℕ) := by sorry
 
 example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
@@ -70,60 +65,66 @@ abbrev AbbNat := ℕ
 def DefNat := ℕ
 #check (37 : DefNat)
 
-def DefSucc (a : ℤ) := a + 1 --as in mathlib
+def DefSucc (a : ℤ) := a + 1 --definition as in Mathlib
 abbrev AbbSucc (a : ℤ) := a + 1 --
 
 example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
 
 example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
 
+
 -- `⌘`
-private
+
+
 abbrev 𝓡 := ℝ --type 𝓡 with \MCR
 #synth TopologicalSpace 𝓡
 
--- attribute [-instance] UniformSpace.toTopologicalSpace
--- #synth TopologicalSpace ℝ
+attribute [-instance] UniformSpace.toTopologicalSpace
+#synth TopologicalSpace ℝ
 
 instance TopSpace𝓡 : TopologicalSpace 𝓡 := ⊥
--- attribute [-instance] TopSpace𝓡
 #synth TopologicalSpace 𝓡
 #synth TopologicalSpace ℝ
 
 example : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
   apply continuous_bot
+/-`continuous_bot` is the statement saying that every function leaving from a discrete space
+is automatically continuous. -/
+
 
 def ℛ := ℝ --type ℛ with \McR
 
--- #synth TopologicalSpace ℛ
--- #synth Field ℝ
+#synth TopologicalSpace ℛ
+#synth Field ℛ
 
 instance : TopologicalSpace ℛ := ⊥
 
--- instance : Field ℛ := inferInstance--inferInstanceAs (Field ℝ)
 instance : Field ℛ := inferInstanceAs (Field ℝ)
 
 #synth CommRing ℛ
 #synth CommRing 𝓡
 
-instance : LT ℛ := inferInstanceAs <| LT ℝ
+instance : LT ℛ := inferInstanceAs <| LT ℝ -- a word about `<|`
 
 lemma ContJump : Continuous (fun x : ℛ ↦ if x < 0 then (0 : ℛ) else 1) := by
   apply continuous_bot
 
--- lemma ContJump' : Continuous (fun x : 𝓡 ↦ if x < 0 then (0 : 𝓡) else 1) := by
---   apply continuous_bot
+lemma ContJump' : Continuous (fun x : 𝓡 ↦ if x < 0 then (0 : 𝓡) else 1) := by
+  apply continuous_bot
 
-example : Continuous (fun x : ℛ × ℛ ↦ if x.1 < 0 then (0 : ℛ) else 1) := by
-  exact ContJump.comp continuous_fst
+-- This might be a problem!
+lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : 𝓡) else 1) := by
+  apply continuous_bot
 
 end Synonyms
 
-
+-- Even leaving the `Synonyms` section, the following still works.
 example : Continuous (fun x : ℛ × ℛ ↦ if x.1 < 0 then (0 : ℛ) else 1) := by
   exact ContJump.comp continuous_fst
 
+
 -- `⌘`
+
 
 section Structures
 
@@ -161,12 +162,13 @@ structure TwoTerms (α : Type) where
   fst : α
   snd : α
 
-structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace γ] :=--where or := are intercheangeable
+structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace γ] :=--`where` or `:=`
   a : α := 0
   f : α → β → γ → γ
   cont : Continuous (f a)
 
 #print Mess
+
 
 -- `⌘`
 
@@ -178,7 +180,7 @@ example : TwoNat := sorry --farlo con `:=`, poi aggiungere _, lampadina, etc...
 
 open Real
 
--- What happens if we have a default value? **Comment
+-- What happens if we have a default value?
 def x1 : Mess ℕ ℝ ℝ where
   f := fun n x y ↦ n + x + y
   cont := by
@@ -243,13 +245,14 @@ def mix1 (x : TwoNat) (y : Couple) : Mix :=
   /-try to remove `with` (remember that `x := {x.fst, x.snd}`, `y = {y.left, y.right}`
   and `Mix.mk` takes a `fst : ℕ` and `right : ℕ`: se we need to throw away `x.snd` and `y.left`-/
 
+def mix1' (x : TwoNat) (y : Couple) : Mix where
+  __ := x
+  __ := y
+
 -- the order does not really matter, it "destructs and reconstructs".
 def mix2 (x : TwoNat) (y : Couple) : Mix :=
   {y, x with}
 
-def mix1' (x : TwoNat) (y : Couple) : Mix := {x, y with}
-  -- __ := x
-  -- __ := y
 
 example : mix1 = mix1' := rfl
 
@@ -287,6 +290,7 @@ def f₂ : Mess ℕ ℕ ℕ where
   f := fun a b ↦ a + b
   cont := continuous_of_discreteTopology
 
+-- `Prop`-valued fields disappear by proof irrelevance
 example : f₁ = f₂ := rfl
 
 example : OneNat := {fst := f₁.a}
@@ -400,3 +404,12 @@ instance : AddMonoidBad ℕ where
   __ := Nat.instAddMonoid
 
 end Structures
+
+-- # Exercises
+
+/- ### 4. Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
+1. `PseudoMetricSpace.uniformity_dist = 𝒫 (idRel)` if the metric is discrete.
+2. As uniformities, `𝒫 (idRel) = ⊥`.
+3. Is the equality `𝒫 (idRel) = ⊥` true as filters?
+4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
+-/
