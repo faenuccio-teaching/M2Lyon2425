@@ -194,30 +194,34 @@ Either using💡or not, there are three ways to define a term of a structure:
 
 1. `myTerm : MyStructure where` and then the list `nthfield := nthterm`, each one a new (indented) line (observe that the💡-action replaces `:=` with `where` automatically).
 
-1. Using the so-called *anonymous constructor* provided by `⟨` and `⟩`: just insert the list of terms `⟨firstterm, secondterm, ..., lastterm⟩` and Lean will understand.
+1. Using the so-called *anonymous constructor* provided by `⟨` and `⟩`: just insert the list of 
+terms `⟨firstterm, secondterm, ..., lastterm⟩` after `myTerm : MyStructure :=` and Lean will 
+understand.
 
 
-* Remember that `class`es are a special case of `structure`s: so, definining an `instance` as we did last week really boils down to constructing a term of a certain `structure`. Points 1. − 3. above are crucial for this.
+* Remember that `class`es are a special case of `structure`s: so, definining an `instance` as we 
+did in the last lecture really boils down to constructing a term of a certain `structure`. Points 
+1. − 3. above are crucial for this.
 
 
 `⌘`
 
 
 Now, constructing terms of a structure with many fields is particularly 
-1. boring,
-1. error-prone,
-1. far from mathematical usage: to construct a term of a complicated structure I might want to 
+1. boring;
+1. error-prone; and
+1. far from mathematical usage: to construct a term of a complicated structure we might want to 
 use a term of a simpler one and "only add what is left to update the simpler one to the richer".
 
-There are two ways, somewhat parallel to the `MyStructure := ...` *vs* `Mystructure where ...` syntaxes.
+There are two ways, somewhat parallel to the `MyStructure := ...` *vs* `Mystructure where ...` 
+syntaxes.
 * The syntax `with` instructs Lean to take all possible labels from that term and to only 
 ask for the remaining ones: it works when using the `:=` construction. Calling `with` triggers both
-    * the collection of all useful fields from a term; and
-    * the discharge of all useless ones.
+    * collecting all useful fields from a term; and
+    * discharging all useless ones.
 
     Both can be used independently.
-* The syntax `__` has the same behaviour, and works when using the `where` intented
-construction
+* The syntax `__` has the same behaviour, and works when using the `where` construction.
 
 In both cases, the "extra-fields" are forgotten, and thrown away.
 
@@ -225,13 +229,12 @@ In both cases, the "extra-fields" are forgotten, and thrown away.
 The big difference between `TwoNat`, and `Couple` are the names of the fields:
 
     structure TwoNat where
-        pair ::
         fst : ℕ
         snd : ℕ
 
     structure Couple where
-        left : Nat
-        right : Nat
+        left : ℕ
+        right : ℕ
 
 These names **are relevant**! You might think of a term of type `TwoNat` (or `Couple`) as a
 pair of *labelled* naturals, and that a structure is a collection of *labelled* terms. So,
@@ -240,9 +243,11 @@ have **nothing to do with each other**.
 +++
 
 +++ More about `with`
-Technically, `with` updated a value: so `{fst := 1, snd := 2} with fst := 3` is
-`{fst := 3, snd := 2`}. So, using `with` but without specifying a new value simply instructs Lean to
-consider all fields on their own without changing them (but possibly picking some of them if needed).
+Technically, `with` updates a value: so `{fst := 1, snd := 2} with fst := 3` is
+`{fst := 3, snd := 2`}.
+
+Using `with` without specifying a new value simply instructs Lean to consider all fields on 
+their own without changing them (but possibly picking some of them if needed).
 +++ 
 
 
@@ -250,15 +255,15 @@ consider all fields on their own without changing them (but possibly picking som
 
 ## Extends
 
-We have already seen the `extends` syntax before: let's try to analyze its behaviour in details
-knowing how `structures` work.
+We have already seen the `extends` syntax before: let's analyse its behaviour in details knowing 
+how `structure`s work.
 
 The main point is to generalise to the whole type what we did for terms using `where` or `__`.
 
 * Suppose we've already defined a structure `PoorStructure` with fields `firstfield,...,nth_field` 
 and  we want a new *richer* structure `RichStructure` that also contains the fields
 `(n+1)st_field,...,rth_field`. We can either
-    * forget `PoorStructure` and declare
+    * forget that we had `PoorStructure` and declare
         
             structure RichStructure where
             firstfield : firstType
@@ -274,39 +279,46 @@ and  we want a new *richer* structure `RichStructure` that also contains the fie
                 rth_field : rth_Type
 
 +++ In details:
-* If the parent structure types have overlapping field names, then all overlapping  field names must 
-have the same type. 
-* The process can be iterated and having a structure extending several ones:
-`extends Structure₁,Structure₂, Structure₃`.
+* If the parent structure types have overlapping field names, then all overlapping  field names 
+must have the **same type**. 
+* The process can be iterated, yielding a structure extending several ones:
+
+        VeryRichStructure extends Structure₁, Structure₂, Structure₃ where
+            ...
+
 * If the overlapping fields have different default values, then the default value 
 from the last parent structure that includes the field is used. New default values in the child (= 
 richer) structure take precedence over default values from the parent (= poorer) structures.
 +++
 
-`⌘`
-
-+++ Interaction of `with` and `extends`'
++++ Interaction of `with` and `extends`
 The `with` (and `__`) syntax are able to "read through" the extension of structures.
 +++
 
+`⌘`
+
 +++ In true Math
 Remember the piece of code
+
     class AddMonoidBad (M : Type) extends Add M, AddZeroClass M
 
 We want to define an instance of `AddMonoidBad` on `ℕ`. Several ways:
-1. type `:=`, go to a new line with `_`, find 💡and fill them
-1. Remember that `ℕ` already has an `add` and a `zero`, so they can be discharged.
-1. Actually observe that we have an instance `AddMonoid` on `ℕ`, and that 
-    class AddMonoid (M : Type u) extends AddSemigroup M, AddZeroClass M where
-    nsmul := ...
-    nsmul_zero := ...
-    zero_nsmul := ...
+1. type `:=`, go to a new line with `_`, wait for 💡and fill all the fields;
+1. remember that `ℕ` already has an `add` and a `zero`, so they can be discharged;
+1. actually observe that we have an instance `AddMonoid` on `ℕ`, and that 
+    
+        class AddMonoid (M : Type u) extends AddSemigroup M, AddZeroClass M where
+        nsmul := ...
+        nsmul_zero := ...
+        zero_nsmul := ...
 
-so there all the fields we need are already them: use `with` or `_` to pick them up. To do so, we
-need to find its name, for which we can do
+so all the fields that we need are already there: use `with` or `_` to pick them up. To do so, we
+need to find the name of the term `AddMonoid ℕ`, for which we can do
 
     #synth AddMonoid ℕ -- Nat.instAddMonoid
 +++
+
+`⌘`
 
 # Exercises
 
