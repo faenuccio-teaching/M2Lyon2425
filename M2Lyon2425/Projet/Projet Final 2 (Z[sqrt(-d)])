@@ -143,33 +143,21 @@ lemma MonAnneau_add_zero (d : ℤ) :
     rw[zero_im]
     rw[add_zero]
 
-instance instCommRing_MonAnneau : CommRing (MonAnneau d) where
-  zero := 0
-  one := 1
-  add := (· + ·)
-  neg x := -x
-  mul := (· * ·)
-  nsmul := nsmulRec
-  zsmul := zsmulRec
-  add_assoc := MonAnneau_add_assoc d
-  zero_add := MonAnneau_zero_add d
-  add_zero := MonAnneau_add_zero d
-
-
-
-  /-
-  neg_add_cancel := by
+lemma MonAnneau_neg_add_cancel (d : ℤ) :
+    ∀ (a : MonAnneau d), (-a) + a = 0 := by
     intro a
     ext
-    · simp only [add_re]
-      simp only [neg_re]
-      simp only [neg_add_cancel]
+    · rw[add_re]
+      rw[neg_re]
+      rw[neg_add_cancel]
       rw[zero_re]
-    · simp only [add_im]
-      simp only [neg_im]
-      simp only [neg_add_cancel]
+    · rw[add_im]
+      rw[neg_im]
+      rw[neg_add_cancel]
       rw[zero_im]
-  add_comm := by
+
+lemma MonAnneau_add_comm (d:ℤ) :
+    ∀ (a b : MonAnneau d), a + b = b + a := by
     intro a b
     ext
     · rw[add_re]
@@ -178,24 +166,34 @@ instance instCommRing_MonAnneau : CommRing (MonAnneau d) where
     · rw[add_im]
       rw[add_im]
       rw[add_comm]
-  mul_assoc := by
+
+lemma MonAnneau_mul_assoc (d:ℤ) :
+    ∀ (a b c : MonAnneau d), a * b * c = a * (b * c) := by
     intro a b c
     ext
-    · simp only[mul_re]
+    · rw[mul_re]
       rw[mul_im]
+      rw[mul_re]
+      rw[mul_re]
+      rw[mul_re]
       rw[mul_im]
       rw[mul_assoc]
       rw[mul_assoc]
       rw[mul_assoc]
       rw[mul_assoc]
       ring
-    · simp only[mul_im]
+    · rw[mul_im]
       rw[mul_re]
+      rw[mul_im]
+      rw[mul_im]
+      rw[mul_im]
       rw[mul_re]
       rw[mul_assoc]
       rw[mul_assoc]
       ring
-  one_mul := by
+
+lemma MonAnneau_one_mul (d:ℤ) :
+  ∀ (a : MonAnneau d), 1 * a = a := by
     intro a
     ext
     · rw[mul_re]
@@ -211,7 +209,9 @@ instance instCommRing_MonAnneau : CommRing (MonAnneau d) where
       rw[one_im]
       rw[zero_mul]
       rw[add_zero]
-  mul_one := by
+
+lemma MonAnneau_mul_one (d:ℤ) :
+    ∀ (a : MonAnneau d), a * 1 = a := by
     intro a
     ext
     · rw[mul_re]
@@ -226,7 +226,9 @@ instance instCommRing_MonAnneau : CommRing (MonAnneau d) where
       rw[one_re]
       rw[mul_one]
       rw[zero_add]
-  left_distrib := by
+
+lemma MonAnneau_left_distrib (d:ℤ) :
+    ∀ (a b c : MonAnneau d), a * (b + c) = a * b + a * c := by
     intro a b c
     ext
     · rw[mul_re]
@@ -245,44 +247,94 @@ instance instCommRing_MonAnneau : CommRing (MonAnneau d) where
       rw[left_distrib]
       rw[left_distrib]
       ring
-      --rw[mul_im]      rw[add_im]      rw[add_im]      rw[mul_im]      rw[mul_im]      rw[add_re]
-  right_distrib := by
+
+lemma MonAnneau_right_distrib (d:ℤ) :
+    ∀ (a b c : MonAnneau d), (a + b) * c = a * c + b * c := by
     intro a b c
     ext
-    · simp
+    · rw[mul_re]
+      rw[add_re]
+      rw[add_im]
+      rw[add_re]
+      rw[mul_re]
+      rw[mul_re]
       ring
-      --rw[mul_re]       rw[add_re]      rw[add_im]      rw[add_re]      rw[mul_re]      rw[mul_re]
-    · simp
+    · rw[mul_im]
+      rw[add_im]
+      rw[add_im]
+      rw[add_re]
+      rw[mul_im]
+      rw[mul_im]
       ring
-  mul_comm := by
+
+lemma MonAnneau_mul_comm (d:ℤ) :
+    ∀ (a b : MonAnneau d), a * b = b * a := by
     intro a b
     ext
-    · simp only [mul_re]
+    · rw[mul_re]
+      rw[mul_re]
       ring
-    · simp only [mul_im]
+    · rw[mul_im]
+      rw[mul_im]
       ring
-  zero_mul := by
+
+lemma MonAnneau_zero_mul (d:ℤ) :
+    ∀ (a : MonAnneau d), 0 * a = 0 := by
     intro a
     ext
     · rw[mul_re]
-      simp only [zero_re, zero_im]
+      rw[zero_re]
+      rw[zero_im]
       rw[zero_mul]
       rw[mul_zero]
       rw[zero_mul]
       rw[sub_self]
     · rw[mul_im]
-      simp only[zero_re, zero_im]
+      rw[zero_re]
+      rw[zero_im]
       rw[zero_mul]
       rw[zero_mul]
       rw[add_zero]
-  mul_zero:=by
+
+lemma MonAnneau_mul_zero (d:ℤ) :
+    ∀ (a : MonAnneau d), a * 0 = 0 := by
     intro a
     ext
-    · simp
-      -- rw[mul_re] rw[zero_re] rw[zero_im]      rw[mul_zero]      rw[mul_zero]      rw[sub_self]
-    · simp
-      --rw[mul_im] rw[zero_im] rw[mul_zero] rw[zero_re] rw[add_zero]-/
+    · rw[mul_re]
+      rw[zero_re]
+      rw[zero_im]
+      rw[mul_zero]
+      rw[mul_zero]
+      rw[sub_self]
+    · rw[mul_im]
+      rw[zero_im]
+      rw[mul_zero]
+      rw[zero_re]
+      rw[mul_zero]
+      rw[add_zero]
 
+
+instance instCommRing_MonAnneau : CommRing (MonAnneau d) where
+  zero := 0
+  one := 1
+  add := (· + ·)
+  neg x := -x
+  mul := (· * ·)
+  nsmul := nsmulRec
+  zsmul := zsmulRec
+  add_assoc := MonAnneau_add_assoc d
+  zero_add := MonAnneau_zero_add d
+  add_zero := MonAnneau_add_zero d
+  neg_add_cancel := MonAnneau_neg_add_cancel d
+  add_comm := MonAnneau_add_comm d
+  mul_assoc := MonAnneau_mul_assoc d
+  one_mul := MonAnneau_one_mul d
+  mul_one := MonAnneau_mul_one d
+  left_distrib := MonAnneau_left_distrib d
+  right_distrib := MonAnneau_right_distrib d
+  mul_comm := MonAnneau_mul_comm d
+  zero_mul := MonAnneau_zero_mul d
+  mul_zero:= MonAnneau_mul_zero d
 
 
 
@@ -330,23 +382,6 @@ def norm (x : (MonAnneau (-1))) :=
   x.re ^ 2 + x.im ^ 2
 
 
-
-
-@[simp]
-theorem norm_nonneg_1 (x : (MonAnneau (-1))) : 0 ≤ norm x := by
-  simp
-  suffices : x.re^2 ≥ 0 ∧ x.im^2 ≥ 0
-  · cases this with
-  | intro left right =>
-    refine Int.add_nonneg left ?intro.hb
-    exact right
-  · constructor
-    · exact sq_nonneg x.re
-    · exact sq_nonneg x.im
-
-
-
-
 @[simp]
 def conj (x : (MonAnneau (-1))) : (MonAnneau (-1)) :=
   ⟨x.re, -x.im⟩
@@ -364,6 +399,41 @@ instance : Div (MonAnneau (-1)) :=
 
 instance : Mod (MonAnneau (-1)) :=
   ⟨fun x y ↦ x - y * (x / y)⟩
+
+
+
+
+theorem sq_add_sq_eq_zero (x y : MonAnneau d) :
+  x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
+  constructor
+  · intro a --Voir élement de mon anneau comme des complexes ?
+    sorry
+  · intro a
+    cases a with
+    | intro left right =>
+      rw[left]
+      rw[right]
+      rw[zero_pow]
+      · rw[add_zero]
+      · rw[ne_eq]
+        simp
+
+
+
+@[simp]
+theorem norm_nonneg_1 (x : (MonAnneau (-1))) : 0 ≤ norm x := by
+  simp
+  suffices : x.re^2 ≥ 0 ∧ x.im^2 ≥ 0
+  · cases this with
+  | intro left right =>
+    refine Int.add_nonneg left ?intro.hb
+    exact right
+  · constructor
+    · exact sq_nonneg x.re
+    · exact sq_nonneg x.im
+
+
+
 
 
 --> Si d=-2 : Un des sujets d'Agreg
@@ -456,6 +526,7 @@ instance : EuclideanDomain (MonAnneau (-2)) where
       · simp only [Int.reduceNeg, mul_re, star_re, neg_mul, star_im, mul_neg, neg_neg,
         Int.cast_sub, Int.cast_mul, Int.cast_ofNat, Int.cast_add, Int.cast_pow, Int.cast_neg,
         sub_neg_eq_add]
+
         sorry
       · dsimp
         sorry
@@ -481,7 +552,8 @@ instance : EuclideanDomain (MonAnneau (-2)) where
     by_cases h : Norm_2 (remainder.mod a b) ≤ Norm_2 b
     exact True
     exact False
-  r_wellFounded := sorry
+  r_wellFounded := by
+    sorry
   remainder_lt := by
     intros a b hb
     dsimp
@@ -496,7 +568,8 @@ instance : EuclideanDomain (MonAnneau (-2)) where
     intros a b hb h
     have : ¬(Norm_2 (Mod.mod (a * b) a) ≤ Norm_2 a) := by
       intro h₂
-      have : Mod.mod (a * b) a = b := sorry
+      have : Mod.mod (a * b) a = b :=
+        sorry
       rw [this] at h₂
       sorry
     simp only [this, ↓reduceDIte] at h
@@ -517,4 +590,5 @@ On veut montrer que Z[sqrt(-d)] n'est pas factoriel pour d≤-3
 
 Synthaxe pour montrer qu'un anneau n'est pas factoriel sur Lean ?
 
+theorem Non_factoriel (hd : d≤ (-3)) : ¬ UFD (MonAnneau d) :=
 -/
