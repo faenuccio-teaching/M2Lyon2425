@@ -190,8 +190,21 @@ for `NormedModuleBad` but not for `NormedModuleGood`. -/
 
 #check ModuleWithRel
 
-instance (M :Type*) [AddCommGroup M] : ModuleWithRel (M → M) where
-  rel := fun f g ↦ sorry
+instance (M : Type*) [AddCommGroup M] [NormedModuleBad M] : NormedModuleBad (M → M) where
+  norm_b := fun g ↦ ‖ g 0 ‖₀
+
+instance (M : Type) [AddCommGroup M] [ModuleWithRel M] : ModuleWithRel (M → M) where
+  rel := fun f g ↦ rel (f 0) (g 0)
+
+variable (p : ∀ {T : Type}, (T → Prop) → Prop)
+
+variable (N : Type) [AddCommGroup N] [NormedModuleBad N]
+#synth ModuleWithRel (N→N)
+
+example (hp : ∀ M :Type, [AddCommGroup M] → [NormedModuleBad M] → ∀ m : M, p (rel m))
+  (M : Type) [AddCommGroup M] [NormedModuleBad M] (f : M → M) : p (rel f) := by
+    specialize hp (M → M) f
+    exact hp
 
 
 /- ## Exercice 2

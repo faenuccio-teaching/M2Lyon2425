@@ -17,29 +17,38 @@ section LocalInstances
 open scoped Filter Uniformity
 
 #print UniformSpace
--- One constructor and four fields
+-- One constructor and five fields
 
-example : instUniformSpaceNat = ⊥ := sorry
+#print instUniformSpaceNat
 
-example : (uniformity ℕ) = (𝓟 idRel) := sorry
+example : instUniformSpaceNat = ⊥ := rfl
+
+example : (uniformity ℕ) = (𝓟 idRel) := rfl
 
 #synth UniformSpace ℕ -- instUniformSpaceNat
 attribute [- instance] instUniformSpaceNat --this is local, it only applies to the current section
 
-#synth UniformSpace ℕ -- failed to synthesize
+--#synth UniformSpace ℕ -- failed to synthesize
 
-def PSM_Nat : PseudoMetricSpace ℕ := sorry
+def PSM_Nat : PseudoMetricSpace ℕ where
+  dist n m := |2^(-n : ℤ) - 2^(-m : ℤ)|
+  dist_self := by simp only [zpow_neg, zpow_natCast, sub_self, abs_zero, implies_true]
+  dist_comm := fun _ _ ↦ abs_sub_comm _ _
+  dist_triangle := fun _ _ _ ↦ abs_sub_le ..
 
 attribute [instance] PSM_Nat
 
-local instance : PseudoMetricSpace ℕ where
+--local instance : PseudoMetricSpace ℕ where
 
 #synth UniformSpace ℕ
 
 /-! This is actually true! See `Counterexamples/DiscreteTopologyNonDiscreteUniformity.lean`-/
-lemma idIsCauchy : CauchySeq (id : ℕ → ℕ) := by sorry
+lemma idIsCauchy : CauchySeq (id : ℕ → ℕ) := by
+  simp only [CauchySeq, Filter.map_id, Cauchy]
 
-example : CauchySeq (id : ℕ → ℕ) := sorry
+  sorry
+
+example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 
 end LocalInstances
 
@@ -59,14 +68,15 @@ abbrev AbbNat := ℕ
 #check (37 : AbbNat)
 
 def DefNat := ℕ
-#check (37 : DefNat)
+#check (Nat.zero : DefNat)
+#check (Nat.succ : DefNat → ℕ)
 
 def DefSucc (a : ℤ) := a + 1 --definition as in Mathlib
 abbrev AbbSucc (a : ℤ) := a + 1 --
 
-example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := sorry
+--example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
 
-example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := sorry
+example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
 
 
 -- `⌘`
@@ -76,47 +86,52 @@ abbrev 𝓡 := ℝ --type 𝓡 with \MCR
 #synth TopologicalSpace 𝓡
 
 attribute [-instance] UniformSpace.toTopologicalSpace
-#synth TopologicalSpace ℝ
+--#synth TopologicalSpace ℝ
 
 instance TopSpace𝓡 : TopologicalSpace 𝓡 := ⊥
 #synth TopologicalSpace 𝓡
 #synth TopologicalSpace ℝ
 
 example : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
-  sorry
+  apply continuous_bot
 /-`continuous_bot` is the statement saying that every function leaving from a discrete space
 is automatically continuous. -/
 
 
 def ℛ := ℝ --type ℛ with \McR
 
-#synth TopologicalSpace ℛ
-#synth Field ℛ
+--#synth TopologicalSpace ℛ --(fails)
+--#synth Field ℛ --(fails)
 
 instance : TopologicalSpace ℛ := ⊥
 
-instance : Field ℛ := sorry
+instance : Field ℛ := inferInstanceAs (Field ℝ)
 
 #synth CommRing ℛ
 #synth CommRing 𝓡
 
-instance : LT ℛ := sorry
+instance : LT ℛ := inferInstanceAs (LT ℝ)
 
 lemma ContJump : Continuous (fun x : ℛ ↦ if x < 0 then (0 : ℛ) else 1) := by
-  sorry
+  apply continuous_bot
 
 lemma ContJump' : Continuous (fun x : 𝓡 ↦ if x < 0 then (0 : 𝓡) else 1) := by
-  sorry
+  apply continuous_bot
 
 -- This might be a problem!
-lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : 𝓡) else 1) := by
-  sorry
+lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
+  apply continuous_bot
 
 end Synonyms
 
+
+-- This might be a problem!
+lemma ContJump''' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
+  apply continuous_bot
+
 -- Even leaving the `Synonyms` section, the following still works.
-example : Continuous (fun x : ℛ × ℛ ↦ if x.1 < 0 then (0 : ℛ) else 1) := by
-  sorry
+example : Continuous (fun x : ℛ ↦ if x < 0 then (0 : ℛ) else 1) := by
+  apply continuous_bot
 
 
 -- `⌘`
@@ -133,6 +148,8 @@ structure TwoNat where
   fst : ℕ
   snd : ℕ
 
+#print TwoNat
+
 whatsnew in
 @[ext]
 structure Couple where
@@ -147,10 +164,10 @@ structure OrderedPairs where
   order : fst ≤ snd -- this field depends upon the previous two.
 
 #check OneNat.mk
-#check TwoNat.mk
+--#check TwoNat.mk
 #check TwoNat.pair
 #check OrderedPairs.mk
-#check order
+--#check order
 #check OrderedPairs.order
 
 
@@ -172,16 +189,20 @@ structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace �
 attribute [-instance] TopSpace𝓡
 -- ## Constructing terms
 
-example : TwoNat := sorry
+example : TwoNat where
+  fst := 3
+  snd := 7
 
 open Real
 
 -- What happens if we have a default value?
-def x1 : Mess ℕ ℝ ℝ := sorry
+def x1 : Mess ℕ ℝ ℝ := ⟨37, fun _ _ _ ↦ 0, by continuity⟩
 
-def x2 : Mess ℕ ℕ ℕ := sorry
+def x2 : Mess ℕ ℕ ℕ := ⟨37, fun _ _ _ ↦ 0, continuous_bot⟩
 
-example (x : TwoNat) : Couple := sorry
+example (x : TwoNat) : Couple where
+  left := x.2
+  right := x.1
 
 -- Same construction, different syntax
 example (x : TwoNat) : Couple := sorry
@@ -590,5 +611,7 @@ Prove the following claims, stated in the section about the non-discrete metric 
 3. Is the equality `𝒫 (idRel) = ⊥` true as filters?
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
 -/
+
+
 
 end Exercises
