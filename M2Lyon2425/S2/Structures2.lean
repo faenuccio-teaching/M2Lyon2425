@@ -183,7 +183,30 @@ Produce instances of `ModuleWithRel, NormedModuleBad, NormedModuleGood` on the t
 show, using the same "universal term" `p` used above, that this yields to conflicting instances
 for `NormedModuleBad` but not for `NormedModuleGood`. -/
 
+-- NormedModuleBad
+instance (M : Type) [AddCommGroup M] [NormedModuleBad M] : NormedModuleBad (M → M) where
+  norm_b := fun f ↦ ‖ f 0 ‖₀
 
+--ModuleWithRel
+instance (M : Type) [AddCommGroup M] [ModuleWithRel M] : ModuleWithRel (M → M) where
+  rel := fun f g ↦ ∀ x, rel (f x) (g x)
+
+variable (p : ∀ {T : Type}, (T → Prop) → Prop)
+
+example (hp : ∀ M : Type, [AddCommGroup M] → [NormedModuleBad M] → ∀ m : M, p (rel m))
+    (M : Type) [AddCommGroup M] [NormedModuleBad M] (v : M → M) : p (rel v) := by
+  specialize hp (M → M) v
+  exact hp
+
+-- NormedModuleGood
+instance (M : Type) [AddCommGroup M] [NormedModuleGood M] : NormedModuleGood (M → M) where
+  norm_g := fun f ↦ ‖ f 0 ‖₁
+  rel := fun f g ↦ ∀ x, rel (f x) (g x)
+
+example (hp : ∀ M : Type, [AddCommGroup M] → [NormedModuleGood M] → ∀ m : M, p (rel m))
+    (M : Type) [AddCommGroup M] [NormedModuleGood M] (v : M → M) : p (rel v) := by
+  specialize hp (M → M) v
+  exact hp
 
 /- ## Exercice 2
 Define the class of metric spaces (but call them `SpaceWithMetric` to avoid conflict with the
