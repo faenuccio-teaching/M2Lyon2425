@@ -1,4 +1,11 @@
-# M2Lyon2425
+---
+# Feel free to add content and custom Front Matter to this file.
+# To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
+
+# layout: home
+usemathjax: true
+---
+
 This is the webpage for the Lean courses of the program <a href="http://mathematiques.ens-lyon.fr/parcours-2024-2025-394652.kjsp">"Higher Algebra and Formalised Mathematics"</a> of the Advanced Master in Mathematics in Lyon for 2024/25. For the original `git` repository, click <a href="https://github.com/faenuccio-teaching/M2Lyon2425">here</a>.
 
 ## Prerequisites 
@@ -41,7 +48,7 @@ Classes are on Wednesday, from 10AM to 1PM, at <a href="https://www.ens-lyon.fr/
 
 ### Second Term
 
-Classes are on Wednesday, from 10.00AM to 1.0PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a>, in room M7-411. The schedule for the second term is as follows:
+Classes are on Wednesday, from 9.45AM to 12.45PM, at <a href="https://www.ens-lyon.fr/en/campus-life/campus-tour/maps-directions">ENS-Lyon</a>, in room M7-411. The schedule for the second term is as follows:
 
 | Date      | Topic         | Teacher | Notes
 |-----------|---------------|---------|---------------
