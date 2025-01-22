@@ -627,12 +627,14 @@ example (hp : ∀ M : Type, ∀ ρ : ℝ≥0, [AddCommGroup M] → [AsAliasR M �
   convert hp
   simp only [eq_rec_constant]
 
-/- ## Exercise 3
-Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
+-- ## Exercise 3
+attribute [- instance] PSM_Nat
+/- Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
 1. `PseudoMetricSpace.uniformity_dist = 𝒫 (idRel)` if the metric is discrete.
 2. As uniformities, `𝒫 (idRel) = ⊥`.
 3. Is the equality `𝒫 (idRel) = ⊥` true as filters?
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
 -/
+#synth UniformSpace ℕ
 
 end Exercises
