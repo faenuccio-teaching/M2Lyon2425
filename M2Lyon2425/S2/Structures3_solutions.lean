@@ -635,11 +635,61 @@ attribute [- instance] PSM_Nat
 3. Is the equality `𝒫 (idRel) = ⊥` true as filters?
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
 -/
-open Metric Filter
+open Metric Filter Classical
 
 #check PseudoMetricSpace.toUniformSpace.uniformity
 
-example (X : Type*) [PseudoMetricSpace X] (hdisc : ∀ x : X, ∃ ε > 0, Metric.ball x ε = {x}) :
-  (PseudoMetricSpace.toUniformSpace.uniformity) = Filter.principal (idRel : Set (X × X)) := sorry
+example (X : Type*) [PseudoMetricSpace X] (hdisc : ∀ x y : X, x ≠ y → dist x y = 1) :
+    (uniformity X) = Filter.principal (idRel : Set (X × X)) := by
+  -- by_cases HX : Nonempty X
+  · rw [PseudoMetricSpace.uniformity_dist]
+    ext S
+    refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+    · simp only [mem_principal, idRel_subset]
+      intro a
+      --obtain ⟨ε, hε_pos, hε_a⟩ := hdisc a
+      replace h : S ∈ ⨅ ε, ⨅ (_ : ε > 0), ⨅ (_ : ε < 1), 𝓟 {p : X × X | dist p.1 p.2 < ε} := by
+        sorry
+      simp only [mem_iInf] at h
+      obtain ⟨I, hI_fin, V, hV, hS⟩ := h
+      by_cases hI : IsEmpty I
+      · have : S = Set.univ := by
+          rw [hS]
+          apply Set.iInter_of_empty
+        rw [this]
+        tauto
+      · let i : I := by
+          rw [not_isEmpty_iff] at hI
+          exact hI.some
+        specialize hV i
+        rw [iInf_le_iInf₂] at hV -- non è rw ma va usato lui
+
+    · simp at h
+
+      have prova : ∀ (ε : ℝ) (_ : ε > 0) (_ : ε < 1), S ∈ 𝓟 {p | dist p.1 p.2 < ε} := by
+        intro ε hε_pos hε_lt p
+        simp only [Set.mem_setOf_eq]
+        intro hp
+        replace hp : p.1 = p.2 := by
+          by_contra h_abs
+          specialize hdisc p.1 p.2 h_abs
+          rw [hdisc] at hp
+          exact not_lt_of_gt hp hε_lt
+      have := @mem_iInf_of_mem (s := S) (ι := ℝ)
+        (f := fun ε ↦ ⨅ (_ : ε > 0), (𝓟 {p : X × X| dist p.1 p.2 < ε})) 1
+      apply this
+      apply mem_iInf_of_mem
+      apply prova
+      exact Real.zero_lt_one
+      sorry
+      exact Real.zero_lt_one
+      -- exact ε_pos
+      -- exact ε_pos
+
+
+
+
+
+
 
 end Exercises
