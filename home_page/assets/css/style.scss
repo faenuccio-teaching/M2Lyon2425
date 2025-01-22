@@ -1,0 +1,124 @@
+---
+---
+
+// /* Import the CSS from the specified theme */
+// @import "{{ site.theme }}";
+
+/* Custom styles go below this line */
+
+/* Body styling */
+body {
+  font-family: 'Merriweather', serif;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333333; /* Text color */
+  background-color: #ffffff; /* Background color */
+}
+
+/* Header */
+header {
+  background-color: #f7f7f7;
+  border-bottom: 2px solid #004d99;
+  text-align: center;
+  padding: 1rem 2rem;
+
+  .page-header {
+    font-family: 'Merriweather', serif;
+    font-size: 2.5rem;
+    color: #004d99; /* Primary color */
+    margin: 0;
+  }
+
+  .page-tagline {
+    font-family: 'Open Sans', sans-serif;
+    font-size: 1.2rem;
+    color: #666666; /* Secondary color */
+  }
+
+  .btn {
+    display: inline-block;
+    background-color: #004d99;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    font-weight: bold;
+    margin: 0.5rem;
+    text-decoration: none;
+
+    &:hover {
+      background-color: darken(#004d99, 10%);
+    }
+  }
+}
+
+/* Main content */
+main {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 10%;
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Merriweather', serif;
+    color: #004d99;
+    margin-top: 1rem;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+  }
+
+  h2 {
+    font-size: 2rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  blockquote {
+    border-left: 4px solid #004d99;
+    padding-left: 1rem;
+    font-style: italic;
+    color: darken(#333333, 20%);
+  }
+
+  code {
+    background-color: #f2f2f2;
+    border-radius: 3px;
+    padding: 0.2rem 0.4rem;
+    font-family: 'Courier New', monospace;
+  }
+}
+
+/* Footer */
+footer {
+  background-color: #e6e6e6;
+  padding: 1rem;
+  text-align: center;
+  color: darken(#333333, 30%);
+  font-size: 0.9rem;
+
+  a {
+    color: #d9534f;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  main {
+    padding: 1rem;
+  }
+
+  header, footer {
+    padding: 1rem;
+  }
+}
