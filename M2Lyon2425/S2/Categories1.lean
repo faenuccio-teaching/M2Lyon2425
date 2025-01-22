@@ -3,6 +3,8 @@ import Mathlib.CategoryTheory.Limits.IsLimit
 import Mathlib.CategoryTheory.NatIso
 import Mathlib.CategoryTheory.DiscreteCategory
 import Mathlib.CategoryTheory.Category.Preorder
+import Mathlib.Algebra.Category.Grp.Basic
+import Mathlib.Algebra.Category.ModuleCat.Basic
 
 universe u v
 
@@ -110,6 +112,8 @@ end Generalities
 section Definitions
 
 open CategoryTheory
+-- A lot of the category theory stuff is in the namespace `CategoryTheory`, so it's
+-- a good idea to open it now.
 
 /- So how do we define a category? The way it is defined in mathlib, a
 category is a type with a `CategoryTheory.Category` instance on it.
@@ -405,9 +409,56 @@ is written like this in mathlib.)
 
 This includes all algebraic categories, as well as `TopCat`.
 
+The algebraic categories (and related ones) are in `Algebra.Category`, and `TopCat` is
+in `Topology.Category`.
+
+For example you have `AlgebraCat`, `Coalgebracat`, `BialgebraCat`, `HopfAlgebraCat`,
+`ModuleCat`, `FGModuleCat`, `RingCat` and `CommRingCat`, `MonCat` and `CommMonCat`
+(the catgeory of monoids/commutative monoids) as well as additive versions `AddMonCat` and
+`AddCommMonCat`, `Grp` and `CommGrp` as well as additive versions `AddGrp` and `AddCommGrp`.
+
+As you can see, the naming scheme is not uniform. We cannot just call these categories
+`Ring`, `Group` etc because this is already the name of a class!
+
+All these categories depend on a universe level (two for `ModuleCat` and `FGModuleCat`:
+one for the ring, one for the modules) and have forgetful functors to `Type`. They
+also have forgetful functors between themselves.
 -/
+#check forget₂ Grp MonCat
+#check forget Grp
+#check Grp.{u}  --this is how you specify the universe
+#check forget Grp.{u}
 
+#check ModuleCat.{v, u}  -- category of `R`-modules in `Type v`, where `R` is a ring in `Type u`
 
+/-
+An object of one of these categories (for examplem `Grp`) is a *bundled group*, i.e.
+a structure containing in its fields a type and a group structure on that type.
+
+Morphisms of by defintions morphisms between the underlying types with extra structures.
+
+If you have a group/ring/etc, you can form the corresponding object of the category by
+using `_name_of_category_.of`; for morphism, use `ofHom`:
+-/
+example (G : Type*) [Group G] : Grp := Grp.of G
+
+example {G H : Type*} [Group G] [Group H] (f : G →* H) : Grp.of G ⟶ Grp.of H := sorry
+-- Lean complains because `G` and `H` are not necessarily in the same universe
+
+example {G H : Type u} [Group G] [Group H] (f : G →* H) : Grp.of G ⟶ Grp.of H :=
+  Grp.ofHom f
+
+-- There are coercions in place to make things less painful. Here for example
+-- I am applying a morphism of `Grp` to an element of `G`, even though technically
+-- `G` is not a group but an object of `Grp`.
+
+example {G H : Grp} (f : G ⟶ H) (x : G) : H := f x
+
+example {G : Type*} [Group G] : (Grp.of G).1 = G := rfl
+example {G : Type*} [Group G] : (Grp.of G).α = G := rfl
+
+example {G H : Type u} [Group G] [Group H] (f : G →* H) : (Grp.ofHom f).toFun = f.toFun := rfl
+example {G H : Type u} [Group G] [Group H] (f : G →* H) : Grp.ofHom f = f := rfl
 
 
 end Examples
