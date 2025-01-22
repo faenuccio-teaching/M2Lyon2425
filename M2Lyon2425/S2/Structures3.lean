@@ -439,6 +439,11 @@ There are (at least) two ways:
 good choices, so a kind of "internal rewriting" is needed.
 -/
 
+instance (M : Type) [AddCommGroup M] [NormedModuleBad M] (ρ : ℝ := 1) : ModuleWithRel M where
+  rel a b := ‖ a - b ‖₀ ≤ ρ
+
+
+
 /- ## Exercise 3
 Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
 1. `PseudoMetricSpace.uniformity_dist = 𝒫 (idRel)` if the metric is discrete.
