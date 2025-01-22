@@ -17,40 +17,62 @@ section LocalInstances
 open scoped Filter Uniformity
 
 #print UniformSpace
--- One constructor and four fields
+-- One constructor and five fields
 
-example : instUniformSpaceNat = ⊥ := sorry
+example : instUniformSpaceNat = ⊥ := rfl
 
-example : (uniformity ℕ) = (𝓟 idRel) := sorry
+example : (uniformity ℕ) = (𝓟 idRel) := rfl
 
 #synth UniformSpace ℕ -- instUniformSpaceNat
 attribute [- instance] instUniformSpaceNat --this is local, it only applies to the current section
 
 #synth UniformSpace ℕ -- failed to synthesize
 
-def PSM_Nat : PseudoMetricSpace ℕ := sorry
+-- def PSM_Nat : PseudoMetricSpace ℕ where
+--   dist := fun n m ↦ |2 ^ (-n : ℤ) - 2 ^ (-m : ℤ)|
+--   dist_self := by simp only [zpow_neg, zpow_natCast, sub_self, abs_zero, implies_true]
+--   dist_comm := fun _ _ ↦ abs_sub_comm ..
+--   dist_triangle := fun _ _ _ ↦ abs_sub_le ..
 
-attribute [instance] PSM_Nat
+-- attribute [instance] PSM_Nat
 
 local instance : PseudoMetricSpace ℕ where
+  dist := fun n m ↦ |2 ^ (-n : ℤ) - 2 ^ (-m : ℤ)|
+  dist_self := by simp only [zpow_neg, zpow_natCast, sub_self, abs_zero, implies_true]
+  dist_comm := fun _ _ ↦ abs_sub_comm ..
+  dist_triangle := fun _ _ _ ↦ abs_sub_le ..
 
 #synth UniformSpace ℕ
 
 /-! This is actually true! See `Counterexamples/DiscreteTopologyNonDiscreteUniformity.lean`-/
 lemma idIsCauchy : CauchySeq (id : ℕ → ℕ) := by sorry
 
-example : CauchySeq (id : ℕ → ℕ) := sorry
+example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 
 end LocalInstances
 
 -- This does not work, since we have quit the `LocalInstance` section
-example : CauchySeq (id : ℕ → ℕ) := sorry
+example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 
 
 -- `⌘`
 
 
 noncomputable section Synonyms
+namespace bleah
+scoped notation "𝔸" => ℕ
+
+def NiceNumber : ℕ := 37
+
+#check NiceNumber
+
+#check (37 : 𝔸)
+end bleah
+
+-- open bleah
+#print NiceNumber
+
+#check (37 : 𝔸)
 
 notation "𝒩" => ℕ
 #check (37 : 𝒩)
@@ -64,9 +86,11 @@ def DefNat := ℕ
 def DefSucc (a : ℤ) := a + 1 --definition as in Mathlib
 abbrev AbbSucc (a : ℤ) := a + 1 --
 
-example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := sorry
+example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := by
+  unfold DefSucc
+  simp only [add_assoc, Int.reduceAdd]
 
-example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := sorry
+example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
 
 
 -- `⌘`
@@ -83,7 +107,7 @@ instance TopSpace𝓡 : TopologicalSpace 𝓡 := ⊥
 #synth TopologicalSpace ℝ
 
 example : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
-  sorry
+  apply continuous_bot
 /-`continuous_bot` is the statement saying that every function leaving from a discrete space
 is automatically continuous. -/
 
@@ -95,28 +119,29 @@ def ℛ := ℝ --type ℛ with \McR
 
 instance : TopologicalSpace ℛ := ⊥
 
-instance : Field ℛ := sorry
+instance : Field ℛ := inferInstanceAs (Field ℝ)
 
 #synth CommRing ℛ
 #synth CommRing 𝓡
 
-instance : LT ℛ := sorry
+instance : LT ℛ := inferInstanceAs <| LT ℝ
 
 lemma ContJump : Continuous (fun x : ℛ ↦ if x < 0 then (0 : ℛ) else 1) := by
-  sorry
+  apply continuous_bot
 
 lemma ContJump' : Continuous (fun x : 𝓡 ↦ if x < 0 then (0 : 𝓡) else 1) := by
-  sorry
+  apply continuous_bot
 
 -- This might be a problem!
-lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : 𝓡) else 1) := by
-  sorry
+lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
+  apply continuous_bot
 
 end Synonyms
 
 -- Even leaving the `Synonyms` section, the following still works.
 example : Continuous (fun x : ℛ × ℛ ↦ if x.1 < 0 then (0 : ℛ) else 1) := by
-  sorry
+  apply ContJump.comp
+  apply continuous_fst
 
 
 -- `⌘`
@@ -158,7 +183,7 @@ structure TwoTerms (α : Type) where
   fst : α
   snd : α
 
-structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace γ] :=--`where` or `:=`
+structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace γ] where--:=--`where` or `:=`
   a : α := 0
   f : α → β → γ → γ
   cont : Continuous (f a)
@@ -172,21 +197,32 @@ structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace �
 attribute [-instance] TopSpace𝓡
 -- ## Constructing terms
 
-example : TwoNat := sorry
+example : TwoNat where
+  fst := 2
+  snd := 76
 
 open Real
 
 -- What happens if we have a default value?
-def x1 : Mess ℕ ℝ ℝ := sorry
+def x1 : Mess ℕ ℝ ℝ where
+  f := fun n x y ↦ n + x + y
+  cont := by
+    simp
+    continuity
 
-def x2 : Mess ℕ ℕ ℕ := sorry
+def x2 : Mess ℕ ℕ ℕ := {a := 37, f := fun n x y ↦ n + x + y, cont := continuous_bot}
+  -- a := 37
+  -- f := fun n x y ↦ n + x + y
+  -- cont := continuous_bot
 
-example (x : TwoNat) : Couple := sorry
+example (x : TwoNat) : Couple where
+  left := x.fst
+  right := x.snd
 
 -- Same construction, different syntax
-example (x : TwoNat) : Couple := sorry
+example (x : TwoNat) : Couple := {left := x.fst, right := x.snd}
 
-example : Couple := sorry
+example (x : TwoNat) : Couple := ⟨x.fst, x.snd⟩
 
 example (x : OneNat) : Couple :=
   sorry
