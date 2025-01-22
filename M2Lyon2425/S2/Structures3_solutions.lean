@@ -630,11 +630,16 @@ example (hp : ∀ M : Type, ∀ ρ : ℝ≥0, [AddCommGroup M] → [AsAliasR M �
 -- ## Exercise 3
 attribute [- instance] PSM_Nat
 /- Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
-1. `PseudoMetricSpace.uniformity_dist = 𝒫 (idRel)` if the metric is discrete.
+1. The uniformity is discrete if the metric is discrete.
 2. As uniformities, `𝒫 (idRel) = ⊥`.
 3. Is the equality `𝒫 (idRel) = ⊥` true as filters?
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
 -/
-#synth UniformSpace ℕ
+open Metric Filter
+
+#check PseudoMetricSpace.toUniformSpace.uniformity
+
+example (X : Type*) [PseudoMetricSpace X] (hdisc : ∀ x : X, ∃ ε > 0, Metric.ball x ε = {x}) :
+  (PseudoMetricSpace.toUniformSpace.uniformity) = Filter.principal (idRel : Set (X × X)) := sorry
 
 end Exercises

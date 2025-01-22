@@ -28,19 +28,19 @@ attribute [- instance] instUniformSpaceNat --this is local, it only applies to t
 
 #synth UniformSpace ℕ -- failed to synthesize
 
--- def PSM_Nat : PseudoMetricSpace ℕ where
---   dist := fun n m ↦ |2 ^ (-n : ℤ) - 2 ^ (-m : ℤ)|
---   dist_self := by simp only [zpow_neg, zpow_natCast, sub_self, abs_zero, implies_true]
---   dist_comm := fun _ _ ↦ abs_sub_comm ..
---   dist_triangle := fun _ _ _ ↦ abs_sub_le ..
-
--- attribute [instance] PSM_Nat
-
-local instance : PseudoMetricSpace ℕ where
+def PSM_Nat : PseudoMetricSpace ℕ where
   dist := fun n m ↦ |2 ^ (-n : ℤ) - 2 ^ (-m : ℤ)|
   dist_self := by simp only [zpow_neg, zpow_natCast, sub_self, abs_zero, implies_true]
   dist_comm := fun _ _ ↦ abs_sub_comm ..
   dist_triangle := fun _ _ _ ↦ abs_sub_le ..
+
+attribute [instance] PSM_Nat
+
+-- local instance : PseudoMetricSpace ℕ where
+--   dist := fun n m ↦ |2 ^ (-n : ℤ) - 2 ^ (-m : ℤ)|
+--   dist_self := by simp only [zpow_neg, zpow_natCast, sub_self, abs_zero, implies_true]
+--   dist_comm := fun _ _ ↦ abs_sub_comm ..
+--   dist_triangle := fun _ _ _ ↦ abs_sub_le ..
 
 #synth UniformSpace ℕ
 
@@ -454,9 +454,11 @@ There are (at least) two ways:
 good choices, so a kind of "internal rewriting" is needed.
 -/
 
-/- ## Exercise 3
-Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
-1. `PseudoMetricSpace.uniformity_dist = 𝒫 (idRel)` if the metric is discrete.
+
+-- ## Exercise 3
+attribute [- instance] PSM_Nat
+/- Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
+1. The uniformity is discrete if the metric is discrete.
 2. As uniformities, `𝒫 (idRel) = ⊥`.
 3. Is the equality `𝒫 (idRel) = ⊥` true as filters?
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
