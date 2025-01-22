@@ -45,8 +45,8 @@ instance : Add (MonAnneau d) :=
 instance : Neg (MonAnneau d) :=
   ⟨ fun x ↦ ⟨ -x.re, -x.im⟩ ⟩
 
-instance : Mul (MonAnneau d) :=
-  ⟨ fun x y ↦  ⟨ x.re * y.re - d* x.im * y.im, x.re * y.im + x.im * y.re⟩ ⟩
+instance : Mul (MonAnneau d) where
+  mul := fun x y ↦  ⟨ x.re * y.re - d* x.im * y.im, x.re * y.im + x.im * y.re⟩
 
 
 
@@ -106,6 +106,42 @@ theorem mul_re (x y : (MonAnneau d)) : (x * y).re = x.re * y.re - d*x.im * y.im 
 theorem mul_im (x y : (MonAnneau d)) : (x * y).im = x.re * y.im + x.im * y.re := by
   rfl
 
+lemma MonAnneau_add_assoc (d : ℤ) :
+    ∀ (a b c : MonAnneau d), a + b + c = a + (b + c) := by
+  intro a b c
+  ext
+  · rw[add_re]
+    rw[add_re]
+    rw[add_re]
+    rw[add_re]
+    rw[add_assoc]
+  · rw[add_im]
+    rw[add_im]
+    rw[add_im]
+    rw[add_im]
+    rw[add_assoc]
+
+lemma MonAnneau_zero_add (d : ℤ) :
+    ∀ (a : MonAnneau d), 0 + a = a := by
+  intro a
+  ext
+  · rw[add_re]
+    rw[zero_re]
+    rw[zero_add]
+  · rw[add_im]
+    rw[zero_im]
+    rw[zero_add]
+
+lemma MonAnneau_add_zero (d : ℤ) :
+    ∀ (a : MonAnneau d), a + 0 = a := by
+  intro a
+  ext
+  · rw[add_re]
+    rw[zero_re]
+    rw[add_zero]
+  · rw[add_im]
+    rw[zero_im]
+    rw[add_zero]
 
 instance instCommRing_MonAnneau : CommRing (MonAnneau d) where
   zero := 0
@@ -115,84 +151,139 @@ instance instCommRing_MonAnneau : CommRing (MonAnneau d) where
   mul := (· * ·)
   nsmul := nsmulRec
   zsmul := zsmulRec
-  add_assoc := by
-    intro a b c
-    ext
-    · simp
-      ring
-    · simp
-      ring
-  zero_add := by
-    intro a
-    ext
-    · simp
-    · simp
-  add_zero := by
-    intro a
-    ext
-    · simp
-    · simp
+  add_assoc := MonAnneau_add_assoc d
+  zero_add := MonAnneau_zero_add d
+  add_zero := MonAnneau_add_zero d
+
+
+
+  /-
   neg_add_cancel := by
     intro a
     ext
-    · simp
-    · simp
+    · simp only [add_re]
+      simp only [neg_re]
+      simp only [neg_add_cancel]
+      rw[zero_re]
+    · simp only [add_im]
+      simp only [neg_im]
+      simp only [neg_add_cancel]
+      rw[zero_im]
   add_comm := by
     intro a b
     ext
-    · simp
-      ring
-    · simp
-      ring
+    · rw[add_re]
+      rw[add_re]
+      rw[add_comm]
+    · rw[add_im]
+      rw[add_im]
+      rw[add_comm]
   mul_assoc := by
     intro a b c
     ext
-    · simp
+    · simp only[mul_re]
+      rw[mul_im]
+      rw[mul_im]
+      rw[mul_assoc]
+      rw[mul_assoc]
+      rw[mul_assoc]
+      rw[mul_assoc]
       ring
-    · simp
+    · simp only[mul_im]
+      rw[mul_re]
+      rw[mul_re]
+      rw[mul_assoc]
+      rw[mul_assoc]
       ring
   one_mul := by
     intro a
     ext
-    · simp
-    · simp
+    · rw[mul_re]
+      rw[one_re]
+      rw[one_mul]
+      rw[one_im]
+      rw[mul_zero]
+      rw[zero_mul]
+      rw[sub_zero]
+    · rw[mul_im]
+      rw[one_re]
+      rw[one_mul]
+      rw[one_im]
+      rw[zero_mul]
+      rw[add_zero]
   mul_one := by
     intro a
     ext
-    · simp
-    · simp
+    · rw[mul_re]
+      rw[one_re]
+      rw[mul_one]
+      rw[one_im]
+      rw[mul_zero]
+      rw[sub_zero]
+    · rw[mul_im]
+      rw[one_im]
+      rw[mul_zero]
+      rw[one_re]
+      rw[mul_one]
+      rw[zero_add]
   left_distrib := by
     intro a b c
     ext
-    · simp
+    · rw[mul_re]
+      rw[add_re]
+      rw[add_im]
+      rw[add_re]
+      rw[mul_re]
+      rw[mul_re]
       ring
-    · simp
+    · rw[mul_im]
+      rw[add_im]
+      rw[add_im]
+      rw[mul_im]
+      rw[mul_im]
+      rw[add_re]
+      rw[left_distrib]
+      rw[left_distrib]
       ring
-
+      --rw[mul_im]      rw[add_im]      rw[add_im]      rw[mul_im]      rw[mul_im]      rw[add_re]
   right_distrib := by
     intro a b c
     ext
     · simp
       ring
+      --rw[mul_re]       rw[add_re]      rw[add_im]      rw[add_re]      rw[mul_re]      rw[mul_re]
     · simp
       ring
   mul_comm := by
     intro a b
     ext
-    · simp
+    · simp only [mul_re]
       ring
-    · simp
+    · simp only [mul_im]
       ring
   zero_mul := by
     intro a
     ext
-    · simp
-    · simp
-  mul_zero := by
+    · rw[mul_re]
+      simp only [zero_re, zero_im]
+      rw[zero_mul]
+      rw[mul_zero]
+      rw[zero_mul]
+      rw[sub_self]
+    · rw[mul_im]
+      simp only[zero_re, zero_im]
+      rw[zero_mul]
+      rw[zero_mul]
+      rw[add_zero]
+  mul_zero:=by
     intro a
     ext
     · simp
+      -- rw[mul_re] rw[zero_re] rw[zero_im]      rw[mul_zero]      rw[mul_zero]      rw[sub_self]
     · simp
+      --rw[mul_im] rw[zero_im] rw[mul_zero] rw[zero_re] rw[add_zero]-/
+
+
 
 
 --Etape 3 : Pour quels d (d<0), est-ce que Z[sqrt(d)] est un anneau Euclidien ?
@@ -330,29 +421,85 @@ def norm_d (z : (MonAnneau d)) : ℤ :=
   z.re^2 + d * z.im^2
 
 --Quotient :
-instance : Div (MonAnneau (-2)) :=
-  ⟨ fun (x y : (MonAnneau (-2))) =>
+instance quotient : Div (MonAnneau (-2)) where
+  div := by
+    intros x y
     let Norme_y := (Norm_2 y : ℚ)⁻¹
     let y_barre := star y
-    ⟨round ((x * y_barre).re * Norme_y : ℚ), round ((x * y_barre).im * Norme_y : ℚ)⟩⟩
+    exact ⟨round ((x * y_barre).re * Norme_y : ℚ), round ((x * y_barre).im * Norme_y : ℚ)⟩
+
+lemma quotient_def : quotient.div = fun x y ↦
+    let Norme_y := (Norm_2 y : ℚ)⁻¹;
+    let y_barre := star y;
+    { re := round ((x * y_barre).re * Norme_y), im := round ((x * y_barre).im * Norme_y) } := by rfl
+
+ #print quotient
 
  --Remainder :
-instance : Mod (MonAnneau (-2)) :=
-  ⟨fun x y => x - y * (x / y)⟩
+instance remainder : Mod (MonAnneau (-2)) where
+  mod := fun x y => x - y * (x / y)
 
-
+lemma remainder_def : remainder.mod = fun x y => x - y * (x / y) := by rfl
 
 instance : EuclideanDomain (MonAnneau (-2)) where
-  quotient := sorry
-  remainder := sorry
-  quotient_mul_add_remainder_eq:= sorry
-  quotient_zero:=sorry
-  r:=sorry
-  r_wellFounded:=sorry
-  remainder_lt:=sorry
-  mul_left_not_lt:=sorry
-
-
+  quotient := quotient.div
+  remainder := remainder.mod
+  quotient_mul_add_remainder_eq:= by
+    intros x y
+    simp [quotient_def, remainder_def]
+    have : y * (x / y) = x := by
+      change y * (quotient.div x y) = x
+      rw [quotient_def]
+      dsimp
+      rw [mul_def]
+      ext
+      · simp only [Int.reduceNeg, mul_re, star_re, neg_mul, star_im, mul_neg, neg_neg,
+        Int.cast_sub, Int.cast_mul, Int.cast_ofNat, Int.cast_add, Int.cast_pow, Int.cast_neg,
+        sub_neg_eq_add]
+        sorry
+      · dsimp
+        sorry
+    rw [this]
+    simp only [Int.reduceNeg, mul_re, star_re, neg_mul, star_im, mul_neg, neg_neg, Int.cast_sub,
+      Int.cast_mul, Int.cast_ofNat, Int.cast_add, Int.cast_pow, Int.cast_neg, sub_self, add_zero]
+    rw [mul_def]
+    dsimp
+    ext
+    · dsimp
+      sorry
+    · dsimp
+      sorry
+  quotient_zero := by
+    intro x
+    rw [quotient_def]
+    dsimp
+    ext
+    · simp only [Int.reduceNeg, star_zero, mul_zero, zero_re, Int.cast_zero, inv_zero, round_zero]
+    · simp only [Int.reduceNeg, mul_zero, add_zero, Int.cast_zero, inv_zero, round_zero, zero_im]
+  r := by
+    intros a b
+    by_cases h : Norm_2 (remainder.mod a b) ≤ Norm_2 b
+    exact True
+    exact False
+  r_wellFounded := sorry
+  remainder_lt := by
+    intros a b hb
+    dsimp
+    have : (Mod.mod (Mod.mod a b) b).re ^ 2 + 2 * (Mod.mod (Mod.mod a b) b).im ^ 2 ≤ b.re ^ 2 + 2 * b.im ^ 2 := by
+      have : (Mod.mod (Mod.mod a b) b).re = (Mod.mod a b).re := sorry
+      rw [this]
+      have : (Mod.mod (Mod.mod a b) b).im = (Mod.mod a b).im := sorry
+      rw [this]
+      sorry
+    simp only [this, ↓reduceIte]
+  mul_left_not_lt := by
+    intros a b hb h
+    have : ¬(Norm_2 (Mod.mod (a * b) a) ≤ Norm_2 a) := by
+      intro h₂
+      have : Mod.mod (a * b) a = b := sorry
+      rw [this] at h₂
+      sorry
+    simp only [this, ↓reduceDIte] at h
 
 --Si d<=-3 :
 
