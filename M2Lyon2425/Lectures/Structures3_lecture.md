@@ -322,7 +322,26 @@ need to find the name of the term `AddMonoid ℕ`, for which we can do
 
 # Exercises
 
-4. Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
+1. Define the class of metric spaces (but call them `SpaceWithMetric` to avoid conflict with the
+existing library) as defined in https://en.wikipedia.org/wiki/Metric_space#Definition, and deduce
+an instance of `TopologicalSpace` on every `SpaceWithMetric`.
+
+    Explain why this is the *wrong* choice, on an explicit example, and fix it.
+1. When defining a `ModuleWithRel` instance on any `NormedModuleBad` we used the relation "being in the
+same ball of radius `1`. Clearly the choice of `1` was arbitrary.
+
+    Define an infinite collection of instances of `ModuleWithRel` on any `NormedModuleBad` indexed by
+    `ρ : ℝ≥0`, and reproduce both the bad and the good example.
+
+    There are (at least) two ways:
+
+    * Enrich the `NormedModule`'s structure with a `ρ`: this is straightforward.
+    
+    * Keep `ρ` as a variable: this is much harder, both because Lean won't be very happy with a
+    `class` depending on a variable and because there will *really* be different instances even with
+    good choices, so a kind of "double forgetfulness" is needed.
+
+1. Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
     * `PseudoMetricSpace.uniformity_dist = 𝒫 (idRel)` if the metric is discrete.
     * As uniformities, `𝒫 (idRel) = ⊥`.
     * Is the equality `𝒫 (idRel) = ⊥` true as filters?
