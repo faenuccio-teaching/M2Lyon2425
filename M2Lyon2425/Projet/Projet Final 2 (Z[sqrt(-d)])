@@ -359,9 +359,10 @@ example (a b : ℤ) : b ≠ 0 → a % b < |b| :=
   Int.emod_lt a
 
 def div' (a b : ℤ) :=
-(a + b / 2) / b
+  (a + b / 2) / b
+
 def mod' (a b : ℤ) :=
-(a + b / 2) % b - b / 2
+  (a + b / 2) % b - b / 2
 theorem div'_add_mod' (a b : ℤ) : b * div' a b + mod' a b = a := by
   rw [div', mod']
   linarith [Int.ediv_add_emod (a + b / 2) b]
@@ -403,10 +404,13 @@ instance : Mod (MonAnneau (-1)) :=
 
 
 
-theorem sq_add_sq_eq_zero (x y : MonAnneau d) :
+theorem sq_add_sq_eq_zero (x y : MonAnneau (-1)) :
   x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
   constructor
-  · intro a --Voir élement de mon anneau comme des complexes ?
+  · intro a
+    rw [pow_two, pow_two, mul_def, mul_def, add_def, MonAnneau.ext_iff] at a
+    cases' a with ha ha2
+    dsimp at ha ha2
     sorry
   · intro a
     cases a with
@@ -421,7 +425,7 @@ theorem sq_add_sq_eq_zero (x y : MonAnneau d) :
 
 
 @[simp]
-theorem norm_nonneg_1 (x : (MonAnneau (-1))) : 0 ≤ norm x := by
+theorem MonAnneau_norm_nonneg_1 (x : (MonAnneau (-1))) : 0 ≤ norm x := by
   simp
   suffices : x.re^2 ≥ 0 ∧ x.im^2 ≥ 0
   · cases this with
@@ -433,6 +437,42 @@ theorem norm_nonneg_1 (x : (MonAnneau (-1))) : 0 ≤ norm x := by
     · exact sq_nonneg x.im
 
 
+theorem MonAnneau_norm_eq_zero (x : (MonAnneau (-1))) : norm x = 0 ↔ x = 0 := by
+  refine ⟨fun hx ↦ ?_, fun hx ↦ ?_⟩
+  · simp only [_root_.norm, Int.reduceNeg] at hx
+    rw [add_eq_zero_iff_of_nonneg] at hx
+    cases' hx with hx1 hx2
+    rw [sq_eq_zero_iff] at hx1 hx2
+    rw [MonAnneau.ext_iff]
+    exact ⟨hx1, hx2⟩
+    exact sq_nonneg x.re
+    exact sq_nonneg x.im
+  · simp only [_root_.norm, Int.reduceNeg]
+    rw [MonAnneau.ext_iff] at hx
+    rw [hx.1, hx.2]
+    rfl
+
+
+theorem MonAnneau_norm_pos (x : (MonAnneau (-1))) : 0 < norm x ↔ x ≠ 0 := by
+  refine ⟨fun hx hx2 ↦ ?_, fun hx ↦ ?_⟩
+  · simp only [_root_.norm, Int.reduceNeg] at hx
+    rw [MonAnneau.ext_iff] at hx2
+    rw [hx2.1, hx2.2] at hx
+    simp only [Int.reduceNeg, zero_re, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
+      zero_im, add_zero, lt_self_iff_false] at hx
+  · simp only [_root_.norm, Int.reduceNeg]
+    rw [ne_eq, MonAnneau.ext_iff, not_and_or] at hx
+    cases' hx with hx1 hx2
+    · simp only [Int.reduceNeg, zero_re, ne_eq] at hx1
+      push_neg at hx1
+      have hx2 := pow_two_pos_of_ne_zero hx1
+      have hx3 := sq_nonneg x.im
+      exact Int.add_pos_of_pos_of_nonneg hx2 hx3
+    · simp only [Int.reduceNeg, zero_re, ne_eq] at hx2
+      push_neg at hx2
+      have hx3 := pow_two_pos_of_ne_zero hx2
+      have hx4 := sq_nonneg x.re
+      exact Int.add_pos_of_nonneg_of_pos hx4 hx3
 
 
 
@@ -467,24 +507,6 @@ theorem star_re (z : (MonAnneau d)) : (star z).re = z.re :=
 @[simp]
 theorem star_im (z : (MonAnneau d)) : (star z).im = -z.im :=
   rfl
-
-instance : StarRing (MonAnneau d) where
-  star_involutive x := by
-    ext
-    · simp
-    · simp
-  star_mul a b := by
-    ext
-    · simp
-      ring
-    · simp
-      ring
-  star_add a b := by
-    ext
-    · simp
-    · simp
-      ring
-
 
 
 def norm_d (z : (MonAnneau d)) : ℤ :=
