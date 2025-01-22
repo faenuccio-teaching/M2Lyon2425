@@ -185,6 +185,7 @@ for `NormedModuleBad` but not for `NormedModuleGood`. -/
 
 
 
+
 /- ## Exercice 2
 Define the class of metric spaces (but call them `SpaceWithMetric` to avoid conflict with the
 existing library) as defined in https://en.wikipedia.org/wiki/Metric_space#Definition, and deduce
