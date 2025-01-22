@@ -117,7 +117,7 @@ lemma ContJump' : Continuous (fun x : 𝓡 ↦ if x < 0 then (0 : 𝓡) else 1) 
   apply continuous_bot
 
 -- This might be a problem!
-lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : 𝓡) else 1) := by
+lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
   apply continuous_bot
 
 end Synonyms
