@@ -22,7 +22,8 @@ In Mathlib, `ℕ` is endowed with the discrete uniformity, coming from the discr
 diagonal: `Uniformity ℕ = 𝒫 (idRel)` where
     * `idRel` is the identity relation, so the subset `{p : ℕ × ℕ | p.1 = p.2}`;
     * `𝒫 (idRel)` is the collection of all subsets in `ℕ × ℕ` that contain `idRel`, seen as a filter;
-    * It can be proven that `PseudoMetricSpace.uniformity_dist` of the discrete metric is indeed `𝒫 (idRel)`;
+    * It can be proven that the uniformity induced by the discrete metric is indeed 
+        `𝒫 (idRel)`;
     * Filters and uniformities are ordered, and one can prove that `𝒫 (idRel) = ⊥`, the bottom element.
 
 Since the discrete metric induces the discrete topology, `UniformSpace.toTopologicalSpace ℕ = ⊥`
