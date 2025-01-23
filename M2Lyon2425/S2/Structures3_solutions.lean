@@ -1,6 +1,7 @@
 import Mathlib.Data.Real.Basic
 import Mathlib.Topology.MetricSpace.Cauchy
 import Mathlib.Topology.Instances.Real
+import Mathlib.Analysis.SpecificLimits.Basic
 import Mathlib.Topology.UniformSpace.Basic
 import Mathlib.Data.Complex.Exponential
 import Mathlib.Topology.MetricSpace.Basic
@@ -633,63 +634,22 @@ attribute [- instance] PSM_Nat
 1. The uniformity is discrete if the metric is discrete.
 2. As uniformities, `𝒫 (idRel) = ⊥`.
 3. Is the equality `𝒫 (idRel) = ⊥` true as filters?
+**ANSWER** NO
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
+**ANSWER** instance : CompleteLattice (TopologicalSpace α) := (gciGenerateFrom α).liftCompleteLattice
 -/
 open Metric Filter Classical
 
-#check PseudoMetricSpace.toUniformSpace.uniformity
-
-example (X : Type*) [PseudoMetricSpace X] (hdisc : ∀ x y : X, x ≠ y → dist x y = 1) :
+example (X : Type*) [MetricSpace X] (hdisc : ∀ x y : X, x ≠ y → dist x y = 1) :
     (uniformity X) = Filter.principal (idRel : Set (X × X)) := by
-  -- by_cases HX : Nonempty X
-  · rw [PseudoMetricSpace.uniformity_dist]
-    ext S
-    refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
-    · simp only [mem_principal, idRel_subset]
-      intro a
-      --obtain ⟨ε, hε_pos, hε_a⟩ := hdisc a
-      replace h : S ∈ ⨅ ε, ⨅ (_ : ε > 0), ⨅ (_ : ε < 1), 𝓟 {p : X × X | dist p.1 p.2 < ε} := by
-        sorry
-      simp only [mem_iInf] at h
-      obtain ⟨I, hI_fin, V, hV, hS⟩ := h
-      by_cases hI : IsEmpty I
-      · have : S = Set.univ := by
-          rw [hS]
-          apply Set.iInter_of_empty
-        rw [this]
-        tauto
-      · let i : I := by
-          rw [not_isEmpty_iff] at hI
-          exact hI.some
-        specialize hV i
-        rw [iInf_le_iInf₂] at hV -- non è rw ma va usato lui
+  convert Metric.uniformSpace_eq_bot.mpr ?_
+  · exact StrictMono.apply_eq_bot_iff fun _ _ a ↦ a
+  use 1
+  simp only [zero_lt_one, true_and]
+  intro i j h
+  exact ge_of_eq <| hdisc i j h
 
-    · simp at h
-
-      have prova : ∀ (ε : ℝ) (_ : ε > 0) (_ : ε < 1), S ∈ 𝓟 {p | dist p.1 p.2 < ε} := by
-        intro ε hε_pos hε_lt p
-        simp only [Set.mem_setOf_eq]
-        intro hp
-        replace hp : p.1 = p.2 := by
-          by_contra h_abs
-          specialize hdisc p.1 p.2 h_abs
-          rw [hdisc] at hp
-          exact not_lt_of_gt hp hε_lt
-      have := @mem_iInf_of_mem (s := S) (ι := ℝ)
-        (f := fun ε ↦ ⨅ (_ : ε > 0), (𝓟 {p : X × X| dist p.1 p.2 < ε})) 1
-      apply this
-      apply mem_iInf_of_mem
-      apply prova
-      exact Real.zero_lt_one
-      sorry
-      exact Real.zero_lt_one
-      -- exact ε_pos
-      -- exact ε_pos
-
-
-
-
-
+example (X : Type*) : (⊥ : UniformSpace X).uniformity = 𝓟 (idRel) := rfl
 
 
 end Exercises
