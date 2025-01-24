@@ -641,9 +641,10 @@ attribute [- instance] PSM_Nat
 open Metric Filter Classical
 
 example (X : Type*) [MetricSpace X] (hdisc : ∀ x y : X, x ≠ y → dist x y = 1) :
-    (uniformity X) = Filter.principal (idRel : Set (X × X)) := by
+    PseudoMetricSpace.toUniformSpace = (⊥ : UniformSpace X) := by
+    -- (uniformity X) = Filter.principal (idRel : Set (X × X)) := by
   convert Metric.uniformSpace_eq_bot.mpr ?_
-  · exact StrictMono.apply_eq_bot_iff fun _ _ a ↦ a
+  -- · exact StrictMono.apply_eq_bot_iff fun _ _ a ↦ a
   use 1
   simp only [zero_lt_one, true_and]
   intro i j h
