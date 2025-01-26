@@ -6,8 +6,6 @@ import Mathlib.Topology.UniformSpace.Basic
 import Mathlib.Data.Complex.Exponential
 import Mathlib.Topology.MetricSpace.Basic
 
--- import Mathlib.Data.NNReal.Basic
-
 
 noncomputable section
 
@@ -650,7 +648,10 @@ example (X : Type*) [MetricSpace X] (hdisc : ∀ x y : X, x ≠ y → dist x y =
   intro i j h
   exact ge_of_eq <| hdisc i j h
 
+
+
 example (X : Type*) : (⊥ : UniformSpace X).uniformity = 𝓟 (idRel) := rfl
+
 
 
 end Exercises
