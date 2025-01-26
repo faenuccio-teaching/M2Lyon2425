@@ -17,22 +17,30 @@ section LocalInstances
 open scoped Filter Uniformity
 
 #print UniformSpace
--- One constructor and four fields
+-- One constructor and five fields
 
-example : instUniformSpaceNat = ⊥ := sorry
+example : instUniformSpaceNat = ⊥ := rfl
 
-example : (uniformity ℕ) = (𝓟 idRel) := sorry
+example : (uniformity ℕ) = (𝓟 idRel) := rfl
 
 #synth UniformSpace ℕ -- instUniformSpaceNat
 attribute [- instance] instUniformSpaceNat --this is local, it only applies to the current section
 
 #synth UniformSpace ℕ -- failed to synthesize
 
-def PSM_Nat : PseudoMetricSpace ℕ := sorry
+def PSM_Nat : PseudoMetricSpace ℕ where
+  dist := fun n m ↦ |2 ^ (-n : ℤ) - 2 ^ (-m : ℤ)|
+  dist_self := by simp only [zpow_neg, zpow_natCast, sub_self, abs_zero, implies_true]
+  dist_comm := fun _ _ ↦ abs_sub_comm _ _
+  dist_triangle := fun _ _ _ ↦ abs_sub_le _ _ _
 
 attribute [instance] PSM_Nat
 
 local instance : PseudoMetricSpace ℕ where
+  dist := fun n m ↦ |2 ^ (-n : ℤ) - 2 ^ (-m : ℤ)|
+  dist_self := by simp only [zpow_neg, zpow_natCast, sub_self, abs_zero, implies_true]
+  dist_comm := fun _ _ ↦ abs_sub_comm _ _
+  dist_triangle := fun _ _ _ ↦ abs_sub_le _ _ _
 
 #synth UniformSpace ℕ
 
@@ -64,9 +72,11 @@ def DefNat := ℕ
 def DefSucc (a : ℤ) := a + 1 --definition as in Mathlib
 abbrev AbbSucc (a : ℤ) := a + 1 --
 
-example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := sorry
+example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := by
+  unfold DefSucc
+  simp only [add_assoc, Int.reduceAdd]
 
-example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := sorry
+example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
 
 
 -- `⌘`
@@ -83,7 +93,7 @@ instance TopSpace𝓡 : TopologicalSpace 𝓡 := ⊥
 #synth TopologicalSpace ℝ
 
 example : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
-  sorry
+  apply continuous_bot
 /-`continuous_bot` is the statement saying that every function leaving from a discrete space
 is automatically continuous. -/
 
@@ -95,29 +105,29 @@ def ℛ := ℝ --type ℛ with \McR
 
 instance : TopologicalSpace ℛ := ⊥
 
-instance : Field ℛ := sorry
+instance : Field ℛ := inferInstanceAs (Field ℝ)
 
 #synth CommRing ℛ
 #synth CommRing 𝓡
 
-instance : LT ℛ := sorry
+instance : LT ℛ := inferInstanceAs (LT ℝ)
 
 lemma ContJump : Continuous (fun x : ℛ ↦ if x < 0 then (0 : ℛ) else 1) := by
-  sorry
+  apply continuous_bot
 
 lemma ContJump' : Continuous (fun x : 𝓡 ↦ if x < 0 then (0 : 𝓡) else 1) := by
-  sorry
+  apply continuous_bot
 
 -- This might be a problem!
-lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : 𝓡) else 1) := by
-  sorry
+lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
+  apply continuous_bot
 
 end Synonyms
 
 -- Even leaving the `Synonyms` section, the following still works.
 example : Continuous (fun x : ℛ × ℛ ↦ if x.1 < 0 then (0 : ℛ) else 1) := by
-  sorry
-
+  apply ContJump.comp
+  apply continuous_fst
 
 -- `⌘`
 
@@ -172,19 +182,27 @@ structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace �
 attribute [-instance] TopSpace𝓡
 -- ## Constructing terms
 
-example : TwoNat := sorry
+example : TwoNat where
+  fst := 2
+  snd := 76
 
 open Real
 
 -- What happens if we have a default value?
-def x1 : Mess ℕ ℝ ℝ := sorry
+def x1 : Mess ℕ ℝ ℝ where
+  f := fun n x y ↦ n + x + y
+  cont := by
+    simp
+    continuity
 
-def x2 : Mess ℕ ℕ ℕ := sorry
+def x2 : Mess ℕ ℕ ℕ := {a := 37, f := fun n x y ↦ n + x + y, cont := continuous_bot}
 
-example (x : TwoNat) : Couple := sorry
+example (x : TwoNat) : Couple where
+  left := x.fst
+  right := x.snd
 
 -- Same construction, different syntax
-example (x : TwoNat) : Couple := sorry
+example (x : TwoNat) : Couple := {left := x.fst, right := x.snd}
 
 example : Couple := sorry
 
@@ -381,104 +399,12 @@ an instance of `TopologicalSpace` on every `SpaceWithMetric`.
 Explain why this is the *wrong* choice, on an explicit example, and fix this.
 -/
 
-@[ext]
-class SpaceWithMetric (X : Type) where
-  d : X → X → ℝ
-  dist_eq_zero (x : X) : d x x = 0
-  dist_pos (x y : X) : x ≠ y → 0 < d x y
-  symm (x y : X) : d x y = d y x
-  triangle (x y z : X) : d x z ≤ d x y + d y z
-
-@[simp]
-instance (X : Type) [SpaceWithMetric X] : TopologicalSpace X where
-  IsOpen := by
-    intro S
-    exact ∀ x ∈ S, ∃ ρ : ℝ, 0 < ρ ∧ {y | SpaceWithMetric.d x y < ρ} ⊆ S
-  isOpen_univ := by
-    by_cases hX : Nonempty X
-    · rintro x -
-      use 1
-      simp
-    · tauto
-  isOpen_inter := by
-    intro S T hS hT x ⟨hxS, hxT⟩
-    let ρS := (hS x hxS).choose
-    let ρT := (hT x hxT).choose
-    use min ρS ρT
-    constructor
-    · apply lt_min
-      exact (hS x hxS).choose_spec.1
-      exact (hT x hxT).choose_spec.1
-    apply Set.subset_inter
-    · apply subset_trans _ (hS x hxS).choose_spec.2
-      intro _ hy
-      simp only [lt_min_iff, Set.mem_setOf_eq] at hy
-      exact hy.1
-    · apply subset_trans _ (hT x hxT).choose_spec.2
-      intro _ hy
-      simp only [lt_min_iff, Set.mem_setOf_eq] at hy
-      exact hy.2
-  isOpen_sUnion := by
-    intro Ω hΩ x ⟨T, hT, hx⟩
-    use (hΩ T hT x hx).choose
-    constructor
-    · exact (hΩ T hT x hx).choose_spec.1
-    apply subset_trans (hΩ T hT x hx).choose_spec.2
-    exact Set.subset_sUnion_of_subset Ω T (by rfl) hT
-
-@[simp]
-instance : SpaceWithMetric ℝ where
-  d := fun x y ↦ dist x y
-  dist_eq_zero := by simp
-  dist_pos := fun x y ↦ (dist_pos).mpr
-  symm := dist_comm
-  triangle := by exact fun x y z ↦ dist_triangle x y z
-
-
-#synth TopologicalSpace ℝ
-
-example : Continuous (fun x : ℝ ↦ x + 1 ) := by
-  sorry
-  -- exact continuous_add_right 1
-
-example : instTopologicalSpaceOfSpaceWithMetric ℝ = UniformSpace.toTopologicalSpace := by
-  ext U
-  rw [Metric.isOpen_iff, IsOpen]
-  simp only [instTopologicalSpaceOfSpaceWithMetric, dist_comm, Metric.ball, instSpaceWithMetricReal,
-    gt_iff_lt]
-
-@[ext]
-class SpaceWithMetricRight (X : Type) extends TopologicalSpace X where
-  d : X → X → ℝ
-  dist_eq_zero (x : X) : d x x = 0
-  dist_pos (x y : X) : x ≠ y → 0 < d x y
-  symm (x y : X) : d x y = d y x
-  triangle (x y z : X) : d x z ≤ d x y + d y z
-  top_eq : ∀ S : Set X, _root_.IsOpen S ↔ ∀ x ∈ S, ∃ ρ : ℝ, 0 < ρ ∧ {y | d x y < ρ} ⊆ S
-
-instance (X : Type) [SpaceWithMetricRight X] : TopologicalSpace X := inferInstance
-
-attribute [-instance] instTopologicalSpaceOfSpaceWithMetric
-
-instance : SpaceWithMetricRight ℝ where
-  d := fun x y ↦ dist x y
-  dist_eq_zero := by simp
-  dist_pos := fun x y ↦ (dist_pos).mpr
-  symm := dist_comm
-  triangle := by exact fun x y z ↦ dist_triangle x y z
-  top_eq := by
-    intro S
-    rw [Metric.isOpen_iff]
-    simp only [instTopologicalSpaceOfSpaceWithMetric, dist_comm, Metric.ball, instSpaceWithMetricReal,
-      gt_iff_lt]
-
-#synth TopologicalSpace ℝ
-
-example : Continuous (fun x : ℝ ↦ x + 1 ) := by
-  exact continuous_add_right 1
-
-example : instTopologicalSpaceOfSpaceWithMetricRight ℝ = UniformSpace.toTopologicalSpace := rfl
-
+class SpaceWithMetric (α : Type*) where
+  dist : α → α → ℝ
+  dist_self : ∀ x, dist x x = 0
+  dist_pos : ∀ x y, x ≠ y → dist x y > 0
+  dist_symm : ∀ x y, dist x y = dist y x
+  dist_triangle : ∀ x y z, dist x z ≤ dist x y + dist y z
 
 -- ## Exercise 2
 open scoped NNReal
