@@ -151,7 +151,7 @@ structure bddLaurentSubmodule /- (M : Type*) [AddCommGroup M] extends Module R M
   carrier : Set R{X}
   UB : ℤ
   LB : ℤ
-  mem_iff : ∀ f : R{X}, f ∈ carrier ↔ (f.support) ⊆ Finset.Icc UB LB
+  mem_iff : ∀ f : R{X}, f ∈ carrier ↔ (f.support) ⊆ Finset.Icc LB UB
 
 -- export bddLaurentSubmodule (mem_iff)
 
@@ -166,9 +166,24 @@ instance :  CoeSort (bddLaurentSubmodule R) (Type _) := ⟨fun M ↦ ↥M.carrie
 
 variable (M : bddLaurentSubmodule R)
 
+-- instance : CoeFun R{X} (fun _ ↦ ℤ →₀ R) := inferInstance
+  -- coe := fun m ↦ m.toFun
+
+instance : FunLike R{X} ℤ R := inferInstanceAs (FunLike (ℤ →₀ R) ℤ R)
+
+instance : CoeFun M (fun _ ↦ ℤ → R) where
+  coe := fun m ↦ m.1.toFun
+
+-- @[simp]
+-- lemma fun_apply {x : M} {n : ℤ} : x.1.toFun n = x n := by
+--   rfl
+
+-- @[simp]?
+-- lemma fun_apply' {x : R{X}} {n : ℤ} : x n = x.toFun n := rfl
+
 @[ext]
-lemma bddext (M : bddLaurentSubmodule R) (x y : (M : Type _)) (H : ∀ n, x.1.toFun n = y.1.toFun n):
-  x = y := by--Finsupp.ext H
+lemma bddext (M : bddLaurentSubmodule R) ⦃x y : M⦄ (H : ∀ n, x n = y n):
+    x = y := by--Finsupp.ext H
   ext
   exact Finsupp.ext H
 
@@ -184,15 +199,13 @@ instance bddLaurentAdd (M : bddLaurentSubmodule R) : Add M where
 
 @[simp]
 lemma add_apply {M : bddLaurentSubmodule R} (x y : (M : Type _)) (n : ℤ) :
-  (x + y).1.toFun n = x.1.toFun n + y.1.toFun n := rfl
+  (x + y) n = x n + y n := rfl
 
-@[simp]
 instance (M : bddLaurentSubmodule R) : Zero M where
   zero := by
     use 0
     simp only [bddLaurentSubmodule.mem_iff, support_zero, empty_subset]
 
-@[simp]
 instance : Neg M where
 neg := by
   rintro ⟨a.val, a.prop⟩
@@ -202,12 +215,18 @@ neg := by
   simp at a.prop
   exact a.prop
 
-@[simp]
-lemma neg_apply (a : M) (n : ℤ) : (-a.1).toFun n = - (a.1.toFun n) := by rfl
 
+-- @[simp]
+-- lemma neg_apply (a : M) (n : ℤ) : (-a.1).toFun n = - (a.1.toFun n) := by rfl
+
+-- @[simp]
+-- lemma neg_apply' (a : M) (n : ℤ) : (-a.1).toFun n = - (a.1.toFun n) := by rfl
+
+@[simp]
+lemma neg_apply (a : M) (n : ℤ) : (-a : M) n = - (a n : R) := by rfl
 
 lemma neg_add : ∀ a : M, -a + a = 0 := by
-  intro
+  intro a
   ext
   simp
   rfl
@@ -231,7 +250,7 @@ lemma add_zero : ∀ a : M, a + 0 = a := by
     rfl
 
 
-instance (M : bddLaurentSubmodule R) : SubNegMonoid M where
+instance (M : bddLaurentSubmodule R) : AddMonoid M where
   add_assoc := by
     intro x y z
     ext n
@@ -241,9 +260,6 @@ instance (M : bddLaurentSubmodule R) : SubNegMonoid M where
   nsmul := by
     intro d x
     fconstructor
-    by_cases hd : d = 0
-    · refine ⟨∅, fun n ↦ d * (x.1.toFun n), ?_⟩
-      simp [hd, zero_mul]
     · refine ⟨{y ∈ x.1.support | d * (x.1.2 y) ≠ 0}, fun n ↦ d * (x.1.toFun n), ?_⟩
       intro a
       simp only [mem_support_iff]
@@ -261,83 +277,25 @@ instance (M : bddLaurentSubmodule R) : SubNegMonoid M where
           rw [this]
           rw [mul_zero]
         · exact hd
-    · by_cases hd : d = 0
-      · rw [hd]
-        simp
-      · simp [hd]
-        apply subset_trans
-        apply Finset.filter_subset
-        have := x.2
-        rw [bddLaurentSubmodule.mem_iff] at this
-        exact this
-  neg := _
-  zsmul := _
+    simp only [ne_eq, bddLaurentSubmodule.mem_iff]
+    apply (Finset.filter_subset _ _).trans
+    simp [← bddLaurentSubmodule.mem_iff, x.2]
+  nsmul_zero := by
+    intro
+    ext
+    simp
+    rfl
+  nsmul_succ := by
+    intro n x
+    ext m
+    simp
+    ring
 
 
-#exit
 instance (M : bddLaurentSubmodule R) : AddCommGroup M where
-  add_assoc := by
-    intro x y z
-    ext n
-    exact add_assoc ..
-  zero := by
-    use 0
-    simp
-  zero_add := by
-    intro
-    ext
-    simp
-    rfl
-  add_zero := by
-    intro
-    ext
-    simp
-    rfl
-  nsmul := by
-    intro d x
-    fconstructor
-    by_cases hd : d = 0
-    · refine ⟨∅, fun n ↦ d * (x.1.toFun n), ?_⟩
-      simp [hd, zero_mul]
-    · refine ⟨{y ∈ x.1.support | d * (x.1.2 y) ≠ 0}, fun n ↦ d * (x.1.toFun n), ?_⟩
-      intro a
-      simp only [mem_support_iff]
-      constructor
-      · intro ha
-        simp at ha
-        exact ha.2
-      · intro hd
-        simp
-        constructor
-        · by_contra habs
-          apply hd
-          have : x.1.2 a = 0 := by
-            exact habs
-          rw [this]
-          rw [mul_zero]
-        · exact hd
-    · by_cases hd : d = 0
-      · rw [hd]
-        simp
-      · simp [hd]
-        apply subset_trans
-        apply Finset.filter_subset
-        have := x.2
-        rw [bddLaurentSubmodule.mem_iff] at this
-        exact this
-  neg := by
-    rintro ⟨x.val, x.prop⟩
-    use -x.val
-    simp
-    rw [support_neg]
-    simp at x.prop
-    exact x.prop
   zsmul := by
     intro d x
     fconstructor
-    by_cases hd : d = 0
-    · refine ⟨∅, fun n ↦ d * (x.1.toFun n), ?_⟩
-      simp [hd, zero_mul]
     · refine ⟨{y ∈ x.1.support | d * (x.1.2 y) ≠ 0}, fun n ↦ d * (x.1.toFun n), ?_⟩
       intro a
       simp only [mem_support_iff]
@@ -355,21 +313,187 @@ instance (M : bddLaurentSubmodule R) : AddCommGroup M where
           rw [this]
           rw [mul_zero]
         · exact hd
-    · by_cases hd : d = 0
-      · rw [hd]
-        simp
-      · simp [hd]
-        apply subset_trans
-        apply Finset.filter_subset
-        have := x.2
-        rw [bddLaurentSubmodule.mem_iff] at this
-        exact this
-  neg_add_cancel := by
-    rintro ⟨x.val, x.prop⟩
-    ext d
+    simp only [ne_eq, bddLaurentSubmodule.mem_iff]
+    apply (Finset.filter_subset _ _).trans
+    simp [← bddLaurentSubmodule.mem_iff, x.2]
+  zsmul_zero' := by
+    intro
+    ext
     simp
-    -- rw [M.neg]
-  add_comm := sorry
+    rfl
+  zsmul_succ' := by
+    intro n x
+    ext m
+    simp
+    ring
+  zsmul_neg' := by
+    rintro n ⟨x.val, x.prop⟩
+    ext m
+    simp
+    ring
+  neg_add_cancel := by
+    intro
+    ext m
+    simp
+    rfl
+  add_comm := by
+    intro n x
+    ext m
+    simp
+    ring
 
+instance : Module R M where
+  smul := by
+    rintro r ⟨m.val, v.prop⟩
+    use r • m.val
+    simp only [bddLaurentSubmodule.mem_iff] at v.prop ⊢
+    exact (support_smul (b := r) (g := m.val)).trans v.prop
+  one_smul := by
+    intro
+    ext
+    apply one_smul
+  mul_smul := by
+    intros
+    ext
+    apply mul_smul
+  smul_zero := by
+    intro
+    ext
+    exact smul_zero ..
+  smul_add := by
+    intros
+    ext
+    exact smul_add ..
+  add_smul := by
+    intros
+    ext
+    exact add_smul ..
+  zero_smul := by
+    intro
+    ext
+    exact zero_smul ..
+
+#synth CommRing R{X}
+
+@[simp]
+lemma smul_apply (f : R{X}) (r : R) (n : ℤ) : (r • f) n = r • (f n) := by
+  rfl
+
+@[simp]
+lemma smul_apply' {f : M} {r : R} {n : ℤ} : (r • f) n = r • (f n) := rfl
+
+instance : Lattice (bddLaurentSubmodule R) where
+  sup := by
+    intro M N
+    use Submodule.span R (M.carrier ∪ N.carrier)
+    use min M.UB N.UB
+    use max M.LB N.LB
+    intro f
+    simp
+    refine ⟨fun hf ↦ ?_, fun hf ↦ ?_⟩
+    · obtain ⟨T, hT, hfT⟩ := Submodule.mem_span_finite_of_mem_span hf
+      obtain ⟨g, hg⟩ := mem_span_finset.mp hfT
+      intro n hn
+      simp at hn
+      obtain ⟨t, ht, ht_nz⟩ : ∃ t ∈ T, t.toFun n ≠ 0 := by
+        by_contra!
+        -- apply_fun (fun l : R{X} ↦ l.toFun) at hg
+        -- rw [funext_iff] at hg
+        -- specialize hg n
+        -- -- simp at hg
+        have uno := @Finsupp.finset_sum_apply (S := T) (α := ℤ) (N := R)
+          (f := fun x ↦ g x • x)
+        rw [Finsupp.ext_iff] at hg
+        -- specialize this n
+        -- have := @sum_smul
+        specialize hg n
+        rw [uno] at hg
+        have htsmul (t : R{X}) (ht : t ∈ T) := smul_apply R t (g t) n
+        have due := @Finset.sum_congr (s₁ := T) (s₂ := T)
+          (f := fun x : R{X} ↦ (g x • x) n)
+          (g := fun x : R{X} ↦ g x • (x n))
+          _ (rfl) htsmul
+        have tre := @Finset.sum_congr (s₁ := T) (s₂ := T)
+          (f := fun x : R{X} ↦ g x • (x n))
+          (g := 0) _ (rfl) ?_
+        rw [due, tre] at hg
+        simp only [Pi.zero_apply, sum_const_zero] at hg
+        exact hn hg.symm
+        · intro t ht
+          simp
+          apply mul_eq_zero_of_right
+          apply this
+          exact ht
+
+
+          -- apply this
+
+
+          -- specialize this ⟨
+          -- simp
+
+
+        -- simp_rw [this] at hg
+
+        -- have htsmul (t : T) : (((g t.1) • t.1) : ℤ → R) n = (g t) • (t.1 n) := sorry
+        -- have := @Finsupp.sum_apply
+        --  [fae_smul_apply] at hg
+        -- simp at hg
+        -- rw [Finsupp.smul] at hg
+        -- simp_rw [smul_apply]
+        -- simp_rw [this] at hg
+        -- erw [this]
+        -- rw [← this]
+      have : t.support ⊆ Icc (max M.LB N.LB) (min M.UB N.UB) := by
+        specialize hT ht
+        rw [Set.mem_union] at hT
+        sorry
+      apply this-- t ht-- ⟨t, ht⟩
+      simp
+      exact ht_nz
+
+
+      -- rw [← hg]
+      -- -- have fss := @Finsupp.support_filter-- (f := g)
+      -- -- apply fss
+      -- have := @Finset.support_sum (s := T) (α := R{X})
+      --   (f := fun i j ↦ ((g i : R) • i)) _
+      -- -- simp only [Function.support_subset_iff, ne_eq, Set.mem_iUnion, /- Function.mem_support, -/
+      -- --   /- exists_prop, forall_const -/] at this
+      -- -- apply subset_trans
+      -- -- simp
+      -- have fs : (Function.support fun x ↦ ∑ i ∈ T, g i • i) = (↑(∑ i ∈ T, g i • i).support : Set ℤ) := by
+      --   norm_cast
+      --   -- simp
+
+      --specialize hf (Submodule.span R M.carrier)
+
+
+    · rw [Submodule.mem_span]
+      rintro p hp
+      apply Set.mem_of_subset_of_mem hp
+      rw [Set.mem_union]
+      left
+      simp
+      apply hf.trans
+      apply Icc_subset_Icc
+      exact Int.le_max_left M.LB N.LB
+      exact Int.min_le_left M.UB N.UB
+
+
+
+  le := sorry
+  le_refl := sorry
+  le_trans := sorry
+  le_antisymm := sorry
+  le_sup_left := sorry
+  le_sup_right := sorry
+  sup_le := sorry
+  inf := sorry
+  inf_le_left := sorry
+  inf_le_right := sorry
+  le_inf := sorry
+
+end
 
 end LaurentPolynomials
