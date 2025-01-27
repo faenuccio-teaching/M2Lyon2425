@@ -144,14 +144,53 @@ instance (R : Type*) [CommRing R] : CommRing R {X} :=
 instance (R : Type*) [CommRing R]: Module R R{X} :=
   inferInstanceAs (Module R (AddMonoidAlgebra R ℤ))
 
+-- whatsnew in
 @[class, ext]
 structure bddLaurentSubmodule /- (M : Type*) [AddCommGroup M] extends Module R M  -/where
   -- extends Submodule R{X} R{X} where
 -- structure bddLaurent (M : Submodule R{X} R{X}) where
   carrier : Set R{X}
-  UB : ℤ
-  LB : ℤ
-  mem_iff : ∀ f : R{X}, f ∈ carrier ↔ (f.support) ⊆ Finset.Icc LB UB
+  bound : ℕ
+  mem_iff : ∀ f : R{X}, f ∈ carrier ↔ (f.support) ⊆ Finset.Icc (- bound : ℤ) (bound : ℤ)
+
+@[ext]
+lemma ext [Nontrivial R] ( M N : bddLaurentSubmodule R) (h : M.carrier = N.carrier) : M = N := by
+  ext
+  · rw [h]
+  · have hM := M.mem_iff
+    have hN := N.mem_iff
+    rw [h] at hM
+    simp_rw [hN] at hM
+    let sn (n : ℤ) : R{X} := single n 1
+    have (n : ℤ) : (sn n).support = {n} := support_single_ne_zero _ one_ne_zero
+    suffices Icc (- N.bound : ℤ) N.bound = Icc (-M.bound : ℤ) M.bound by
+      apply eq_of_le_of_le _
+      · have nLe := subset_of_eq this
+        rw [Icc_subset_Icc_iff] at nLe
+        norm_cast at nLe
+        exact nLe.2
+        linarith
+      · have nLe := subset_of_eq this.symm
+        rw [Icc_subset_Icc_iff] at nLe
+        norm_cast at nLe
+        exact nLe.2
+        linarith
+    ext n
+    specialize hM (sn n)
+    simp only [this, singleton_subset_iff] at hM
+    exact hM
+
+
+
+
+
+    -- specialize hM sn
+
+
+
+
+
+
 
 -- export bddLaurentSubmodule (mem_iff)
 
@@ -180,6 +219,8 @@ instance : CoeFun M (fun _ ↦ ℤ → R) where
 
 -- @[simp]?
 -- lemma fun_apply' {x : R{X}} {n : ℤ} : x n = x.toFun n := rfl
+
+#help command variable
 
 @[ext]
 lemma bddext (M : bddLaurentSubmodule R) ⦃x y : M⦄ (H : ∀ n, x n = y n):
@@ -382,12 +423,12 @@ lemma smul_apply (f : R{X}) (r : R) (n : ℤ) : (r • f) n = r • (f n) := by
 @[simp]
 lemma smul_apply' {f : M} {r : R} {n : ℤ} : (r • f) n = r • (f n) := rfl
 
-instance : Lattice (bddLaurentSubmodule R) where
+instance [Nontrivial R] : Lattice (bddLaurentSubmodule R) where
   sup := by
     intro M N
+    set B := max M.bound N.bound with hB
     use Submodule.span R (M.carrier ∪ N.carrier)
-    use min M.UB N.UB
-    use max M.LB N.LB
+    use B
     intro f
     simp
     refine ⟨fun hf ↦ ?_, fun hf ↦ ?_⟩
@@ -397,15 +438,9 @@ instance : Lattice (bddLaurentSubmodule R) where
       simp at hn
       obtain ⟨t, ht, ht_nz⟩ : ∃ t ∈ T, t.toFun n ≠ 0 := by
         by_contra!
-        -- apply_fun (fun l : R{X} ↦ l.toFun) at hg
-        -- rw [funext_iff] at hg
-        -- specialize hg n
-        -- -- simp at hg
         have uno := @Finsupp.finset_sum_apply (S := T) (α := ℤ) (N := R)
           (f := fun x ↦ g x • x)
         rw [Finsupp.ext_iff] at hg
-        -- specialize this n
-        -- have := @sum_smul
         specialize hg n
         rw [uno] at hg
         have htsmul (t : R{X}) (ht : t ∈ T) := smul_apply R t (g t) n
@@ -424,71 +459,83 @@ instance : Lattice (bddLaurentSubmodule R) where
           apply mul_eq_zero_of_right
           apply this
           exact ht
-
-
-          -- apply this
-
-
-          -- specialize this ⟨
-          -- simp
-
-
-        -- simp_rw [this] at hg
-
-        -- have htsmul (t : T) : (((g t.1) • t.1) : ℤ → R) n = (g t) • (t.1 n) := sorry
-        -- have := @Finsupp.sum_apply
-        --  [fae_smul_apply] at hg
-        -- simp at hg
-        -- rw [Finsupp.smul] at hg
-        -- simp_rw [smul_apply]
-        -- simp_rw [this] at hg
-        -- erw [this]
-        -- rw [← this]
-      have : t.support ⊆ Icc (max M.LB N.LB) (min M.UB N.UB) := by
+      have : t.support ⊆ Icc (- B) B := by
         specialize hT ht
-        rw [Set.mem_union] at hT
-        sorry
-      apply this-- t ht-- ⟨t, ht⟩
+        simp at hT
+        rcases hT with hTL | hTR
+        · apply hTL.trans
+          apply Icc_subset_Icc
+          · simp only [neg_le_neg_iff, Nat.cast_le]
+            rw [hB]
+            exact Nat.le_max_left ..
+          · rw [hB]
+            norm_cast
+            exact Nat.le_max_left ..
+        · apply hTR.trans
+          apply Icc_subset_Icc
+          · simp only [neg_le_neg_iff, Nat.cast_le]
+            rw [hB]
+            exact Nat.le_max_right ..
+          · rw [hB]
+            norm_cast
+            exact Nat.le_max_right ..
+      apply this
       simp
       exact ht_nz
-
-
-      -- rw [← hg]
-      -- -- have fss := @Finsupp.support_filter-- (f := g)
-      -- -- apply fss
-      -- have := @Finset.support_sum (s := T) (α := R{X})
-      --   (f := fun i j ↦ ((g i : R) • i)) _
-      -- -- simp only [Function.support_subset_iff, ne_eq, Set.mem_iUnion, /- Function.mem_support, -/
-      -- --   /- exists_prop, forall_const -/] at this
-      -- -- apply subset_trans
-      -- -- simp
-      -- have fs : (Function.support fun x ↦ ∑ i ∈ T, g i • i) = (↑(∑ i ∈ T, g i • i).support : Set ℤ) := by
-      --   norm_cast
-      --   -- simp
-
-      --specialize hf (Submodule.span R M.carrier)
-
-
-    · rw [Submodule.mem_span]
-      rintro p hp
-      apply Set.mem_of_subset_of_mem hp
-      rw [Set.mem_union]
-      left
+    rw [← Finsupp.sum_single f]
+    apply Submodule.sum_mem
+    intro n hn
+    apply Submodule.subset_span
+    simp
+    specialize hf hn
+    simp at hf
+    by_cases hmax : M.bound ≤ N.bound
+    · right
+      apply (support_single_subset).trans
       simp
-      apply hf.trans
-      apply Icc_subset_Icc
-      exact Int.le_max_left M.LB N.LB
-      exact Int.min_le_left M.UB N.UB
-
-
-
-  le := sorry
-  le_refl := sorry
-  le_trans := sorry
-  le_antisymm := sorry
-  le_sup_left := sorry
-  le_sup_right := sorry
-  sup_le := sorry
+      refine ⟨le_trans ?_ hf.1, ?_⟩
+      · simp
+        apply le_of_eq
+        apply max_eq_right
+        exact hmax
+      · replace hB : B = N.bound := max_eq_right hmax
+        rw [← hB]
+        exact hf.2
+    · left
+      apply (support_single_subset).trans
+      simp
+      replace hmax := le_of_lt (lt_of_not_ge hmax)
+      replace hb : B = M.bound := max_eq_left hmax
+      rwa [hb] at hf
+  le := fun M N ↦ M.carrier ⊆ N.carrier
+  le_refl := by simp
+  le_trans := by
+    intro M N P hMN hNP
+    simp only [Set.le_eq_subset]
+    exact hMN.trans hNP
+  le_antisymm := by
+    intro M N hMN hNM
+    ext x
+    revert x
+    rw [← Set.ext_iff]
+    simp only [Set.le_eq_subset] at hMN hNM
+    apply subset_antisymm hMN hNM
+  le_sup_left := by
+    intro _ _ _ _
+    apply Submodule.subset_span
+    rw [Set.mem_union]
+    tauto
+  le_sup_right := by
+    intro _ _ _ _
+    apply Submodule.subset_span
+    rw [Set.mem_union]
+    tauto
+  sup_le := by
+    intro M N P hMP hNP x hx
+    simp at hx
+    replace hNP := (Submodule.span_monotone (R := R) (M := R{X})) hNP
+    replace hMP := (Submodule.span_monotone (R := R) (M := R{X})) hMP
+    sorry
   inf := sorry
   inf_le_left := sorry
   inf_le_right := sorry
