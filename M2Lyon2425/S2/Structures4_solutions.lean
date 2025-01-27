@@ -414,14 +414,27 @@ instance : Module R M where
     ext
     exact zero_smul ..
 
-#synth CommRing R{X}
-
 @[simp]
 lemma smul_apply (f : R{X}) (r : R) (n : ℤ) : (r • f) n = r • (f n) := by
   rfl
 
 @[simp]
 lemma smul_apply' {f : M} {r : R} {n : ℤ} : (r • f) n = r • (f n) := rfl
+
+variable {R}
+
+def toSubmodule : Submodule R R{X} := by
+  let ι : M →ₗ[R] R{X} :=
+    { toFun := fun x ↦ x.1
+      map_add' := by intros; rfl
+      map_smul' := by intros; rfl }
+  exact LinearMap.range ι
+
+lemma toSubmodule_congr (N : bddLaurentSubmodule R) : (toSubmodule N).carrier = N.carrier := by
+  ext x
+  simp [toSubmodule]
+
+variable (R)
 
 instance [Nontrivial R] : Lattice (bddLaurentSubmodule R) where
   sup := by
@@ -443,7 +456,7 @@ instance [Nontrivial R] : Lattice (bddLaurentSubmodule R) where
         rw [Finsupp.ext_iff] at hg
         specialize hg n
         rw [uno] at hg
-        have htsmul (t : R{X}) (ht : t ∈ T) := smul_apply R t (g t) n
+        have htsmul (t : R{X}) (_ : t ∈ T) := smul_apply R t (g t) n
         have due := @Finset.sum_congr (s₁ := T) (s₂ := T)
           (f := fun x : R{X} ↦ (g x • x) n)
           (g := fun x : R{X} ↦ g x • (x n))
@@ -531,15 +544,55 @@ instance [Nontrivial R] : Lattice (bddLaurentSubmodule R) where
     rw [Set.mem_union]
     tauto
   sup_le := by
-    intro M N P hMP hNP x hx
-    simp at hx
+    intro M N P hMP hNP
     replace hNP := (Submodule.span_monotone (R := R) (M := R{X})) hNP
     replace hMP := (Submodule.span_monotone (R := R) (M := R{X})) hMP
-    sorry
-  inf := sorry
-  inf_le_left := sorry
-  inf_le_right := sorry
-  le_inf := sorry
+    let P_sub : Submodule R R{X} := toSubmodule P
+    have := toSubmodule_congr P
+    have also : ↑P_sub = (toSubmodule P).carrier := by
+      apply Eq.trans
+      apply this
+      exact this.symm
+    rw [← this] at hMP hNP
+    have uff := Submodule.span_eq (R := R) (M := R{X}) P_sub
+    rw [← also, uff] at hNP hMP
+    intro x hx
+    simp at hx
+    rw [Submodule.span_union] at hx
+    rw [Submodule.mem_sup] at hx
+    obtain ⟨y, hy, z, hz, H⟩ := hx
+    specialize hMP hy
+    specialize hNP hz
+    have temp : x ∈ P_sub := by
+      rw [← H]
+      apply add_mem hMP hNP
+    rw [← this, ← also]
+    exact temp
+  inf := by
+    intro M N
+    set B := min M.bound N.bound with hB
+    use (M.carrier ∩ N.carrier)
+    use B
+    intro f
+    refine ⟨fun h ↦ ?_, fun h ↦ ?_⟩
+    · rwa [Set.mem_inter_iff, bddLaurentSubmodule.mem_iff, bddLaurentSubmodule.mem_iff,
+        ← Finset.subset_inter_iff, ← Finset.coe_subset, Finset.coe_inter, Finset.coe_Icc,
+        Finset.coe_Icc, Set.Icc_inter_Icc, ← Finset.coe_Icc, Finset.coe_subset, inf_eq_min,
+        ← Nat.cast_min, sup_eq_max, max_neg_neg, ← Nat.cast_min, ← hB] at h
+    · rwa [Set.mem_inter_iff, bddLaurentSubmodule.mem_iff, bddLaurentSubmodule.mem_iff,
+        ← Finset.subset_inter_iff, ← Finset.coe_subset, Finset.coe_inter, Finset.coe_Icc,
+        Finset.coe_Icc, Set.Icc_inter_Icc, ← Finset.coe_Icc, Finset.coe_subset, inf_eq_min,
+        ← Nat.cast_min, sup_eq_max, max_neg_neg, ← Nat.cast_min, ← hB]
+  inf_le_left := by
+    intro
+    simp [Set.inter_subset_left]
+  inf_le_right := by
+    intro
+    simp [Set.inter_subset_right]
+  le_inf := by
+    intro M N P hMN hMP
+    simp only [Set.subset_inter_iff] at hMN hMP ⊢
+    exact ⟨hMN, hMP⟩
 
 end
 
