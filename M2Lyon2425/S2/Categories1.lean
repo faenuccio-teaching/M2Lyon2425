@@ -238,13 +238,13 @@ It is written `C ⥤ D` (\ + func).
 
 variable {C : Type u} [Category.{v} C] (X : C)
 
--- The Yoneda functors:
+-- The Hom functors:
 
-example : C ⥤ Type v where
+def HomLeft : C ⥤ Type v where
   obj Y := X ⟶ Y
   map f g := g ≫ f
 
-example : Cᵒᵖ ⥤ Type v where
+def HomRight : Cᵒᵖ ⥤ Type v where
   obj Y := Opposite.unop Y ⟶ X
   map f g := sorry
   map_id := sorry
@@ -262,6 +262,7 @@ example (F : C ⥤ D) : Cᵒᵖ ⥤ Dᵒᵖ where
   map := sorry
   map_id := sorry
   map_comp := sorry
+
 
 /-
 We can compose functors, and this is written `F ⋙ G` (\ + ggg), if `F : C ⥤ D`
@@ -325,7 +326,114 @@ def CategoryTheory.NatTrans.hcomp {C : Type u₁} [Category.{v₁, u₁} C] {D :
   F.comp H ⟶ G.comp I
 -/
 
+/- The Yoneda functors.-/
+
+def Yon : C ⥤ (Cᵒᵖ ⥤ Type v) where
+  obj := HomRight
+  map {Y Y'} f := sorry
+  map_id := sorry
+  map_comp := sorry
+-- What happens if I try to do `Yon : C ⥤ (Cᵒᵖ ⥤ Type)`?
+
+
+def YonOp : Cᵒᵖ ⥤ (C ⥤ Type v) where
+  obj X := sorry -- try `HomLeft X`, what happens?
+  map := sorry
+  map_id := sorry
+  map_comp := sorry
+
+
+/-
+The Yoneda lemma. Of course it's already in mathlib, but let's do it as an exercise.
+First we should decide how to state it. One statement is that the Yoneda embedding
+`Yon : C ⥤ (Cᵒᵖ ⥤ Type)` is fully faithful (as well the as `YonOp`), but this is not
+the most general version.
+You also have a version that says that, for every `X : C` and `F : Cᵒᵖ ⥤ Type v`,
+there is an equivalence between the types `Yon.obj X ⟶ F` and `F.obj (Opposite.op X)`
+given by sending `u : Yon.obj X ⟶ F` to the image of `𝟙 X` by `u`.
+Let's try to prove this first.
+-/
+
+open Opposite
+
+@[simp]
+def YonedaEquivFun {X : C} {F : Cᵒᵖ ⥤ Type v} (u : Yon.obj X ⟶ F) : F.obj (op X) := sorry
+
+@[simp]
+def YonedaEquivInv {X : C} {F : Cᵒᵖ ⥤ Type v} (x : F.obj (op X)) : Yon.obj X ⟶ F := sorry
+
+@[simp]
+def YonedaEquiv (X : C) (F : Cᵒᵖ ⥤ Type v) : (Yon.obj X ⟶ F) ≃ F.obj (op X) := sorry
+
+/-
+Of course we could go further, because both sides of the equivalence are functors in
+`X` and `F`, so we could ask for an isomorphism of functors `X × (Cᵒᵖ ⥤ Type v) ⥤ Type`.
+(What universe level here?)
+
+Let's do full faithfulness of `Yon` instead.
+-/
+
+example : Yon.FullyFaithful (C := C) := sorry
+
 end Definitions
+
+section Adjunction
+
+open CategoryTheory
+
+universe u' v'
+
+variable {C : Type u} [Category.{v} C] {D : Type u'} [Category.{v'} D]
+  (F : C ⥤ D) (G : D ⥤ C)
+
+/-
+Let's see one of the fundamental concepts of category theory: adjoint functors.
+Informally, we say that functors `F : C ⥤ D` and `G : D ⥤ C` are adjoint if
+there are equivalences `(F.obj X ⟶ Y) ≃ (X ⟶ G.obj Y)` for every `X : C` and `Y : D`.
+Of course, these equivalences should be natural in both `X` and `Y`.
+
+Let's look at the mathlib definition:
+
+structure Adjunction (F : C ⥤ D) (G : D ⥤ C) where
+  /-- The unit of an adjunction -/
+  unit : 𝟭 C ⟶ F.comp G
+  /-- The counit of an adjunction -/
+  counit : G.comp F ⟶ 𝟭 D
+  /-- Equality of the composition of the unit and counit with the identity `F ⟶ FGF ⟶ F = 𝟙` -/
+  left_triangle_components (X : C) :
+      F.map (unit.app X) ≫ counit.app (F.obj X) = 𝟙 (F.obj X) := by aesop_cat
+  /-- Equality of the composition of the unit and counit with the identity `G ⟶ GFG ⟶ G = 𝟙` -/
+  right_triangle_components (Y : D) :
+      unit.app (G.obj Y) ≫ G.map (counit.app Y) = 𝟙 (G.obj Y) := by aesop_cat
+
+Note that this is the current definition, not the one in our outdated version of
+mathlib! In our version, this is called `Adjunction.CoreUnitCounit`.-/
+
+#print Adjunction
+#print Adjunction.CoreUnitCounit
+
+/-
+Current mathlib uses the `unit - counit` definition. The equivalence we were discussing is
+then called `Adjunction.homEquiv`. Let's try to get a "mathlib adjunction" from an
+"informal adjunction". (Of course, this is already in mathlib, in fact there
+are several different constructors for adjunctions.)
+-/
+
+structure InfAdjunction where
+  equiv (X : C) (Y : D) : (F.obj X ⟶ Y) ≃ (X ⟶ G.obj Y)
+  left_naturality {X X' : C} (Y : D) (f : X ⟶ X') (g : F.obj X' ⟶ Y) :
+      f ≫ equiv X' Y g = equiv X Y (F.map f ≫ g)
+  right_naturality (X : C) {Y Y' : D} (g : Y ⟶ Y') (f : X ⟶ G.obj Y) :
+    (equiv X Y).symm f ≫ g = (equiv X Y').symm (f ≫ G.map g)
+
+
+example (adj : InfAdjunction F G) : Adjunction.CoreUnitCounit F G where
+  unit := sorry
+  counit := sorry
+  left_triangle := sorry
+  right_triangle := sorry
+
+end Adjunction
 
 section Examples
 
