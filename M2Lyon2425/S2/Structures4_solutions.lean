@@ -87,7 +87,7 @@ example (f g : ℕ → ℕ) (hf : Injective f) (hg : ∀ (a b), g a = g b → a 
   exact hg
 
 example (a b : ℕ) (f : ℕ → ℕ) (h_myInj : myInjective f) (h_Inj : Injective f) (hab : f a = f b) :
-  True := by sorry
+  True := sorryAx
   -- have : h_myInj = h_Inj := rfl
   -- have : h_myInj = h_myInj := rfl
   -- have : h_Inj = h_Inj := rfl
@@ -117,19 +117,104 @@ through `a`, pick the circle line to a terminus of a line through `b`, use this 
 
 -/
 
-inductive Stations : Type*
+inductive Stations : Type
+  | JeanMace : Stations
+  | SaxeGambetta : Stations
+  | PlaceGuichard : Stations
   | PartDieu : Stations
+  | HotelDeVille : Stations
+  | CroixPacquet : Stations
   | Perrache : Stations
+  | Ampere : Stations
+  | Bellecour : Stations
+  | Cordeliers : Stations
+  | Guillotiere : Stations
+  | VieuxLyon : Stations
 
-structure Line where
+open Stations List Classical
+
+inductive IsDirection : List Stations → Prop
+  | c_SN : IsDirection [HotelDeVille, CroixPacquet]
+  | b_SN : IsDirection [JeanMace, SaxeGambetta, PlaceGuichard, PartDieu]
+  | a_SN : IsDirection [Perrache, Ampere, Bellecour, Cordeliers, HotelDeVille]
+  | d_EW : IsDirection [Guillotiere, Bellecour, VieuxLyon]
+  | back {L : List Stations} : IsDirection L → IsDirection L.reverse
+
+structure Directions where
+  stops : List Stations
+  isDir : IsDirection stops
+
+-- def reverse : Directions → Directions := fun ⟨D, hD⟩ ↦
+--   ⟨D.stops.reverse, IsDirection.back D.isDir⟩
+
+def A_SN : Directions where
+  stops := [Perrache, Ampere, Bellecour, Cordeliers, HotelDeVille]
+  isDir := IsDirection.a_SN
+
+def A_NS : Directions where
+  stops := [Perrache, Ampere, Bellecour, Cordeliers, HotelDeVille].reverse
+  isDir := IsDirection.back IsDirection.a_SN
+
+instance Directions.Setoid : Setoid Directions where
+  r := fun L M ↦ L.stops = M.stops.reverse ∨ L.stops = M.stops
+  iseqv := by
+    constructor
+    · tauto
+    · intros
+      rw [← reverse_eq_iff]
+      tauto
+    · intro _ _ _
+      rintro (h1 | h1) (_ | _) <;> simp_all
+
+def Lines := Quotient Directions.Setoid
+
+abbrev A : Lines := Quotient.mk'' A_NS
+abbrev A'' : Lines := ⟦A_NS⟧
+abbrev A' : Lines := Quotient.mk'' A_SN
+abbrev A''' : Lines := Quotient.mk'' A_NS
+
+example : A = A' := by
+  rw [Quotient.eq'']
+  constructor
+  rfl
+
+#check List.get
+
+structure Trip (start arrival : Stations) where
   stops : List Stations
   not_empty : stops ≠ []
+  start : stops.head not_empty = start
+  arrival : stops.getLast not_empty = arrival
   nodup : stops.Nodup
+  connection (l : List Stations) : IsInfix l stops → l.length == 2 →
+    ∃ D : Directions, IsInfix l D.stops
 
-structure Trip where
-  n : ℕ+ -- the number of stops
-  select : Fin n → Stations
-  inj : select.Injective
+def Connected (S A : Stations) : Prop := Nonempty (Trip S A)
+
+lemma Connected_symm (stat : Stations) : Connected stat stat := by
+  use [stat] <;> simp
+  intro l hl _
+  have := hl.length_le
+  simp_all
+
+lemma Connected_rfl {pt₁ pt₂} (h : Connected pt₁ pt₂) : Connected pt₂ pt₁ := by
+  let t := choice h
+  use t.stops.reverse
+  · simp [t.not_empty]
+  · simp [t.arrival]
+  · simp [t.start]
+  · simp [t.nodup]
+  · intro l hl htwo
+    obtain ⟨D, hD⟩ := t.connection l.reverse ?_ ?_
+    fconstructor
+    · fconstructor
+      · use D.stops.reverse
+      · apply IsDirection.back
+        exact D.isDir
+
+
+
+
 
 
 -- -- #check Line.notempty
