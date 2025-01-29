@@ -34,20 +34,23 @@ structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace �
 
 
 -- This forgets the label and takes it back.
-example (x : OneNat) : TwoNat := sorry
+example (x : OneNat) : TwoNat := {x with snd := x.1}
 
 -- another syntax
-example (x : OneNat) : TwoNat := sorry
+example (x : OneNat) : TwoNat where
+  __ := x
+  snd := 37
 
-example (x : TwoNat) : OneNat := sorry
+example (x : TwoNat) : OneNat := {x with}
 
-example (x : TwoNat) : OneNat := sorry
+example (x : TwoNat) : OneNat where
+  __ := x
 
-example (x : TwoNat) : Couple := sorry
+example (x : TwoNat) : Couple := x
 
-example (x : OneNat) : Couple := sorry
+example (x : OneNat) : Couple := {left := x.1, right := 37}
 
-example (x : OneNat) : ℕ := sorry
+example (x : OneNat) : ℕ := x.1
 
 
 -- This forgets the label and takes it back.
@@ -74,19 +77,21 @@ structure Mix where
 
 #check Mix.mk
 
-def mix1 (x : TwoNat) (y : Couple) : Mix := sorry
+def mix1 (x : TwoNat) (y : Couple) : Mix := {x, y with}
 /- remember that `x := {x.fst, x.snd}`, `y = {y.left, y.right}`
   and `Mix.mk` takes a `fst : ℕ` and `right : ℕ`: s we need to throw away `x.snd` and `y.left`-/
 
-def mix1' (x : TwoNat) (y : Couple) : Mix := sorry
+def mix1' (x : TwoNat) (y : Couple) : Mix where
+  __ := x
+  __ := y
 
 -- the order does not really matter, it "destructs and reconstructs".
-def mix2 (x : TwoNat) (y : Couple) : Mix := sorry
+def mix2 (x : TwoNat) (y : Couple) : Mix := {y, x with}
 
 
-example : mix1 = mix1' := sorry
+example : mix1 = mix1' := rfl
 
-example : mix1 = mix2 := sorry
+example : mix1 = mix2 := rfl
 
 -- An example with structures having three terms.
 structure Mix' where
@@ -105,13 +110,15 @@ structure Mix₃ where
 
 /- `x := {x.fst, x.right}`, `y := {y.snd, y.left}`, `z := {z.fst, z.snd, z.thrd}` and `Mix.mk` takes
 a `fst : ℕ` and a `right : ℕ`: we need to throw away `x.left`, `y.left`, `z.snd` and `z.thrd`-/
-example (x : Mix) (y : Mix') (z : ThreeNat) : Mix₃ := sorry
+example (x : Mix) (y : Mix') (z : ThreeNat) : Mix₃ := {x, y, z with}
 
 -- A final example with a `Prop`-valued field:
 
 #check Mess.mk
 
-def f₁ : Mess ℕ ℕ ℕ := sorry
+def f₁ : Mess ℕ ℕ ℕ where
+  f:= fun a b ↦ a + b
+  cont := {isOpen_preimage := fun _ _ ↦ trivial}
 
 def f₂ : Mess ℕ ℕ ℕ := sorry
 
@@ -124,7 +131,6 @@ example : f₁ = f₂ := sorry
 
 -- ## Extends
 
-
 structure Blob extends OneNatOneInt, OneNat
 structure Blob' extends OneNatOneInt, TwoNat
 
@@ -134,7 +140,7 @@ structure TwoNatExt extends OneNat where
 /- Under the hood, Lean destructs all these terms and reconstructs them "in the right order" ---
  but keeping labels. -/
 
-def TwoExtToCouple : TwoNatExt → Couple := by sorry
+def TwoExtToCouple : TwoNatExt → Couple := sorry
 
 def TwoNatToCouple : TwoNat → Couple :=  sorry
 
@@ -195,13 +201,18 @@ We can now go back to what we saw the last weeks: remember that we defined -/
 
 class AddMonoidBad (M : Type) extends Add M, AddZeroClass M
 
-instance : AddMonoidBad ℕ := sorry
+instance : AddMonoidBad ℕ where
+  add := Nat.add
+  zero := Nat.zero
+  zero_add := Nat.zero_add
+  add_zero := Nat.add_zero
 
-instance : AddMonoidBad ℕ := sorry
+instance : AddMonoidBad ℕ := ⟨Nat.zero_add, Nat.add_zero⟩
 
-instance : AddMonoidBad ℕ := sorry
+instance : AddMonoidBad ℕ := {Nat.instAddMonoid with}
 
-instance : AddMonoidBad ℕ := sorry
+instance : AddMonoidBad ℕ where
+  __ := Nat.instAddMonoid
 
 end Structures
 
@@ -220,10 +231,11 @@ def G₁ : ℕ → ℕ := (· + 1)
 def G₂ : ℕ → ℕ := fun x ↦ x + 1
 def G₃ : ℕ → ℕ := fun x ↦ Nat.succ x
 
-example : F₁ = F₂ := sorry
-example : G₁ = G₂ := sorry
-example : G₂ = G₃ := sorry
+example : F₁ = F₂ := rfl
+example : G₁ = G₂ := rfl
+example : G₂ = G₃ := rfl
 
+def L₀ : Type → Type := (List ·)
 def L₁ : Type _ → Type _ := (List ·) --
 def L₂ : Type* → Type _ := (List ·)
 def L₃ : Type* → Type* := (List ·)
@@ -303,6 +315,22 @@ There are (at least) two ways:
 good choices, so a kind of "internal rewriting" is needed.
 -/
 
+class NormedModuleBad' (M : Type*) [AddCommGroup M] where
+  ρ_b' : ℝ≥0
+  norm_b' : M → ℝ≥0
+
+instance (M : Type*) [AddCommGroup M] [NormedModuleBad' M] :
+    ModuleWithRel M where
+rel := fun x y ↦ NormedModuleBad'.norm_b' (x - y) ≤ NormedModuleBad'.ρ_b' M
+
+class NormedModuleGood' (M : Type*) [AddCommGroup M] where
+  ρ_g' : ℝ≥0
+  norm_g' : M → ℝ≥0
+  rel_g' : M → M → Prop
+
+instance (M : Type*) [AddCommGroup M] [NormedModuleGood' M] :
+    ModuleWithRel M where
+rel := NormedModuleGood'.rel_g'
 
 -- ## Exercise 2
 /- Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
@@ -312,6 +340,12 @@ good choices, so a kind of "internal rewriting" is needed.
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
 -/
 
+open scoped Filter
+
+example : (𝓟 idRel) = (⊥ : UniformSpace ℕ).uniformity := rfl
+
+-- The equality `𝒫 (idRel) = ⊥` isn't true as filters.
+example : (𝓟 idRel) = (⊥ : Filter (ℕ × ℕ)) := rfl
 
 /- ## Exercise 3
 In the attached file `PlanMetro.pdf` you find a reduced version of Lyon's subway network. I have
@@ -345,5 +379,8 @@ inductive Stations : Type
 
 open Stations List Classical
 
+def OrdLine (x y : Stations) : List Stations := [x, y]
+
+def NonordLine (x y : Stations) := Multiset.ofList [x, y]
 
 end Exercises
