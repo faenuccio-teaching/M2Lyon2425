@@ -6,7 +6,6 @@ import Mathlib.Analysis.Normed.Group.Basic
 import Mathlib.Algebra.MonoidAlgebra.Basic
 import Mathlib.Data.Int.Interval
 
-
 section Structures
 
 structure OneNat where
@@ -379,8 +378,53 @@ inductive Stations : Type
 
 open Stations List Classical
 
-def OrdLine (x y : Stations) : List Stations := [x, y]
+-- Question 1
 
-def NonordLine (x y : Stations) := Multiset.ofList [x, y]
+def Lines : Set (List Stations) :=
+    {[JeanMace, SaxeGambetta, PlaceGuichard, PartDieu],
+    [VieuxLyon, Bellecour, Guillotiere],
+    [HotelDeVille, CroixPacquet],
+    [Perrache, Ampere, Bellecour, Cordeliers, HotelDeVille]}
+
+structure OrdLines (l : List Stations) where
+  startord : Stations
+  finishord : Stations
+
+instance MB : OrdLines [JeanMace, SaxeGambetta, PlaceGuichard, PartDieu] := ⟨JeanMace, PartDieu⟩
+
+def NonordLines : Set (List Stations) :=
+    {[VieuxLyon, Bellecour, Guillotiere],
+    [HotelDeVille, CroixPacquet],
+    [Perrache, Ampere, Bellecour, Cordeliers, HotelDeVille]}
+
+-- In mathlib
+variable {α : Type*}
+def nthLe (l : List α) (n : ℕ) (h : n < l.length) : α := get l ⟨n, h⟩
+
+def Connected_Nonord (x y : Stations) := ∃ l ∈ NonordLines, x ∈ l ∧ y ∈ l
+
+def Connected_Ord (x y : Stations) := ∃ l ∈ Lines, ∃ (_ : OrdLines l),
+    ∃ n m, ∃ (hn : n < l.length) (hm : m < l.length ), x = nthLe l n hn
+    ∧ y = nthLe l m hm
+    ∧ n ≤ m
+
+structure ConnectedStations (x y : Stations) where
+  l : List Stations
+  hl : 1 ≤ l.length
+  start : nthLe l 0 (lt_of_lt_of_le zero_lt_one hl) = x
+  finish : nthLe l (l.length - 1) (Nat.pred_lt (Nat.not_eq_zero_of_lt hl)) = y
+  path : ∀ x y, (∃ n m , ∃ (hn : n < l.length) (hm : m < l.length), x = nthLe l n hn
+  ∧ y = nthLe l m hm ∧ m = n-1) → Connected_Nonord x y ∨ Connected_Ord x y
+
+instance : ConnectedStations Perrache Guillotiere where
+  l := [Perrache, Ampere, Bellecour, Guillotiere]
+  hl := Nat.le_of_ble_eq_true (by rfl)
+  start := by rfl
+  finish := by rfl
+  path := by
+    intros x y h
+    obtain ⟨n, m, hn, hm, posx, posy, hmn⟩ := h
+    simp only [hmn] at posy
+    sorry
 
 end Exercises
