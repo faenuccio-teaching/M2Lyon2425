@@ -70,6 +70,14 @@ example : mix1 = mix1' := sorry
 
 example : mix1 = mix2 := sorry
 
+-- yet, if there are two identical fields, it is the first that is picked:
+def ord (x₁ x₂ : TwoNat) : Mix := {x₁, x₂ with right := 3}
+
+example (x₁ x₂ : TwoNat) : (ord x₁ x₂).fst = x₁.fst := sorry
+
+example (x₁ x₂ : TwoNat) : (ord x₁ x₂).fst = x₂.fst := sorry
+
+
 -- An example with structures having three terms.
 structure Mix' where
   snd : ℕ

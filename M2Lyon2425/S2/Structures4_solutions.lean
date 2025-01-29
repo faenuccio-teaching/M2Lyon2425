@@ -79,6 +79,13 @@ example : mix1 = mix1' := rfl
 
 example : mix1 = mix2 := rfl
 
+-- yet, if there are two identical fields, it is the first that is picked:
+def ord (x₁ x₂ : TwoNat) : Mix := {x₁, x₂ with right := 3}
+
+example (x₁ x₂ : TwoNat) : (ord x₁ x₂).fst = x₁.fst := sorry
+
+example (x₁ x₂ : TwoNat) : (ord x₁ x₂).fst = x₂.fst := sorry
+
 
 -- An example with structures having three terms.
 structure Mix' where
@@ -318,7 +325,7 @@ instance (M N : Type*) [AddCommGroup M] [AddCommGroup N] [ModuleWithRel M] [Modu
 
 variable (p : ∀ {T : Type}, (T → Prop) → Prop)
 /- When defining a `ModuleWithRel` instance on any `NormedModuleBad` we used the relation "being in the
-same ball of radius `1`. Clearly the choice of `1` was arbitrary.
+same ball of radius `1`". Clearly the choice of `1` was arbitrary.
 
 Define an infinite collection of instances of `ModuleWithRel` on any `NormedModuleBad` indexed by
 `ρ : ℝ≥0`, and reproduce both the bad and the good example.
@@ -327,8 +334,7 @@ There are (at least) two ways:
 * Enrich the `NormedModule`'s structure with a `ρ`: this is straightforward.
 * Keep `ρ` as a variable: this is much harder, both because Lean won't be very happy with a
 `class` depending on a variable and because there will *really* be different instances even with
-good choices, so a kind of "internal rewriting" is needed.
--/
+good choices, so a kind of "internal rewriting" is needed. -/
 
 class NMB_r (M : Type) extends AddCommGroup M, NormedModuleBad M where
   ρ : ℝ≥0
@@ -398,21 +404,20 @@ example (hp : ∀ M : Type, ∀ ρ : ℝ≥0, [AddCommGroup M] → [AsAliasR M �
   simp only [eq_rec_constant]
 
 -- ## Exercise 2
-/- Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
+/- "Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
 1. The uniformity is discrete if the metric is discrete.
 2. As uniformities, `𝒫 (idRel) = ⊥`.
 3. Is the equality `𝒫 (idRel) = ⊥` true as filters?
 **ANSWER** NO
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
-**ANSWER** instance : CompleteLattice (TopologicalSpace α) := (gciGenerateFrom α).liftCompleteLattice
+**ANSWER** instance : CompleteLattice (TopologicalSpace α) := (gciGenerateFrom α).liftCompleteLattice"
 -/
 open Metric Filter Classical
 
 example (X : Type*) [MetricSpace X] (hdisc : ∀ x y : X, x ≠ y → dist x y = 1) :
-    PseudoMetricSpace.toUniformSpace = (⊥ : UniformSpace X) := by
-    -- (uniformity X) = Filter.principal (idRel : Set (X × X)) := by
+    (uniformity X) = Filter.principal (idRel : Set (X × X)) := by
   convert Metric.uniformSpace_eq_bot.mpr ?_
-  -- · exact StrictMono.apply_eq_bot_iff fun _ _ a ↦ a
+  · exact StrictMono.apply_eq_bot_iff fun _ _ a ↦ a
   use 1
   simp only [zero_lt_one, true_and]
   intro i j h
@@ -424,7 +429,7 @@ example (X : Type*) : (⊥ : UniformSpace X).uniformity = 𝓟 (idRel) := rfl
 
 
 /- ## Exercise 3
-In the attached file `PlanMetro.pdf` you find a reduced version of Lyon's subway network. I have
+"In the attached file `PlanMetro.pdf` you find a reduced version of Lyon's subway network. I have
 already defined the type of `Stations`.
 
 1. Find a way to formalize lines (both ordered and non-ordered), and the notion for two stations of
@@ -436,7 +441,7 @@ being connected by a path.
 connected.
 
 4. Prove that in the above configuration with a "circle line" every trip requires of at most two
-changes.
+changes."
 -/
 
 inductive Stations : Type
