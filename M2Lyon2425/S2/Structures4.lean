@@ -50,24 +50,6 @@ example (x : OneNat) : Couple := sorry
 example (x : OneNat) : ℕ := sorry
 
 
--- This forgets the label and takes it back.
-example (x : OneNat) : TwoNat := sorry
-
--- another syntax
-example (x : OneNat) : TwoNat := sorry
-
-example (x : TwoNat) : OneNat := sorry
-
-example (x : TwoNat) : OneNat := sorry
-
-
-example (x : TwoNat) : Couple := sorry
-
-example (x : OneNat) : Couple := sorry
-
-example (x : OneNat) : ℕ := sorry
-
-
 structure Mix where
   fst : ℕ
   right : ℕ
