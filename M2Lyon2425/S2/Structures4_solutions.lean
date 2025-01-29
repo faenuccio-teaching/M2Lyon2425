@@ -64,7 +64,7 @@ structure Mix where
 def mix1 (x : TwoNat) (y : Couple) : Mix :=
   {x, y with}
 /- remember that `x := {x.fst, x.snd}`, `y = {y.left, y.right}`
-  and `Mix.mk` takes a `fst : ℕ` and `right : ℕ`: se we need to throw away `x.snd` and `y.left`-/
+  and `Mix.mk` takes a `fst : ℕ` and `right : ℕ`: s we need to throw away `x.snd` and `y.left`-/
 
 def mix1' (x : TwoNat) (y : Couple) : Mix where
   __ := x
@@ -102,6 +102,8 @@ example (x : Mix) (y : Mix') (z : ThreeNat) : Mix₃ :=
 
 -- A final example with a `Prop`-valued field:
 
+#check Mess.mk
+
 def f₁ : Mess ℕ ℕ ℕ where
   f := fun a b ↦ a + b
   cont := {isOpen_preimage := fun _ _ ↦ trivial}
@@ -127,8 +129,8 @@ structure Blob' extends OneNatOneInt, TwoNat
 structure TwoNatExt extends OneNat where
   snd : ℕ
 
-/- Under the hood, Lean destructs all these terms and reconstructs them "in the right order" --- but
-keeping labels. -/
+/- Under the hood, Lean destructs all these terms and reconstructs them "in the right order" ---
+ but keeping labels. -/
 
 -- Remember that `Couple` are pairs of left-right naturals.
 def TwoExtToCouple : TwoNatExt → Couple := by --fun x ↦ {left := x.1, right := x.2} -- error! why?
@@ -150,10 +152,9 @@ structure ThreeNatExt extends TwoNat, Mix
 constructors of the parent structure; in case of overlapping fields, things are destructured. -/
 def TwoNatToExt : TwoNat → TwoNatExt := fun x ↦ {x with}
 
-/- In this example, `with` is able to
-1. Destruct `x` into `x.fst` and get a `OneNat`
-2. Out of the `OneNat` reuire another `ℕ` to define a `TwoNatExt`
-3. Destruct `x` into `x.snd` and get the missing field. -/
+/- In the above definition, `with` is able to
+1. Destruct `x` into `x.fst` and get a `OneNat`, that populates the first field of a `TwoNatExt`
+2. Observe that the other field `x.snd` has the right type and label of what is missing. -/
 
 example (x : TwoNat) : TwoNatToExt x = ⟨⟨x.fst⟩, x.snd⟩ := rfl
 
@@ -161,6 +162,8 @@ example (x : TwoNat) : TwoNatToExt x = ⟨⟨x.fst⟩, x.snd⟩ := rfl
   `structure Mix where`
         `fst : ℕ`
         `right : ℕ`     -/
+
+#check ThreeNatExt.mk
 
 def M₁ : Mix := {fst := 17, right := 11}
 def two : TwoNat := {fst := 1, snd := 2}
@@ -171,8 +174,8 @@ def three' : ThreeNatExt := {two, M₁ with}
 example : three.fst = 17 := by rfl
 example : three'.fst = 1 := by rfl
 
-/- So in reality Lean is first using the first variable (`M` or `two`), possibly throwing away
-useless stuff, and then using what follows to complete them -/
+/- So in reality Lean is first using the first variable (`M₁` or `two`), possibly throwing away
+useless stuff, and then using what follows to complete them. -/
 
 example : three = three' := sorry--rfl -- (they're even different, not simply not `defeq`..._
 --  indeed, `three={fst = 17, snd = 2, right = 11}` while `three'={fst = 1, snd = 2, right = 11}`-/
@@ -182,6 +185,7 @@ def M₂ : Mix := {fst := 13, right := 11}
 def trois : ThreeNatExt := {two, M₂ with}
 
 example : trois.fst = 1 := rfl
+
 example : three' = trois := rfl -- one uses `M₁`, and the other uses `M₂`.
 /- both are `{fst = 1, snd = 2, right = 11}` (the field `left` has been discharged) . -/
 
@@ -235,13 +239,11 @@ def L₃ : Type* → Type* := (List ·)
 /-The difference between `Type*` and `Type _` is that the first declares a term in every universe
 level, the second requires Lean to infer it automatically. -/
 
-open Real
-
 
 -- `⌘`
 
 
-open Function
+open Real Function
 
 def myInjective (f : ℕ → ℕ) : Prop :=
   ∀ {a b : ℕ}, f a = f b → a = b
@@ -264,7 +266,7 @@ example (f g : ℕ → ℕ) (hf : myInjective f) (hg : ∀ (a b), g a = g b → 
   exact hg
   exact @hg
 
-/- As "explained" in the error message, `myInjective g` it creates two metavariables `a† : ℕ` and
+/- As "explained" in the error message, `myInjective g` creates variables `a† : ℕ` and
 `b† : ℕ` so that `myInjective g` *is* `g a† = g b† → a† = b†`and the `∀` has vanished. -/
 
 example (f g : ℕ → ℕ) (hf : Injective f) (hg : ∀ (a b), g a = g b → a = b) :
