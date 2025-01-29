@@ -18,9 +18,12 @@ open scoped Filter Uniformity
 
 #print UniformSpace
 -- One constructor and five fields
+-- One constructor and five fields
 
 example : instUniformSpaceNat = ⊥ := rfl
+example : instUniformSpaceNat = ⊥ := rfl
 
+example : (uniformity ℕ) = (𝓟 idRel) := rfl
 example : (uniformity ℕ) = (𝓟 idRel) := rfl
 
 #synth UniformSpace ℕ -- instUniformSpaceNat
@@ -47,18 +50,32 @@ local instance : PseudoMetricSpace ℕ where
 /-! This is actually true! See `Counterexamples/DiscreteTopologyNonDiscreteUniformity.lean`-/
 lemma idIsCauchy : CauchySeq (id : ℕ → ℕ) := by sorry
 
-example : CauchySeq (id : ℕ → ℕ) := sorry
+example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 
 end LocalInstances
 
 -- This does not work, since we have quit the `LocalInstance` section
-example : CauchySeq (id : ℕ → ℕ) := sorry
+example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 
 
 -- `⌘`
 
 
 noncomputable section Synonyms
+namespace bleah
+scoped notation "𝔸" => ℕ
+
+def NiceNumber : ℕ := 37
+
+#check NiceNumber
+
+#check (37 : 𝔸)
+end bleah
+
+-- open bleah
+#print NiceNumber
+
+#check (37 : 𝔸)
 
 notation "𝒩" => ℕ
 #check (37 : 𝒩)
@@ -75,7 +92,11 @@ abbrev AbbSucc (a : ℤ) := a + 1 --
 example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := by
   unfold DefSucc
   simp only [add_assoc, Int.reduceAdd]
+example (a : ℤ) : DefSucc (DefSucc a) = a + 2 := by
+  unfold DefSucc
+  simp only [add_assoc, Int.reduceAdd]
 
+example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
 example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := by simp only [add_assoc, Int.reduceAdd]
 
 
@@ -94,6 +115,7 @@ instance TopSpace𝓡 : TopologicalSpace 𝓡 := ⊥
 
 example : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
   apply continuous_bot
+  apply continuous_bot
 /-`continuous_bot` is the statement saying that every function leaving from a discrete space
 is automatically continuous. -/
 
@@ -106,6 +128,7 @@ def ℛ := ℝ --type ℛ with \McR
 instance : TopologicalSpace ℛ := ⊥
 
 instance : Field ℛ := inferInstanceAs (Field ℝ)
+instance : Field ℛ := inferInstanceAs (Field ℝ)
 
 #synth CommRing ℛ
 #synth CommRing 𝓡
@@ -114,11 +137,15 @@ instance : LT ℛ := inferInstanceAs (LT ℝ)
 
 lemma ContJump : Continuous (fun x : ℛ ↦ if x < 0 then (0 : ℛ) else 1) := by
   apply continuous_bot
+  apply continuous_bot
 
 lemma ContJump' : Continuous (fun x : 𝓡 ↦ if x < 0 then (0 : 𝓡) else 1) := by
   apply continuous_bot
+  apply continuous_bot
 
 -- This might be a problem!
+lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
+  apply continuous_bot
 lemma ContJump'' : Continuous (fun x : ℝ ↦ if x < 0 then (0 : ℝ) else 1) := by
   apply continuous_bot
 
@@ -168,7 +195,7 @@ structure TwoTerms (α : Type) where
   fst : α
   snd : α
 
-structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace γ] :=--`where` or `:=`
+structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace γ] where--:=--`where` or `:=`
   a : α := 0
   f : α → β → γ → γ
   cont : Continuous (f a)
@@ -185,10 +212,18 @@ attribute [-instance] TopSpace𝓡
 example : TwoNat where
   fst := 2
   snd := 76
+example : TwoNat where
+  fst := 2
+  snd := 76
 
 open Real
 
 -- What happens if we have a default value?
+def x1 : Mess ℕ ℝ ℝ where
+  f := fun n x y ↦ n + x + y
+  cont := by
+    simp
+    continuity
 def x1 : Mess ℕ ℝ ℝ where
   f := fun n x y ↦ n + x + y
   cont := by
@@ -200,11 +235,15 @@ def x2 : Mess ℕ ℕ ℕ := {a := 37, f := fun n x y ↦ n + x + y, cont := con
 example (x : TwoNat) : Couple where
   left := x.fst
   right := x.snd
+example (x : TwoNat) : Couple where
+  left := x.fst
+  right := x.snd
 
 -- Same construction, different syntax
 example (x : TwoNat) : Couple := {left := x.fst, right := x.snd}
+example (x : TwoNat) : Couple := {left := x.fst, right := x.snd}
 
-example : Couple := sorry
+example (x : TwoNat) : Couple := ⟨x.fst, x.snd⟩
 
 example (x : OneNat) : Couple :=
   sorry
@@ -442,76 +481,11 @@ There are (at least) two ways:
 good choices, so a kind of "internal rewriting" is needed.
 -/
 
-class NMB_r (M : Type) extends AddCommGroup M, NormedModuleBad M where
-  ρ : ℝ≥0
 
-instance (M : Type) [NMB_r M] : ModuleWithRel M where
-  rel := fun x y ↦ ‖x - y‖₀ ≤ NMB_r.ρ M
-
-instance (M N : Type) [NMB_r M] [NMB_r N] : NMB_r (M × N) where
-  ρ := max (NMB_r.ρ M) (NMB_r.ρ N)
-
-instance (M : Type) [NMB_r M] : ModuleWithRel M where
-  rel := fun x y ↦ ‖ x - y ‖₀ ≤ NMB_r.ρ M
-
-example (ρ : ℝ≥0) (hp : ∀ M : Type, [NMB_r M] → ∀ m : M, p (rel m))
-    (M : Type) [NMB_r M] (v : M × M) : p (rel v) := by
-  specialize hp (M × M) v
-  -- exact hp
-  sorry
-
-class NMG_r (M : Type) extends AddCommGroup M, NormedModuleBad M where
-  ρ : ℝ≥0
-  rel_ρ := fun x y ↦ norm_b (x - y) ≤ ρ
-
-instance (M : Type) [NMG_r M] : ModuleWithRel M where
-  rel := NMG_r.rel_ρ--fun x y ↦ ‖x - y‖₁ ≤ NMG_r.ρ M
-
-instance (M N : Type) [NMG_r M] [NMG_r N] : NMG_r (M × N) where
-  ρ := max (NMG_r.ρ M) (NMG_r.ρ N)
-  norm_b := fun ⟨m, n⟩ ↦ max ‖m‖₀ ‖n‖₀
-  rel_ρ := rel
-
-example /- (ρ : ℝ≥0) -/ (hp : ∀ M : Type, [NMG_r M] → ∀ m : M, p (rel m))
-    (M : Type) [NMG_r M] (v : M × M) : p (rel v) := by
-  specialize hp (M × M) v
-  exact hp
-
--- ### The hard approach
-
-@[nolint unusedArguments]
-def aliasR (M : Type*) (ρ : ℝ≥0) [AddCommGroup M] := M
-
-class AsAliasR (M : Type*) (ρ : ℝ≥0) [AddCommGroup M] :=
-  norm_R : M → ℝ≥0
-  rel_R : M → M → Prop := fun x y ↦ norm_R (x - y) ≤ ρ
-  equiv : M ≃ aliasR M ρ := Equiv.refl _
-
-instance (M M' : Type*) (ρ ρ' : ℝ≥0) [AddCommGroup M] [AddCommGroup M'] [AsAliasR M ρ]
-  [AsAliasR M' ρ']: AsAliasR (M × M') (max ρ ρ') where
-  norm_R := fun ⟨m₁, m₁'⟩ ↦ max (AsAliasR.norm_R ρ m₁) (AsAliasR.norm_R ρ' m₁')
-
-instance (M : Type*) (ρ : ℝ≥0) [AddCommGroup M] : AddCommGroup (aliasR M ρ) :=
-  inferInstanceAs (AddCommGroup M)
-
--- The `ModuleWithRel` instance on every `aliasR`.
-@[nolint unusedArguments]
-instance (M : Type*) (ρ : ℝ≥0) [AddCommGroup M] [AsAliasR M ρ] : ModuleWithRel (aliasR M ρ) where
-  rel := @AsAliasR.rel_R M ρ _ _
-
-variable (p : ∀ {T : Type}, (T → Prop) → Prop)
-
-example (hp : ∀ M : Type, ∀ ρ : ℝ≥0, [AddCommGroup M] → [AsAliasR M ρ] →
-    ∀ m : aliasR M ρ, p (rel m))
-    (M : Type) (ρ : ℝ≥0) [AddCommGroup M] [AsAliasR M ρ] (v : aliasR (M × M) ρ) :
-      p (rel (max_self ρ ▸ v)) := by
-  specialize hp (M × M) (max ρ ρ) v
-  convert hp
-  simp only [eq_rec_constant]
-
-/- ## Exercise 3
-Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
-1. `PseudoMetricSpace.uniformity_dist = 𝒫 (idRel)` if the metric is discrete.
+-- ## Exercise 3
+attribute [- instance] PSM_Nat
+/- Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
+1. The uniformity is discrete if the metric is discrete.
 2. As uniformities, `𝒫 (idRel) = ⊥`.
 3. Is the equality `𝒫 (idRel) = ⊥` true as filters?
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
