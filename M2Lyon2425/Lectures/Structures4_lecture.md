@@ -9,11 +9,15 @@ use a term of a simpler one and "only add what is left to update the simpler one
 There are two ways, somewhat parallel to the `MyStructure := ...` *vs* `Mystructure where ...` 
 syntaxes.
 * The syntax `with` instructs Lean to take all possible labels from that term and to only 
-ask for the remaining ones: it works when using the `:=` construction. Calling `with` triggers both
+ask for the remaining ones, and it works when using the `:=` construction:
+
+        example (x : OneNat) : TwoNat := {x with snd := 37}
+
+    Calling `with` triggers both
     * collecting all useful fields from a term; and
     * discharging all useless ones.
 
-    Both can be used independently.
+    These features can be applied simultaneously and independently.
 * The syntax `__` has the same behaviour, and works when using the `where` construction.
 
 In both cases, the "extra-fields" are forgotten, and thrown away.
@@ -40,7 +44,8 @@ Technically, `with` updates a value: so `{fst := 1, snd := 2} with fst := 3` is
 `{fst := 3, snd := 2`}.
 
 Using `with` without specifying a new value simply instructs Lean to consider all fields on 
-their own without changing their value (but possibly picking some of them if needed).
+their own without changing their value (possibly picking only the ones that are needed, 
+while discharging the others).
 +++ 
 
 
@@ -72,13 +77,13 @@ and  we want a new *richer* structure `RichStructure` that also contains the fie
                 rth_field : rth_Type
 
 +++ In details
-* If the parent structure types have overlapping field names, then all overlapping  field names 
-must have the **same type**. 
 * The process can be iterated, yielding a structure extending several ones:
 
         VeryRichStructure extends Structure₁, Structure₂, Structure₃ where
             ...
 
+* If the parent structures have overlapping field names, then all overlapping field names 
+must have the **same type**. 
 * If the overlapping fields have different default values, then the default value 
 from the **last** parent structure that includes the field is used. New default values in the child
 (= richer) structure take precedence over default values from the parent (= poorer) structures.
@@ -104,7 +109,7 @@ We want to define an instance of `AddMonoidBad` on `ℕ`. Several ways:
         zero_nsmul := ...
 
 so all the fields that we need are already there: use `with` or `_` to pick them up. To do so, we
-need to find the name of the term `AddMonoid ℕ`, for which we can do
+need to find the name of the term in `AddMonoid ℕ`, for which we can do
 
     #synth AddMonoid ℕ -- Nat.instAddMonoid
 +++
@@ -114,8 +119,24 @@ need to find the name of the term `AddMonoid ℕ`, for which we can do
 # Some ancillary syntax
 
 +++ The anonymous variable
-(typed `\. = ·` and not `\cdot = ⬝`). -/
+When declaring a "very basic" function, the syntax 
+
+    fun x ↦ simple expression depending on x
+
+might be too heavy. We can replace it by
+
+    (simple expression depending on ·)
+
+where
+* round parenthesis are crucial;
+* `·` is typed `\. = ·` and not `\cdot = ⬝`
+
+`⌘`
+
 +++
+
+
+
 
 +++ Minimally/Weakily inserted implicit variables
 We've seen the syntax `{` and `}` to insert *implicit* variables. But in `Mathlib` we find the 
@@ -123,41 +144,46 @@ We've seen the syntax `{` and `}` to insert *implicit* variables. But in `Mathli
     def Injective (f : α → β) : Prop :=
         ∀ ⦃a₁ a₂⦄, f a₁ = f a₂ → a₁ = a₂
 
-* What are this funny double curly braces `⦃` and `⦄`?
+What are this funny double curly braces `⦃` and `⦄`?
 
 Lean has a mechanism for automatically insterting implicit λ-variables when needed; so, as soon as
-it encounters an implicit hole, it populates it with a (potentially anonymous) variable. This can be
-problematic.
+it encounters an implicit hole, it populates it with an anonymous variable. 
+
+#### This can be problematic.
 
 Let's define
 
     def myInjective (f : ℕ → ℕ) : Prop :=
         ∀ {a b : ℕ}, f a = f b → a = b
 
-with usual implicit variables, and let's see what goes wrong... `⌘`
+with usual implicit variables, and let's see what goes wrong ... → `⌘`
 
 
 * The syntax `⦃` introduces so-called *minimally/weakly inserted implicit arguments*, that only
 becomes populated when something explicit *following them* is provided (lest the whole term would
-not type-check): if nothing is inserted *after*, they stay implicit and the `λ`-term is treated as
+not type-check).
+
+If nothing is inserted *after*, they stay implicit and the `λ`-term is treated as
 a honest term in the `∀`-Type.
 
-The reason why `exact @hg` worked is that the role of the `@` is to *disable* this mechanism of 
-automatically populating implicit holes, and this allows to explicitely populate the fields when
+* The reason why `exact @hg` worked is that the role of the `@` is to *disable* this mechanism of 
+automatically populating implicit holes, that also allows to explicitely populate the fields when
 needed.
 
 For more on this, see for example
+
 https://proofassistants.stackexchange.com/questions/66/in-lean-what-do-double-curly-brackets-mean
+
 or
+
 https://lean-lang.org/doc/reference/latest/Terms/Functions/#implicit-functions (section §5.3.1).
--/
 
 +++
 
 # Exercises
 
 1. When defining a `ModuleWithRel` instance on any `NormedModuleBad` we used the relation "being in the
-same ball of radius `1`. Clearly the choice of `1` was arbitrary.
+same ball of radius `1`". Clearly the choice of `1` was arbitrary.
 
     Define an infinite collection of instances of `ModuleWithRel` on any `NormedModuleBad` indexed by
     `ρ : ℝ≥0`, and reproduce both the bad and the good example.
@@ -185,8 +211,17 @@ same ball of radius `1`. Clearly the choice of `1` was arbitrary.
 
     1. Prove that being connected is an equivalence relation.
 
+    1. Test that *Vieux Lyon* and *Part Dieu* are not connected, but *Vieux Lyon* and *Croix-Paquet*
+        are.
+
+    1. 1. Formalize a program that receives two stations in input and 
+        * throws an error if they are not connected;
+        * provides a/the list of lines (without stations) needed to travel between them, if they are
+            connected.
+
     1. Prove that if we add a "circle line" connecting all terminus', then every two stations become
     connected.
 
-    1. Prove that in the above configuration with a "circle line" every trip requires of at most two
-    changes.
+    1. Formalize the notion of "correspondance" and prove that that in the above configuration with
+    a "circle line" every trip requires at most two correspondences.
+
