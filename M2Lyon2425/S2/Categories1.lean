@@ -624,5 +624,4 @@ def coreTop : Adjunction.CoreHomEquiv DiscreteFunctor (forget TopCat) where
   homEquiv_naturality_left_symm := sorry
   homEquiv_naturality_right := sorry
 
-
 end Adjunction
