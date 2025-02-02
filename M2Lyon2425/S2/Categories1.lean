@@ -5,6 +5,8 @@ import Mathlib.CategoryTheory.DiscreteCategory
 import Mathlib.CategoryTheory.Category.Preorder
 import Mathlib.Algebra.Category.Grp.Basic
 import Mathlib.Algebra.Category.ModuleCat.Basic
+import Mathlib.GroupTheory.Abelianization
+import Mathlib.Topology.Category.TopCat.Basic
 
 universe u v
 
@@ -109,11 +111,13 @@ in category theory. For example, saying that an object is the limit of a diagram
 
 end Generalities
 
-section Definitions
 
 open CategoryTheory
 -- A lot of the category theory stuff is in the namespace `CategoryTheory`, so it's
 -- a good idea to open it now.
+
+
+section Definitions
 
 /- So how do we define a category? The way it is defined in mathlib, a
 category is a type with a `CategoryTheory.Category` instance on it.
@@ -377,67 +381,8 @@ example : Yon.FullyFaithful (C := C) := sorry
 
 end Definitions
 
-section Adjunction
-
-open CategoryTheory
-
-universe u' v'
-
-variable {C : Type u} [Category.{v} C] {D : Type u'} [Category.{v'} D]
-  (F : C ⥤ D) (G : D ⥤ C)
-
-/-
-Let's see one of the fundamental concepts of category theory: adjoint functors.
-Informally, we say that functors `F : C ⥤ D` and `G : D ⥤ C` are adjoint if
-there are equivalences `(F.obj X ⟶ Y) ≃ (X ⟶ G.obj Y)` for every `X : C` and `Y : D`.
-Of course, these equivalences should be natural in both `X` and `Y`.
-
-Let's look at the mathlib definition:
-
-structure Adjunction (F : C ⥤ D) (G : D ⥤ C) where
-  /-- The unit of an adjunction -/
-  unit : 𝟭 C ⟶ F.comp G
-  /-- The counit of an adjunction -/
-  counit : G.comp F ⟶ 𝟭 D
-  /-- Equality of the composition of the unit and counit with the identity `F ⟶ FGF ⟶ F = 𝟙` -/
-  left_triangle_components (X : C) :
-      F.map (unit.app X) ≫ counit.app (F.obj X) = 𝟙 (F.obj X) := by aesop_cat
-  /-- Equality of the composition of the unit and counit with the identity `G ⟶ GFG ⟶ G = 𝟙` -/
-  right_triangle_components (Y : D) :
-      unit.app (G.obj Y) ≫ G.map (counit.app Y) = 𝟙 (G.obj Y) := by aesop_cat
-
-Note that this is the current definition, not the one in our outdated version of
-mathlib! In our version, this is called `Adjunction.CoreUnitCounit`.-/
-
-#print Adjunction
-#print Adjunction.CoreUnitCounit
-
-/-
-Current mathlib uses the `unit - counit` definition. The equivalence we were discussing is
-then called `Adjunction.homEquiv`. Let's try to get a "mathlib adjunction" from an
-"informal adjunction". (Of course, this is already in mathlib, in fact there
-are several different constructors for adjunctions.)
--/
-
-structure InfAdjunction where
-  equiv (X : C) (Y : D) : (F.obj X ⟶ Y) ≃ (X ⟶ G.obj Y)
-  left_naturality {X X' : C} (Y : D) (f : X ⟶ X') (g : F.obj X' ⟶ Y) :
-      f ≫ equiv X' Y g = equiv X Y (F.map f ≫ g)
-  right_naturality (X : C) {Y Y' : D} (g : Y ⟶ Y') (f : X ⟶ G.obj Y) :
-    (equiv X Y).symm f ≫ g = (equiv X Y').symm (f ≫ G.map g)
-
-
-example (adj : InfAdjunction F G) : Adjunction.CoreUnitCounit F G where
-  unit := sorry
-  counit := sorry
-  left_triangle := sorry
-  right_triangle := sorry
-
-end Adjunction
 
 section Examples
-
-open CategoryTheory
 
 /- There are some categories already in mathlib.-/
 
@@ -568,5 +513,116 @@ example {G : Type*} [Group G] : (Grp.of G).α = G := rfl
 example {G H : Type u} [Group G] [Group H] (f : G →* H) : (Grp.ofHom f).toFun = f.toFun := rfl
 example {G H : Type u} [Group G] [Group H] (f : G →* H) : Grp.ofHom f = f := rfl
 
-
 end Examples
+
+section Adjunction
+
+universe u' v'
+
+variable {C : Type u} [Category.{v} C] {D : Type u'} [Category.{v'} D]
+  (F : C ⥤ D) (G : D ⥤ C)
+
+/-
+Let's see one of the fundamental concepts of category theory: adjoint functors.
+Informally, we say that functors `F : C ⥤ D` and `G : D ⥤ C` are adjoint if
+there are equivalences `(F.obj X ⟶ Y) ≃ (X ⟶ G.obj Y)` for every `X : C` and `Y : D`.
+Of course, these equivalences should be natural in both `X` and `Y`.
+
+Let's look at the mathlib definition:
+
+structure Adjunction (F : C ⥤ D) (G : D ⥤ C) where
+  /-- The unit of an adjunction -/
+  unit : 𝟭 C ⟶ F.comp G
+  /-- The counit of an adjunction -/
+  counit : G.comp F ⟶ 𝟭 D
+  /-- Equality of the composition of the unit and counit with the identity `F ⟶ FGF ⟶ F = 𝟙` -/
+  left_triangle_components (X : C) :
+      F.map (unit.app X) ≫ counit.app (F.obj X) = 𝟙 (F.obj X) := by aesop_cat
+  /-- Equality of the composition of the unit and counit with the identity `G ⟶ GFG ⟶ G = 𝟙` -/
+  right_triangle_components (Y : D) :
+      unit.app (G.obj Y) ≫ G.map (counit.app Y) = 𝟙 (G.obj Y) := by aesop_cat
+
+Note that this is the current definition, not the one in our outdated version of
+mathlib! In our version, this is called `Adjunction.CoreUnitCounit`.-/
+
+#print Adjunction
+#print Adjunction.CoreUnitCounit
+
+/-
+Current mathlib uses the `unit - counit` definition. The equivalence we were discussing is
+then called `Adjunction.homEquiv`. Let's try to get a "mathlib adjunction" from an
+"informal adjunction". (Of course, this is already in mathlib, in fact there
+are several different constructors for adjunctions.)
+-/
+
+structure InfAdjunction where
+  equiv (X : C) (Y : D) : (F.obj X ⟶ Y) ≃ (X ⟶ G.obj Y)
+  left_naturality {X X' : C} (Y : D) (f : X ⟶ X') (g : F.obj X' ⟶ Y) :
+      f ≫ equiv X' Y g = equiv X Y (F.map f ≫ g)
+  right_naturality (X : C) {Y Y' : D} (g : Y ⟶ Y') (f : X ⟶ G.obj Y) :
+    (equiv X Y).symm f ≫ g = (equiv X Y').symm (f ≫ G.map g)
+
+-- Exercise: going from "informal adjunctions" to "unit-counit adjunctions".
+example (adj : InfAdjunction F G) : Adjunction.CoreUnitCounit F G where
+  unit := sorry
+  counit := sorry
+  left_triangle := sorry
+  right_triangle := sorry
+
+
+/-
+Let's try to do some classical adjunctions.
+-/
+
+-- Abelianization ⊣ forgetful
+
+-- Definition of the abelianization functor from `Grp` to `CommGrp`.
+-- We used the definitions and lemmas of `Mathlib.GroupTheory.Abelianization`.
+@[simp]
+def FunctorAbelianization : Grp ⥤ CommGrp where
+  obj G := CommGrp.of (Abelianization G)
+  map f := CommGrp.ofHom (Abelianization.map f)
+  map_id _ := by
+    dsimp
+    erw [Abelianization.map_id]
+    rfl
+  map_comp _ _ := by
+    dsimp
+    erw [← Abelianization.map_comp]
+    rfl
+
+#check Adjunction.mkOfHomEquiv
+#print Adjunction.CoreHomEquiv
+
+def core : Adjunction.CoreHomEquiv FunctorAbelianization (forget₂ CommGrp Grp) where
+  homEquiv G H := Abelianization.lift.symm
+  homEquiv_naturality_left_symm _ _ := by
+    dsimp
+    apply Abelianization.hom_ext
+    ext
+    dsimp
+    erw [Abelianization.lift.of]
+--  homEquiv_naturality_right _ _ := by aesop
+
+def adjAb : FunctorAbelianization ⊣ (forget₂ CommGrp Grp) :=
+  Adjunction.mkOfHomEquiv core
+
+-- Adjunction between `Type` and `TopCat` given by the discrete topology.
+-- Note that morphisms in `TopCat` are bundle continuous maps of type `ContinuousMap`.
+#print ContinuousMap
+
+def DiscreteFunctor : Type ⥤ TopCat where
+  obj X :=
+    letI : TopologicalSpace X := ⊥
+    TopCat.of X
+  map f := ContinuousMap.mk f continuous_bot
+
+#check forget TopCat
+
+def coreTop : Adjunction.CoreHomEquiv DiscreteFunctor (forget TopCat) where
+  homEquiv X Y := by sorry
+  homEquiv_naturality_left_symm := sorry
+  homEquiv_naturality_right := sorry
+
+
+end Adjunction
