@@ -1,10 +1,6 @@
-import Mathlib.CategoryTheory.Equivalence
-import Mathlib.CategoryTheory.Limits.IsLimit
-import Mathlib.CategoryTheory.NatIso
-import Mathlib.CategoryTheory.DiscreteCategory
-import Mathlib.CategoryTheory.Category.Preorder
 import Mathlib.Algebra.Category.Grp.Basic
-import Mathlib.Algebra.Category.ModuleCat.Basic
+import Mathlib.CategoryTheory.Comma.StructuredArrow.Basic
+import Mathlib.CategoryTheory.Limits.Shapes.Terminal
 import Mathlib.GroupTheory.Abelianization
 import Mathlib.Topology.Category.TopCat.Basic
 

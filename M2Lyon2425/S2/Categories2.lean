@@ -1,6 +1,9 @@
+import Mathlib.Algebra.Category.Grp.Basic
 import Mathlib.CategoryTheory.Limits.EssentiallySmall
+import Mathlib.CategoryTheory.Limits.Shapes.FiniteProducts
+import Mathlib.CategoryTheory.Limits.Shapes.Types
 import Mathlib.CategoryTheory.Limits.Shapes.WideEqualizers
-import Mathlib.CategoryTheory.Subobject.Comma
+import Mathlib.CategoryTheory.Subobject.WellPowered
 
 open CategoryTheory Category
 
@@ -8,14 +11,14 @@ universe u u' v v' w w'
 
 variable {C : Type u} [Category.{v} C]
 
-variable {J : Type w} [Category.{w} J]
+variable {J : Type w} [Category.{w'} J]
 
 section Generalities
 /-
 Limits and colimits.
 
-Let `K : J ⥤ C` be a functor. We say that an object `X` of `C` is a limit of `F`
-if:
+Let `K : J ⥤ C` be a functor. We say that an object `X` of `C` is a limit
+of `F` if:
 (1) We have morphisms `f j : X ⟶ F.obj j` for every `j : J`.
 (2) For every morphism `u : j ⟶ k` in `J`, we have `f j ≫ F.map u = f k`.
 (3) Every time we have the data of an object `Y` of `C` and of morphisms
@@ -159,7 +162,8 @@ The object `X` of (1) is called the *point* of the cone.
 /-
 A `c : Cone F` is:
 * an object `c.pt` and
-* a natural transformation `c.π : c.pt ⟶ F` from the constant `c.pt` functor to `F`.
+* a natural transformation `c.π : c.pt ⟶ F` from the constant `c.pt`
+functor to `F`.
 
 So the data required to make a term of type `Cone F` is morphisms
 `πⱼ : c.pt ⟶ K j` for all `j : J` such that, for every morphism
@@ -205,11 +209,12 @@ cone morphism to `t`. -/
 structure IsLimit (t : Cone F) where
   /-- There is a morphism from any cone point to `t.pt` -/
   lift : ∀ s : Cone F, s.pt ⟶ t.pt
-  /-- The map makes the triangle with the two natural transformations commute -/
+  /-- The map makes the triangle with the two natural transformations
+  commute -/
   fac : ∀ (s : Cone F) (j : J), lift s ≫ t.π.app j = s.π.app j := by aesop_cat
   /-- It is the unique such map to do this -/
-  uniq : ∀ (s : Cone F) (m : s.pt ⟶ t.pt) (_ : ∀ j : J, m ≫ t.π.app j = s.π.app j), m = lift s := by
-    aesop_cat
+  uniq : ∀ (s : Cone F) (m : s.pt ⟶ t.pt)
+      (_ : ∀ j : J, m ≫ t.π.app j = s.π.app j), m = lift s := by aesop_cat
 -/
 
 /-
@@ -223,8 +228,8 @@ Then we have theorems saying that a limit cone is unique up to
 Colimits are "the same" except that you revert the direction of
 every morphism. So we get a categorical definition of initial objects
 (the empty type for types, the trivial group/abelian group/module, etc),
-coproducts (also called "disjoint union" for types, "free products" for groups,
-and "direct sums" for modules), binary coproducts, pushouts,
+coproducts (also called "disjoint union" for types, "free products"
+for groups, and "direct sums" for modules), binary coproducts, pushouts,
 coequalizers, cokernels etc.
 
 Unlike limits, colimits generally have different definitions in
@@ -243,9 +248,11 @@ variable {D : Type u'} [Category.{v'} D] (G : D ⥤ C)
 
 section Preserves
 /- Here we prove that a right adjoint functor preserves all limits.
-We also want to show this for big limits, so we introduce more universes
+We also want to show this for big limits, so we use different universes
 for the indexing category of the limits.
 -/
+#check J
+#synth Category J
 
 #check Functor.leftAdjoint
 #check Adjunction.ofIsRightAdjoint
@@ -266,10 +273,11 @@ noncomputable def RightAdjointPreservesLimit [G.IsRightAdjoint]
 
 end Preserves
 
--- This is a lemma from `Categories1`.
+-- This is a lemma from `Categories1`, useful in the next two sections.
 lemma IsRightAdjointIffInitial :
     G.IsRightAdjoint ↔ ∀ (X : C),
     HasInitial (StructuredArrow X G) := sorry
+
 
 section GeneralAdjointFunctorTheorem
 
@@ -337,6 +345,19 @@ Useful lemmas and defs:
 #check epi_of_epi_fac
 #check eq_of_epi_equalizer
 
+/-
+In the next proof, we use the notion of "monomorphism". This is a
+categorical version of injectivity for a morphism: a morphism
+`f : X ⟶ Y` is called a monomorphism (`Mono` in lean) if, for
+every object `Z` and all `g, h : Z ⟶ X`, if `g ≫ f = h ≫ f`, then
+`g = h`.
+
+The dual notion, which generalizes surjectivity, is that of an
+epimorphism (`Epi` in lean) : a morphism `f : X ⟶ Y` is called an
+epimorphism every object `Z` and all `g, h : Y ⟶ Z`,
+if `f ≫ g = f ≫ h`, then `g = h`.
+-/
+
 lemma InitialOfFamily [HasLimits C] {I : Type*} (x : I → C)
     (wi : ∀ (X : C), ∃ (i : I), Nonempty (x i ⟶ X)) [Small.{v} I] :
     HasInitial C := by
@@ -372,7 +393,7 @@ lemma InitialOfFamily [HasLimits C] {I : Type*} (x : I → C)
   -- We take `j : Z ⟶ Y` the equalizer of `f` and `g`.
   -- Then `i ≫ k ≫ j ≫ i = i` because `Y` is the (wide) equalizer of
   -- all the morphisms `X ⟶ X`, so `(i ≫ k) ≫ j = 𝟙 Y` because `i`
-  -- is a monomorphism (`Mono`), so `j` is an epimorphism (`Epi`),
+  -- is a monomorphism (see `Mono`), so `j` is an epimorphism (`Epi`),
   -- which implies that `f = g` because `j` is the equalizer of `f` and `g`.
   exact hasInitial_of_unique Y
 
@@ -387,8 +408,8 @@ def SolutionSetCondition := ∀ (X : C), ∃ (I : Type u) (_ : Small.{v'} I)
 
 /--
 The general adjoint functor theorem: if `G` satisfies the solution set
-condition and preserves small limits, and if `C` and `D` have all small limits,
-then `G` has a left adjoint.
+condition and preserves small limits, and if `C` and `D` have all small
+limits, then `G` has a left adjoint.
 -/
 theorem GeneralAdjointFunctor [HasLimits D]
     [PreservesLimitsOfSize.{v', v'} G]
@@ -438,8 +459,8 @@ universe `w` if it is `w`-locally small (i.e. its hom types are
 `w`-small) and `Subobject X` is `w`-small for every `X`.
 -/
 
-/- If `C` has small limits and `X : C` is such that `Subobject X` is `v`-small
-(where `v` is the universe level of the hom types of `C`),
+/- If `C` has small limits and `X : C` is such that `Subobject X` is
+`v`-small (where `v` is the universe level of the hom types of `C`),
 then we can form a "minimal subobject" of `X` by taking the limit of
 all subobjects of `X`. We will actually take the limit over `MonOver X`
 (which is equivalent to `Subobject X`), as this is easier.
@@ -450,7 +471,8 @@ local instance [HasLimits C] (X : C) [Small.{v} (Subobject X)] :
   (essentiallySmall_monoOver_iff_small_subobject X).mpr inferInstance
 -- If `Subobject X` is `v`-small, then `MonoOver X` is
 -- essentially small, i.e. equivalent to a `v`-small category.
--- (This holds because `Subobject X` and `MonoOver X` are equivalent categories.)
+-- (This holds because `Subobject X` and `MonoOver X` are equivalent
+-- categories.)
 
 local instance [HasLimits C] (X : C) [Small.{v} (Subobject X)] :
     HasLimitsOfShape (MonoOver X) C :=
@@ -459,7 +481,8 @@ local instance [HasLimits C] (X : C) [Small.{v} (Subobject X)] :
 -- it has limits indexed by `MonoOver X`.
 
 noncomputable def MinimalSubobject [HasLimits C] (X : C)
-    [Small.{v} (Subobject X)] : C := limit (MonoOver.forget X ⋙ Over.forget X)
+    [Small.{v} (Subobject X)] : C :=
+  limit (MonoOver.forget X ⋙ Over.forget X)
 -- The "minimal subobject" of `X` is the limit ("intersection") of
 -- all subobjects of `X`.
 
@@ -482,8 +505,8 @@ local instance [HasLimits C] (X : C)
     sorry
 
 /-- The minimality property: every monomorphism into `MinimalSubobject X`
-is an isomorphism. Indeed, if `u : Y ⟶ MinimalSubobject X` is a monormorphism,
-then we get a subobject of `X` by taking the composition
+is an isomorphism. Indeed, if `u : Y ⟶ MinimalSubobject X` is a
+monormorphism, then we get a subobject of `X` by taking the composition
 `Y ⟶ MinimalSubobject X ⟶ X`. So we have a "projection" morphism
 `MinimalSubobject X ⟶ Y`, which will be the inverse of `u`.
 -/
@@ -491,7 +514,8 @@ lemma MinimalSubobjectIsMinimal [HasLimits C] (X : C)
     [Small.{v} (Subobject X)] {Y : C} (u : Y ⟶ MinimalSubobject X)
     [Mono u] : IsIso u := by
   set j := MonoOver.mk' (u ≫ MinimalSubobjectTo X)
-  set v : MinimalSubobject X ⟶ Y := limit.π (MonoOver.forget X ⋙ Over.forget X) j
+  set v : MinimalSubobject X ⟶ Y :=
+    limit.π (MonoOver.forget X ⋙ Over.forget X) j
   have eq : u ≫ v = 𝟙 Y := by
     sorry
   have eq' : v ≫ u = 𝟙 (MinimalSubobject X) := by
@@ -591,7 +615,8 @@ lemma HasInitialOfWellPowered [WellPowered.{v} C] [HasLimits C] {I : Type*}
 #check StructuredArrow.comp_right
 #check StructuredArrow.homMk
 
-lemma IsCogeneratingOfIsCogenerating (y : I → D) (h : IsCogenerating y) (X : C) :
+lemma IsCogeneratingOfIsCogenerating (y : I → D) (h : IsCogenerating y)
+    (X : C) :
     IsCogenerating (fun (a : Σ (i : I), X ⟶ G.obj (y i)) ↦
     StructuredArrow.mk a.2) := by
   intro a b u v
@@ -612,9 +637,440 @@ theorem SpecialAdjointFunctor [HasLimits D] [WellPowered.{v'} D]
   rw [IsRightAdjointIffInitial]
   intro X
   obtain ⟨I, y, hs, h⟩ := cogen
-  refine @HasInitialOfWellPowered _ _ ?_ ?_ _ ?_ _ (IsCogeneratingOfIsCogenerating G y h X)
+  refine @HasInitialOfWellPowered _ _ ?_ ?_ _ ?_ _
+    (IsCogeneratingOfIsCogenerating G y h X)
   · sorry -- try to use `StructuredArrow.wellPowered_structuredArrow`
   · sorry -- here the helpful one is `StructuredArrow.hasLimitsOfSize`
   · sorry -- use `small_sigma`
 
 end SpecialAdjointFunctorTheorem
+
+
+section GroupObject
+
+/-
+To play with limits some more, we will look at the notion of
+group objects in a category `C` that admits finite products.
+This is a categorical definition of groups.
+
+The idea is that a group object in `C` is the data of:
+- An object of `C`, let's call it `X`.
+- A "multiplication" map, which should be a morphism `X ⨯ X ⟶ X`.
+(Here `⨯` is a notation for the categorical product, typed using
+"\ + X".)
+- An "inversion" map, which should be a morphism `X ⟶ X`.
+- A "unit": If `X` were a type, the unit would be an element of
+`X`, but this does not make sense here. Instead, we will ask
+for a morphism `⊤_ C ⟶ X`, where `⊤_ C` is a terminal object of `C`.
+(If `C` is `Type u`, then `⊤_ C` is a one-point type, so giving a
+morphism `⊤_ C ⟶ X` is the same as giving an element of `X`.)
+(Type `⊤` using "\ + top".)
+
+Of course, these data should satisfy some axioms, such as associativity
+of multiplication, the fact that the unit is a unit, etc. The insight
+is that we can express all of these axioms categorically, as
+equalities betweem some morphisms.
+-/
+
+variable (C : Type u) [Category.{v} C]
+
+variable [HasFiniteProducts C]
+
+structure GroupObject where
+  X : C
+  mul : X ⨯ X ⟶ X    -- type ⨯ using \ + X
+  mul_assoc : prod.map mul (𝟙 X) ≫ mul =
+      (prod.associator X X X).hom ≫ prod.map (𝟙 X) mul ≫ mul
+  one : ⊤_ C ⟶ X -- type `⊤` using \ + top
+  one_mul : (prod.leftUnitor X).inv ≫ prod.map one (𝟙 X) ≫ mul = 𝟙 X
+  mul_one : (prod.rightUnitor X).inv ≫ prod.map (𝟙 X) one ≫ mul = 𝟙 X
+  inv : X ⟶ X
+  inv_mul_cancel : prod.lift inv (𝟙 X) ≫ mul = terminal.from X ≫ one
+-- Note that we chose a minimal list of axioms. There should also be
+-- a `mul_inv_cancel` for example, but it can be deduced from the
+-- other axioms.
+
+-- Category structure on group objects.
+instance : Category (GroupObject C) where
+  Hom G G' := {f : G.X ⟶ G'.X | G.one ≫ f = G'.one ∧
+    prod.map f f ≫ G'.mul = G.mul ≫ f}
+  id G := ⟨𝟙 G.X, by simp⟩
+  comp f g := ⟨f.1 ≫ g.1, ⟨by rw [← assoc, f.2.1, g.2.1],
+    by rw [← prod.map_map, assoc, g.2.2, ← assoc, f.2.2, assoc]⟩⟩
+  id_comp f := by simp
+  comp_id f := by simp
+  assoc f g h := by simp
+
+-- The forgetful functor from group objects in `C` to `C`.
+def GroupObjectForget : GroupObject C ⥤ C where
+  obj G := G.X
+  map f := f.1
+  map_id _ := by rfl
+  map_comp _ _ := by rfl
+
+/-
+Our next goal is to show that group objects in the category `Type u`
+are just groups. (In fact, we will construct an equivalence of
+categories `GroupObject (Type u) ≌ Grp.{u}`.) To simplify the proofs,
+we use some lemmas about products in `Type u`.
+-/
+
+section Lemmas
+
+lemma prod.map_fst_apply {A B C D : Type u} (f : A ⟶ B) (g : C ⟶ D)
+    (x : A ⨯ C) :
+    prod.fst (X := B) (prod.map f g x) = f (prod.fst (X := A) x) := by
+  change (prod.map f g ≫ prod.fst) _ = _
+  rw [prod.map_fst]
+  rfl
+
+lemma prod.map_snd_apply {A B C D : Type u} (f : A ⟶ B) (g : C ⟶ D)
+    (x : A ⨯ C) :
+    prod.snd (X := B) (prod.map f g x) = g (prod.snd (X := A) x) := by
+  change (prod.map f g ≫ prod.snd) _ = _
+  rw [prod.map_snd]
+  rfl
+
+lemma prod.lift_fst_apply {A B C : Type u} (f : A ⟶ B) (g : A ⟶ C) (x : A) :
+    prod.fst (X := B) (prod.lift f g x) = f x := by
+  change (prod.lift f g ≫ prod.fst) _ = _
+  rw [prod.lift_fst]
+
+lemma prod.lift_snd_apply {A B C : Type u} (f : A ⟶ B) (g : A ⟶ C) (x : A) :
+    prod.snd (X := B) (prod.lift f g x) = g x := by
+  change (prod.lift f g ≫ prod.snd) _ = _
+  rw [prod.lift_snd]
+
+end Lemmas
+
+/- If `G` is a group object in `Type u`, then `G.X` gets a canonical
+`Group` instance. We define this instance bit by bit as usual: first
+we introduce the `Mul`, `Inv` and `One` instances, then we prove
+their properties.
+-/
+
+noncomputable instance (G : GroupObject (Type u)) : Mul G.X where
+  mul x y := G.mul ((Types.binaryProductIso G.X G.X).inv ⟨x, y⟩)
+
+noncomputable instance (G : GroupObject (Type u)) : One G.X where
+  one := G.one (Types.terminalIso.inv default)
+
+noncomputable instance (G : GroupObject (Type u)) : Inv G.X where
+  inv x := G.inv x
+
+noncomputable instance (G : GroupObject (Type u)) : Group G.X where
+  mul_assoc x y z := by
+    dsimp [HMul.hMul, Mul.mul]
+    have eq : G.mul ((Types.binaryProductIso G.X G.X).inv (G.mul
+        ((Types.binaryProductIso G.X G.X).inv (x, y)), z)) =
+        (prod.map G.mul (𝟙 G.X) ≫ G.mul) ((Types.binaryProductIso _ _).inv
+        ⟨(Types.binaryProductIso G.X G.X).inv ⟨x, y⟩, z⟩) := by
+      simp only [types_comp_apply]
+      refine congrArg G.mul ?_
+      refine (Types.binaryProductIso G.X G.X).toEquiv.injective ?_
+      ext
+      · simp only [Iso.toEquiv_fun, inv_hom_id_apply, Types.binaryProductIso_hom_comp_fst_apply]
+        rw [prod.map_fst_apply]
+        simp only [types_comp_apply, Types.binaryProductIso_inv_comp_fst_apply]
+      · simp only [Iso.toEquiv_fun, inv_hom_id_apply, Types.binaryProductIso_hom_comp_snd_apply]
+        rw [prod.map_snd_apply]
+        simp only [types_comp_apply, Types.binaryProductIso_inv_comp_snd_apply, types_id_apply]
+    rw [eq, G.mul_assoc]
+    dsimp
+    refine congrArg G.mul ?_
+    refine (Types.binaryProductIso G.X G.X).toEquiv.injective ?_
+    ext
+    · simp only [Iso.toEquiv_fun, Types.binaryProductIso_hom_comp_fst_apply, inv_hom_id_apply]
+      rw [prod.map_fst_apply, prod.lift_fst_apply]
+      simp only [types_comp_apply, Types.binaryProductIso_inv_comp_fst_apply, types_id_apply]
+    · simp only [Iso.toEquiv_fun, Types.binaryProductIso_hom_comp_snd_apply, inv_hom_id_apply]
+      rw [prod.map_snd_apply, prod.lift_snd_apply]
+      refine congrArg G.mul ?_
+      refine (Types.binaryProductIso G.X G.X).toEquiv.injective ?_
+      ext
+      · simp only [Iso.toEquiv_fun, Types.binaryProductIso_hom_comp_fst_apply, inv_hom_id_apply]
+        rw [prod.lift_fst_apply]
+        simp only [types_comp_apply, Types.binaryProductIso_inv_comp_fst_apply,
+          Types.binaryProductIso_inv_comp_snd_apply]
+      · simp only [Iso.toEquiv_fun, Types.binaryProductIso_hom_comp_snd_apply, inv_hom_id_apply]
+        rw [prod.lift_snd_apply]
+        simp only [Types.binaryProductIso_inv_comp_snd_apply]
+  one_mul x := by
+    dsimp [HMul.hMul, Mul.mul, OfNat.ofNat, One.one]
+    have eq : (Types.binaryProductIso G.X G.X).inv
+        (G.one (Types.terminalIso.inv PUnit.unit), x) =
+        prod.map G.one (𝟙 G.X) ((prod.leftUnitor G.X).inv x) := by
+      refine (Types.binaryProductIso G.X G.X).toEquiv.injective ?_
+      simp only [Iso.toEquiv_fun, inv_hom_id_apply, prod.leftUnitor_inv]
+      ext
+      · simp only [Types.binaryProductIso_hom_comp_fst_apply]
+        rw [prod.map_fst_apply]
+        refine congrArg G.one ?_
+        rw [prod.lift_fst_apply]
+        refine Types.terminalIso.toEquiv.injective ?_
+        simp only [Iso.toEquiv_fun, inv_hom_id_apply]
+      · simp only [Types.binaryProductIso_hom_comp_snd_apply]
+        rw [prod.map_snd_apply]
+        simp only [types_comp_apply, types_id_apply]
+        rw [prod.lift_snd_apply]
+        simp only [types_id_apply]
+    rw [eq]
+    change ((prod.leftUnitor G.X).inv ≫ prod.map G.one (𝟙 G.X) ≫ G.mul) _ = _
+    rw [G.one_mul]
+    simp
+  mul_one x := by
+    dsimp [HMul.hMul, Mul.mul, OfNat.ofNat, One.one]
+    have eq : (Types.binaryProductIso G.X G.X).inv
+        (x, G.one (Types.terminalIso.inv PUnit.unit)) =
+        prod.map (𝟙 G.X) G.one ((prod.rightUnitor G.X).inv x) := by
+      refine (Types.binaryProductIso G.X G.X).toEquiv.injective ?_
+      simp only [Iso.toEquiv_fun, inv_hom_id_apply, prod.leftUnitor_inv]
+      ext
+      · simp only [prod.rightUnitor_inv, Types.binaryProductIso_hom_comp_fst_apply]
+        rw [prod.map_fst_apply]
+        simp only [types_comp_apply, types_id_apply]
+        rw [prod.lift_fst_apply]
+        simp only [types_id_apply]
+      · simp only [Types.binaryProductIso_hom_comp_snd_apply]
+        rw [prod.map_snd_apply]
+        simp only [prod.rightUnitor_inv]
+        refine congrArg G.one ?_
+        refine Types.terminalIso.toEquiv.injective ?_
+        simp only [Iso.toEquiv_fun, inv_hom_id_apply, prod.rightUnitor_inv]
+    rw [eq]
+    change ((prod.rightUnitor G.X).inv ≫ prod.map (𝟙 G.X) G.one ≫ G.mul) _ = _
+    rw [G.mul_one]
+    simp
+  inv_mul_cancel x := by
+    dsimp [HMul.hMul, Mul.mul, Inv.inv]
+    have eq : G.mul ((Types.binaryProductIso G.X G.X).inv (G.inv x, x)) =
+        (prod.lift G.inv (𝟙 G.X) ≫ G.mul) x := by
+      simp only [types_comp_apply]
+      refine congrArg G.mul ?_
+      refine (Types.binaryProductIso G.X G.X).toEquiv.injective ?_
+      simp only [Iso.toEquiv_fun, inv_hom_id_apply]
+      ext
+      · simp only [Types.binaryProductIso_hom_comp_fst_apply]
+        rw [prod.lift_fst_apply]
+      · simp only [Types.binaryProductIso_hom_comp_snd_apply]
+        rw [prod.lift_snd_apply]
+        simp only [types_id_apply]
+    rw [eq, G.inv_mul_cancel]
+    change _ = G.one (Types.terminalIso.inv default)
+    simp only [types_comp_apply, PUnit.default_eq_unit]
+    refine congrArg G.one ?_
+    refine Types.terminalIso.toEquiv.injective ?_
+    simp only [Iso.toEquiv_fun, inv_hom_id_apply]
+
+/-
+If `f : G ⟶ G'` is a morphism of group objects in `Type u`, this
+constructs the corresponding morphism of groups from `G.X` to `G'.X`.
+-/
+@[simp]
+def MonoidHomOfHom {G G' : GroupObject (Type u)} (f : G ⟶ G') :
+    G.X →* G'.X where
+      toFun := f.1
+      map_one' := by
+        change (G.one ≫ f.1) (Types.terminalIso.inv default) = 1
+        rw [f.2.1]
+        rfl
+      map_mul' x y := by
+        dsimp [HMul.hMul, Mul.mul]
+        change (G.mul ≫ f.1) _ = _
+        rw [← f.2.2]
+        simp only [Set.mem_setOf_eq, types_comp_apply]
+        refine congrArg G'.mul ?_
+        refine (Types.binaryProductIso G'.X G'.X).toEquiv.injective ?_
+        simp only [Iso.toEquiv_fun, inv_hom_id_apply]
+        ext
+        · simp only [Types.binaryProductIso_hom_comp_fst_apply]
+          rw [prod.map_fst_apply]
+          simp only [Set.mem_setOf_eq, types_comp_apply, Types.binaryProductIso_inv_comp_fst_apply]
+        · simp only [Types.binaryProductIso_hom_comp_snd_apply]
+          rw [prod.map_snd_apply]
+          simp only [Set.mem_setOf_eq, types_comp_apply, Types.binaryProductIso_inv_comp_snd_apply]
+
+-- The functor from `GroupObject (Type u)` to `Grp.{u}` sending
+-- `G` to `G.X` with the group structure defined above.
+noncomputable def CanIso : GroupObject (Type u) ⥤ Grp.{u} where
+  obj G := Grp.of G.X
+  map f := Grp.ofHom (MonoidHomOfHom f)
+  map_id X := by
+    dsimp
+    ext
+    simp only [Grp.coe_of, Grp.coe_id', id_eq]
+    rfl
+  map_comp f g := by
+    dsimp
+    ext
+    simp only [Grp.coe_of]
+    rfl
+
+/- The functor in the other direction: if `G` is a group, then
+it defines a group object in `Type u`, because we have a morphism
+`G × G → G` defined by the multiplication, etc. However, there is
+a technical complication: the categorical product `G ⨯ G` in `Type u`
+(chosen by the axiom of choice among all binary products)
+is NOT the Cartesian product `G × G`, it is only isomorphic to it!
+Similarly, the chosen terminal object in `Type u` is only isomorphic
+to `PUnit.{u + 1}`.
+
+(In fact, this shows that our definitio of group objects is not
+the right one. There is a class called `ChosenFiniteProducts` which
+allows us to choose "nice" representatives in a category such as
+`Type u`, and we should use the finite products given by this class
+to define group objects. I didn't do this because I wanted to torture
+you a bit. End of digression.)
+-/
+#check Types.binaryProductIso
+#check Types.terminalIso
+
+-- Every group defines a group object in `Type u`.
+@[simp]
+noncomputable def GroupObjectOfGrp (G : Type u) [Group G] :
+    GroupObject (Type u) where
+  X := G
+  mul p := ((Types.binaryProductIso G G).hom p).1 * ((Types.binaryProductIso G G).hom p).2
+  mul_assoc := by
+    dsimp
+    ext
+    simp only [Types.binaryProductIso_hom_comp_fst_apply, Types.binaryProductIso_hom_comp_snd_apply,
+      types_comp_apply]
+    rw [prod.map_fst_apply, prod.map_snd_apply, prod.map_fst_apply, prod.map_snd_apply,
+      prod.lift_fst_apply, prod.lift_snd_apply, prod.lift_fst_apply, prod.lift_snd_apply]
+    simp only [types_id_apply, types_comp_apply]
+    rw [mul_assoc]
+  one _ := 1
+  one_mul := by
+    dsimp
+    ext
+    simp only [Types.binaryProductIso_hom_comp_fst_apply, Types.binaryProductIso_hom_comp_snd_apply,
+      types_comp_apply, types_id_apply]
+    rw [prod.map_fst_apply, prod.map_snd_apply, one_mul, prod.lift_snd_apply]
+    simp only [types_id_apply]
+  mul_one := by
+    dsimp
+    ext
+    simp only [Types.binaryProductIso_hom_comp_fst_apply, Types.binaryProductIso_hom_comp_snd_apply,
+      types_comp_apply, types_id_apply]
+    rw [prod.map_fst_apply, prod.lift_fst_apply, prod.map_snd_apply, mul_one]
+    simp only [types_id_apply]
+  inv x := x⁻¹
+  inv_mul_cancel := by
+    ext
+    simp only [Types.binaryProductIso_hom_comp_fst_apply, Types.binaryProductIso_hom_comp_snd_apply,
+      types_comp_apply]
+    rw [prod.lift_fst_apply, prod.lift_snd_apply]
+    simp only [types_id_apply, inv_mul_cancel]
+
+-- Every morphism of groups defines a morphism of group objects.
+@[simp]
+noncomputable def HomOfMonoidHom {G G' : Type u} [Group G] [Group G']
+    (f : G →* G') : GroupObjectOfGrp G ⟶ GroupObjectOfGrp G' where
+      val := f.toFun
+      property := by
+        constructor
+        · aesop
+        · ext
+          dsimp
+          simp only [Types.binaryProductIso_hom_comp_fst_apply,
+            Types.binaryProductIso_hom_comp_snd_apply, map_mul]
+          rw [prod.map_fst_apply, prod.map_snd_apply]
+
+-- Putting all this together into a functor.
+noncomputable def CanIsoInv : Grp.{u} ⥤ GroupObject (Type u) where
+  obj G := GroupObjectOfGrp G.1
+  map f := HomOfMonoidHom f
+  map_id G := by
+    dsimp
+    rw [← SetCoe.ext_iff]
+    ext
+    rfl
+  map_comp f g := by
+    dsimp
+    rw [← SetCoe.ext_iff]
+    ext
+    rfl
+
+/-
+To get an equivalence, we now need to define isomorphisms of functors
+`𝟭 (GroupObject (Type u)) ≅ CanIso ⋙ CanIsoInv` and
+`CanIsoInv ⋙ CanIso ≅ 𝟭 Grp.{u}`. These morphisms are basically given
+by the identity, but we do have to check the compatibility with the
+various group/group object structures.
+-/
+
+noncomputable def CanUnit : 𝟭 (GroupObject (Type u)) ≅ CanIso ⋙ CanIsoInv := by
+  refine NatIso.ofComponents (fun G ↦ ?_) (fun f ↦ ?_)
+  · dsimp [CanIso, CanIsoInv]
+    refine {hom := ?_, inv := ?_, hom_inv_id := ?_, inv_hom_id := ?_}
+    · refine {val := 𝟙 G.X, property := ⟨?_, ?_⟩}
+      · dsimp
+        ext
+        change _ = G.one (Types.terminalIso.inv default)
+        simp only [types_comp_apply, types_id_apply, PUnit.default_eq_unit]
+        refine congrArg G.one ?_
+        refine Types.terminalIso.toEquiv.injective ?_
+        simp only [Iso.toEquiv_fun, inv_hom_id_apply]
+      · dsimp
+        ext
+        simp only [prod.map_id_id, Types.binaryProductIso_hom_comp_fst_apply,
+          Types.binaryProductIso_hom_comp_snd_apply, types_comp_apply, types_id_apply]
+        change G.mul ((Types.binaryProductIso G.X G.X).inv _) = _
+        refine congrArg G.mul ?_
+        refine (Types.binaryProductIso _ _).toEquiv.injective ?_
+        ext
+        · simp only [Iso.toEquiv_fun, inv_hom_id_apply, Types.binaryProductIso_hom_comp_fst_apply]
+        · simp only [Iso.toEquiv_fun, inv_hom_id_apply, Types.binaryProductIso_hom_comp_snd_apply]
+    · refine {val := 𝟙 G.X, property := ⟨?_, ?_⟩}
+      · dsimp
+        ext
+        simp only [types_comp_apply, types_id_apply]
+        change G.one (Types.terminalIso.inv default) = _
+        refine congrArg G.one ?_
+        refine Types.terminalIso.toEquiv.injective ?_
+        simp only [PUnit.default_eq_unit, Iso.toEquiv_fun, inv_hom_id_apply]
+      · dsimp
+        ext
+        simp only [prod.map_id_id, types_comp_apply, types_id_apply,
+          Types.binaryProductIso_hom_comp_fst_apply, Types.binaryProductIso_hom_comp_snd_apply]
+        change _ = G.mul ((Types.binaryProductIso G.X G.X).inv _)
+        refine congrArg G.mul ?_
+        refine (Types.binaryProductIso _ _).toEquiv.injective ?_
+        ext
+        · simp only [Iso.toEquiv_fun, Types.binaryProductIso_hom_comp_fst_apply, inv_hom_id_apply]
+        · simp only [Iso.toEquiv_fun, Types.binaryProductIso_hom_comp_snd_apply, inv_hom_id_apply]
+    · rw [← SetCoe.ext_iff]
+      rfl
+    · rw [← SetCoe.ext_iff]
+      rfl
+  · dsimp [CanIso, CanIsoInv]
+    rw [← SetCoe.ext_iff]
+    rfl
+
+noncomputable def CanCounit : CanIsoInv ⋙ CanIso ≅ 𝟭 Grp.{u} := by
+  refine NatIso.ofComponents (fun G ↦ ?_) (fun f ↦ ?_)
+  · dsimp [CanIsoInv, CanIso]
+    refine MulEquiv.toGrpIso ?_
+    refine {toFun := fun x ↦ x, invFun := fun x ↦ x, left_inv := fun _ ↦ by rfl,
+            right_inv := fun _ ↦ by rfl,  map_mul' := fun x y ↦ ?_}
+    change (CanIsoInv.obj G).mul ((Types.binaryProductIso _ _).inv ⟨x, y⟩) = _
+    simp only [CanIsoInv, GroupObjectOfGrp, HomOfMonoidHom, Set.mem_setOf_eq, OneHom.toFun_eq_coe,
+      MonoidHom.toOneHom_coe, inv_hom_id_apply]
+  · ext
+    rfl
+
+-- The equivalence.
+noncomputable def CanEquiv : GroupObject (Type u) ≌ Grp.{u} where
+  functor := CanIso
+  inverse := CanIsoInv
+  unitIso := CanUnit
+  counitIso := CanCounit
+  functor_unitIso_comp _ := by rfl
+
+-- Compatibility of the equivalence with the forgetful functors.
+noncomputable def CanEquivCompat :
+    CanEquiv.functor ⋙ forget Grp ≅ GroupObjectForget (Type u) :=
+  NatIso.ofComponents (fun _ ↦ Iso.refl _) (fun _ ↦ rfl)
+
+end GroupObject
