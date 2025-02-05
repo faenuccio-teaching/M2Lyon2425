@@ -24,7 +24,7 @@ structure NonFlatCat where
     id : (X : Obj) → Mor X X
     comp : (X : Obj) → (Y : Obj) → (Z : Obj) →
         (f : Mor X Y) → (g : Mor Y Z) → Mor X Z
-    id_comp : sorry
+    id_comp : ∀ X Y, ∀ f : Mor X Y, comp X X Y (id X) f = f
     comp_id : sorry
     comp_assoc : sorry
 -- This is not the actual definition. In fact, as you can see
@@ -130,7 +130,7 @@ that an object is the limit of a diagram:
 end Generalities
 
 
-open CategoryTheory
+open CategoryTheory Category
 -- A lot of the category theory stuff is in the namespace
 -- `CategoryTheory`, so it's a good idea to open it now.
 
@@ -202,7 +202,7 @@ example : 𝟙 X ≫ f ≫ g = f ≫ 𝟙 Y ≫ g := by simp
 
 example : f ≫ g ≫ h = f ≫ (g ≫ h) := by rfl
 
-example : f ≫ g ≫ h = (f ≫ g) ≫ h := by rw [Category.assoc] --`rfl` does not work
+example : f ≫ g ≫ h = (f ≫ g) ≫ h := by rw [assoc] --`rfl` does not work
 
 /-
 We have a special tactic for proving "obvious" categorical stuff.
@@ -276,15 +276,17 @@ variable {C : Type u} [Category.{v} C] (X : C)
 
 -- The Hom functors:
 
+@[simp]
 def HomLeft : C ⥤ Type v where
   obj Y := X ⟶ Y
   map f g := g ≫ f
 
+@[simp]
 def HomRight : Cᵒᵖ ⥤ Type v where
   obj Y := Opposite.unop Y ⟶ X
-  map f g := sorry
-  map_id := sorry
-  map_comp := sorry
+  map f g := f.unop ≫ g
+  map_id X' := by aesop_cat
+  map_comp := by aesop_cat
 
 #check Opposite.op
 #check Opposite.unop
@@ -293,11 +295,13 @@ def HomRight : Cᵒᵖ ⥤ Type v where
 
 variable {D : Type*} [Category D]
 
+open Opposite in
 example (F : C ⥤ D) : Cᵒᵖ ⥤ Dᵒᵖ where
-  obj := sorry
-  map := sorry
-  map_id := sorry
-  map_comp := sorry
+  obj X := by
+    exact op (F.obj (unop X))
+  map f := (F.map f.unop).op
+  map_id := by aesop_cat
+  map_comp := by aesop_cat
 
 
 /-
@@ -353,7 +357,7 @@ The type of natural transformations from `F` to `G` is writte
 `F ⟶ G` (with the `hom` arrow).
 -/
 
-#print NatIso
+-- #print NatIso
 -- oops... A `NatIso` is actually just an isomorphism in
 -- the category of functors.
 #print Iso
@@ -375,17 +379,24 @@ def CategoryTheory.NatTrans.hcomp {C : Type u₁} [Category.{v₁, u₁} C]
 -/
 
 /- The Yoneda functors.-/
-
+@[simp]
 def Yon : C ⥤ (Cᵒᵖ ⥤ Type v) where
   obj := HomRight
-  map {Y Y'} f := sorry
-  map_id := sorry
-  map_comp := sorry
+  map {Y Y'} f := {
+    app := fun _ g ↦ g ≫ f
+    -- naturality := by
+    --   intro X X' h
+    --   dsimp [HomRight]
+    --   ext g
+    --   simp
+  }
+
 -- What happens if I try to do `Yon : C ⥤ (Cᵒᵖ ⥤ Type)`?
 
-
+open Opposite in
+@[simp]
 def YonOp : Cᵒᵖ ⥤ (C ⥤ Type v) where
-  obj X := sorry -- try `HomLeft X`, what happens?
+  obj X := HomLeft (unop X) -- try `HomLeft X`, what happens?
   map := sorry
   map_id := sorry
   map_comp := sorry
@@ -411,15 +422,27 @@ open Opposite
 
 @[simp]
 def YonedaEquivFun {X : C} {F : Cᵒᵖ ⥤ Type v} (u : Yon.obj X ⟶ F) :
-    F.obj (op X) := sorry
+    F.obj (op X) := (u.app (op X)) (𝟙 X)
 
 @[simp]
 def YonedaEquivInv {X : C} {F : Cᵒᵖ ⥤ Type v} (x : F.obj (op X)) :
-    Yon.obj X ⟶ F := sorry
+    Yon.obj X ⟶ F where
+      app _ f := F.map f.op x
 
 @[simp]
 def YonedaEquiv (X : C) (F : Cᵒᵖ ⥤ Type v) :
-    (Yon.obj X ⟶ F) ≃ F.obj (op X) := sorry
+    (Yon.obj X ⟶ F) ≃ F.obj (op X) where
+      toFun := YonedaEquivFun
+      invFun := YonedaEquivInv
+      left_inv u := by
+        dsimp
+        ext Y f
+        dsimp at f ⊢
+        have := u.naturality f.op
+        apply_fun (fun h ↦ h (𝟙 X)) at this
+        simp at this
+        exact this.symm
+      right_inv := by aesop_cat
 
 /-
 Of course we could go further, because both sides of the
@@ -430,7 +453,10 @@ an isomorphism of functors `X × (Cᵒᵖ ⥤ Type v) ⥤ Type`.
 Let's do full faithfulness of `Yon` instead.
 -/
 
-example : Yon.FullyFaithful (C := C) := sorry
+example : Yon.FullyFaithful (C := C) where
+  preimage := sorry
+  map_preimage := sorry
+  preimage_map := sorry
 
 end Definitions
 
@@ -493,7 +519,7 @@ allow `Hom` types to be in `Prop`, and `U ≤ V` is.
 
 example (K : Type*) [Preorder K] (f : J → K) (h : Monotone f) :
     J ⥤ K where
-  obj := sorry
+  obj := f
   map := sorry
   map_id := sorry
   map_comp := sorry
@@ -563,8 +589,8 @@ morphism, use `ofHom`:
 -/
 example (G : Type*) [Group G] : Grp := Grp.of G
 
-example {G H : Type*} [Group G] [Group H] (f : G →* H) :
-    Grp.of G ⟶ Grp.of H := sorry
+example {G H : Type u} [Group G] [Group H] (f : G →* H) :
+    Grp.of G ⟶ Grp.of H := f
 -- Lean complains because `G` and `H` are not necessarily
 -- in the same universe
 
@@ -680,7 +706,10 @@ Let's try to do some classical adjunctions.
 def FunctorAbelianization : Grp ⥤ CommGrp where
   obj G := CommGrp.of (Abelianization G)
   map f := CommGrp.ofHom (Abelianization.map f)
-  map_id _ := by sorry
+  map_id X := by
+    dsimp
+
+    sorry
   map_comp _ _ := by sorry
 
 #check Adjunction.mkOfHomEquiv
