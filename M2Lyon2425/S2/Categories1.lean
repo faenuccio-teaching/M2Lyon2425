@@ -1,4 +1,4 @@
-import Mathlib.CategoryTheory.Comma.StructuredArrow.Basic
+import Mathlib.CategoryTheory.Comma.StructuredArrow
 import Mathlib.CategoryTheory.Limits.Shapes.Terminal
 import Mathlib.GroupTheory.Abelianization
 import Mathlib.Topology.Category.TopCat.Basic
