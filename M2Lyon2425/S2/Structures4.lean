@@ -34,39 +34,23 @@ structure Mess (α β γ : Type) [Zero α] [TopologicalSpace β] [UniformSpace �
 
 
 -- This forgets the label and takes it back.
-example (x : OneNat) : TwoNat := sorry
+example (x : OneNat) : TwoNat := {x with snd := x.fst}
 
 -- another syntax
-example (x : OneNat) : TwoNat := sorry
+example (x : OneNat) : TwoNat where
+  __ := x
+  snd := x.fst
 
-example (x : TwoNat) : OneNat := sorry
+example (x : TwoNat) : OneNat where
+  __ := x
 
-example (x : TwoNat) : OneNat := sorry
+example (x : TwoNat) : OneNat := {x with}
 
-example (x : TwoNat) : Couple := sorry
+example (x : TwoNat) : Couple where
+  left := x.1
+  right := x.2
 
-example (x : OneNat) : Couple := sorry
-
-example (x : OneNat) : ℕ := sorry
-
-
--- This forgets the label and takes it back.
-example (x : OneNat) : TwoNat := sorry
-
--- another syntax
-example (x : OneNat) : TwoNat := sorry
-
-example (x : TwoNat) : OneNat := sorry
-
-example (x : TwoNat) : OneNat := sorry
-
-
-example (x : TwoNat) : Couple := sorry
-
-example (x : OneNat) : Couple := sorry
-
-example (x : OneNat) : ℕ := sorry
-
+example (x : OneNat) : Couple := ⟨x.1, x.1⟩
 
 structure Mix where
   fst : ℕ
@@ -74,19 +58,26 @@ structure Mix where
 
 #check Mix.mk
 
-def mix1 (x : TwoNat) (y : Couple) : Mix := sorry
+def mix1 (x : TwoNat) (y : Couple) : Mix where
+  __ := x
+  __ := y
+
+def mix1'' (x x' : TwoNat) (y : Couple) : Mix := {x, x', y with}
+
+#print mix1''
+
 /- remember that `x := {x.fst, x.snd}`, `y = {y.left, y.right}`
   and `Mix.mk` takes a `fst : ℕ` and `right : ℕ`: s we need to throw away `x.snd` and `y.left`-/
 
-def mix1' (x : TwoNat) (y : Couple) : Mix := sorry
+def mix1' (x : TwoNat) (y : Couple) : Mix := {x, y with}
 
 -- the order does not really matter, it "destructs and reconstructs".
-def mix2 (x : TwoNat) (y : Couple) : Mix := sorry
+def mix2 (x : TwoNat) (y : Couple) : Mix := {y, x with}
 
 
-example : mix1 = mix1' := sorry
+example : mix1 = mix1' := rfl
 
-example : mix1 = mix2 := sorry
+example : mix1 = mix2 := rfl
 
 -- An example with structures having three terms.
 structure Mix' where
@@ -105,18 +96,23 @@ structure Mix₃ where
 
 /- `x := {x.fst, x.right}`, `y := {y.snd, y.left}`, `z := {z.fst, z.snd, z.thrd}` and `Mix.mk` takes
 a `fst : ℕ` and a `right : ℕ`: we need to throw away `x.left`, `y.left`, `z.snd` and `z.thrd`-/
-example (x : Mix) (y : Mix') (z : ThreeNat) : Mix₃ := sorry
+example (x : Mix) (y : Mix') (z : ThreeNat) : Mix₃ := {x, y, z with}
 
 -- A final example with a `Prop`-valued field:
 
 #check Mess.mk
 
-def f₁ : Mess ℕ ℕ ℕ := sorry
+def f₁ : Mess ℕ ℕ ℕ where
+  f := (· + ·)
+  cont := {isOpen_preimage := fun _ _ ↦ trivial}
 
-def f₂ : Mess ℕ ℕ ℕ := sorry
+def f₂ : Mess ℕ ℕ ℕ where
+  a := 0
+  f := (· + ·)
+  cont := continuous_of_discreteTopology
 
 -- `Prop`-valued fields disappear by proof irrelevance
-example : f₁ = f₂ := sorry
+example : f₁ = f₂ := rfl
 
 
 -- `⌘`
@@ -126,7 +122,7 @@ example : f₁ = f₂ := sorry
 
 
 structure Blob extends OneNatOneInt, OneNat
-structure Blob' extends OneNatOneInt, TwoNat
+--structure Blob' extends OneNatOneInt, TwoNat
 
 structure TwoNatExt extends OneNat where
   snd : ℕ
@@ -220,13 +216,14 @@ def G₁ : ℕ → ℕ := (· + 1)
 def G₂ : ℕ → ℕ := fun x ↦ x + 1
 def G₃ : ℕ → ℕ := fun x ↦ Nat.succ x
 
-example : F₁ = F₂ := sorry
-example : G₁ = G₂ := sorry
-example : G₂ = G₃ := sorry
+example : F₁ = F₂ := rfl
+example : G₁ = G₂ := rfl
+example : G₂ = G₃ := rfl
 
+def L₀ : Type → Type := (List ·) --
 def L₁ : Type _ → Type _ := (List ·) --
 def L₂ : Type* → Type _ := (List ·)
-def L₃ : Type* → Type* := (List ·)
+-- def L₃ : Type* → Type* := (List ·)
 /-The difference between `Type*` and `Type _` is that the first declares a term in every universe
 level, the second requires Lean to infer it automatically. -/
 
@@ -244,10 +241,27 @@ def myInjective (f : ℕ → ℕ) : Prop :=
 
 
 lemma myInjective.comp {f g : ℕ → ℕ} (hf : myInjective f) (hg : myInjective g) :
-    myInjective (f ∘ g) := by sorry
+    myInjective (f ∘ g) := by
+    intro a b H
+    apply hg
+    apply hf
+    exact H
 
 example (f g : ℕ → ℕ) (hf : myInjective f) (hg : ∀ (a b), g a = g b → a = b) :
-  myInjective (f ∘ g) := by sorry
+  myInjective (f ∘ g) := by
+  intro a b h
+  apply hg
+  apply hf
+  exact h
+
+example (f g : ℕ → ℕ) (hf : myInjective f) (hg : ∀ {a b}, g a = g b → a = b) :
+  myInjective (f ∘ g) := by
+  intro a b h
+  apply myInjective.comp
+  · exact hf
+  · exact hg
+  · exact h
+
 
 /- As "explained" in the error message, `myInjective g` creates two variables `a† : ℕ` and
 `b† : ℕ` so that `myInjective g` *is* `g a† = g b† → a† = b†`and the `∀` has vanished. -/
@@ -312,6 +326,11 @@ good choices, so a kind of "internal rewriting" is needed.
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
 -/
 
+open Metric Filter Classical
+
+example (X : Type*) [MetricSpace X] (hdisc : ∀ x y : X, x ≠ y → dist x y = 1) :
+  (uniformity X) = (𝓟 (idRel : Set (X×X) )) := by
+    sorry
 
 /- ## Exercise 3
 In the attached file `PlanMetro.pdf` you find a reduced version of Lyon's subway network. I have
@@ -344,6 +363,10 @@ inductive Stations : Type
   | VieuxLyon : Stations
 
 open Stations List Classical
+
+def ligne := Stations → Stations → Prop
+
+
 
 
 end Exercises

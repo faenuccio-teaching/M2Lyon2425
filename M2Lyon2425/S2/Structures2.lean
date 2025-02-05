@@ -208,35 +208,48 @@ example (hp : ∀ M :Type, [AddCommGroup M] → [NormedModuleBad M] → ∀ m : 
 
 
 /- ## Exercice 2
-Define the class of metric spaces (but call them `SpaceWithMetric` to avoid conflict with the
+Define the class of metric spaces (but call them `SpaceWithMetric'` to avoid conflict with the
 existing library) as defined in https://en.wikipedia.org/wiki/Metric_space#Definition, and deduce
-an instance of `TopologicalSpace` on every `SpaceWithMetric`.
+an instance of `TopologicalSpace` on every `SpaceWithMetric'`.
 
 
 
 Explain why this is the *wrong* choice, on an explicit example, and fix this.
 -/
 
-class SpaceWithMetric (M : Type*) where
+class SpaceWithMetric' (M : Type*) where
   dist : M → M → ℝ
   sep : ∀ x, dist x x = 0
-  pos : ∀ x y, x ≠ y → dist x y > 0
+  pos : ∀ x y, x ≠ y → 0 < dist x y
   symm : ∀ x y, dist x y = dist y x
   ineq_trig : ∀ x y z, dist x z ≤ dist x y + dist y z
 
-instance (M :Type*) [i : SpaceWithMetric M] : TopologicalSpace M where
-  IsOpen U := ∀ x ∈ U, ∃ c, ∃ ρ : ℝ, i.dist c x < ρ ∧ ∀ y, i.dist c y < ρ → y ∈ U
+instance (M :Type*) [SpaceWithMetric' M] : TopologicalSpace M where
+  IsOpen U :=
+    ∀ x ∈ U, ∃ c, ∃ ρ : ℝ, SpaceWithMetric'.dist c x < ρ ∧ ∀ y, SpaceWithMetric'.dist c y < ρ → y ∈ U
   isOpen_univ := by
     simp
     intro x
     use x
     use 1
-    rw [i.sep]
+    rw [SpaceWithMetric'.sep]
     simp
-  isOpen_inter := sorry
+  isOpen_inter := by
+    simp
+    intro S T
+    sorry
   isOpen_sUnion := by
     simp only [Set.mem_sUnion, forall_exists_index, and_imp]
     sorry
+
+class SpaceWithetric (X : Type) extends TopologicalSpace X where
+  dist : X → X → ℝ
+  sep : ∀ x, dist x x = 0
+  pos : ∀ x y, x ≠ y → 0 < dist x y
+  symm : ∀ x y, dist x y = dist y x
+  ineq_trig : ∀ x y z, dist x z ≤ dist x y + dist y z
+  top_eq : ∀ S : Set X, IsOpen S ↔ ∀ x ∈ S, ∃ ρ : ℝ, {y | dist x y < ρ} ⊆ S
+
 
 
 /- ## Exercise 3

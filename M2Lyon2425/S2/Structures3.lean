@@ -44,21 +44,21 @@ attribute [instance] PSM_Nat
 --   dist_comm := fun _ _ ↦ abs_sub_comm ..
 --   dist_triangle := fun _ _ _ ↦ abs_sub_le ..
 
+attribute [instance] instUniformSpaceNat
+
 #synth UniformSpace ℕ
 
 /-! This is actually true! See `Counterexamples/DiscreteTopologyNonDiscreteUniformity.lean`-/
 lemma idIsCauchy : CauchySeq (id : ℕ → ℕ) := by
   simp only [CauchySeq, Filter.map_id, Cauchy]
-
   sorry
 
-example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 
 end LocalInstances
 
 -- This does not work, since we have quit the `LocalInstance` section
-example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
+--example : CauchySeq (id : ℕ → ℕ) := idIsCauchy
 
 
 -- `⌘`
@@ -75,7 +75,7 @@ def NiceNumber : ℕ := 37
 #check (37 : 𝔸)
 end bleah
 
--- open bleah
+open bleah
 #print NiceNumber
 
 #check (37 : 𝔸)
@@ -106,7 +106,7 @@ example (a : ℤ) : AbbSucc (AbbSucc a) = a + 2 := by simp only [add_assoc, Int.
 abbrev 𝓡 := ℝ --type 𝓡 with \MCR
 #synth TopologicalSpace 𝓡
 
-attribute [-instance] UniformSpace.toTopologicalSpace
+-- attribute [-instance] UniformSpace.toTopologicalSpace
 --#synth TopologicalSpace ℝ
 
 instance TopSpace𝓡 : TopologicalSpace 𝓡 := ⊥
@@ -238,24 +238,6 @@ example (x : OneNat) : Couple :=
 
 -- `⌘`
 
-
--- This forgets the label and takes it back.
-example (x : OneNat) : TwoNat := sorry
-
--- another syntax
-example (x : OneNat) : TwoNat := sorry
-
-example (x : TwoNat) : OneNat := sorry
-
-example (x : TwoNat) : OneNat := sorry
-
-
-example (x : TwoNat) : Couple := sorry
-
-example (x : OneNat) : Couple := sorry
-
-example (x : OneNat) : ℕ := sorry
-
 structure Mix where
   fst : ℕ
   right : ℕ
@@ -308,110 +290,6 @@ example : f₁ = f₂ := sorry
 
 -- `⌘`
 
-
--- ## Extends
-
-
-structure TwoNatExt extends OneNat where
-  snd : ℕ
-
-structure OneNatOneInt where
-  fst : ℕ
-  snd : ℤ
-
-structure Blob extends OneNatOneInt, OneNat
-structure Blob' extends OneNatOneInt, TwoNat
-
-
-/- Under the hood, Lean destructs all these terms and reconstructs them "in the right order" --- but
-keeping labels. -/
-
-def TwoExtToCouple : TwoNatExt → Couple := by sorry
-
-def TwoNatToCouple : TwoNat → Couple :=  sorry
-
-/- And if there are duplicates? Remember that
-  `structure Mix where`
-      `fst : ℕ`
-      `right : ℕ`     -/
-
-structure ThreeNatExt extends TwoNat, Mix
-
-#print ThreeNatExt
-
-/- Overlapping fields are not duplicated; moreover, whenever possible, fields will coincide with
-constructors of the parent structure; in case of overlapping fields, things are destructured. -/
-
-
-def TwoNatToExt : TwoNat → TwoNatExt := sorry
-
-/- `with` is able to
-1. Destruct `x` into `x.fst` and get a `OneNat`
-2. Out of the `OneNat` reuire another `ℕ` to define a `TwoNatExt`
-3. Destruct `x` into `x.snd` and get the missing field. -/
-
-example (x : TwoNat) : TwoNatToExt x = ⟨⟨x.fst⟩, x.snd⟩ := sorry
-
-
-/- Remember
-    `mix1 (x : TwoNat) (y : Couple) : Mix := {x, y with}` and
-    `mix2 (x : TwoNat) (y : Couple) : Mix := {y, x with}` -/
-
-def mix3 (x : TwoNatExt) (y : Couple) : Mix := sorry
-
-example (x : TwoNat) (y : Couple) : mix1 x y = mix3 (TwoNatToExt x) y := sorry
-
-
-/- Remember that `ThreeNatExt extends TwoNat, Mix` and
-  `structure Mix where`
-        `fst : ℕ`
-        `right : ℕ`     -/
-
-def M₁ : Mix := {fst := 17, right := 11}
-def two : TwoNat := {fst := 1, snd := 2}
-
-def three₁ : ThreeNatExt := {M₁, two with}
-def three₁' : ThreeNatExt := {two, M₁ with}
-
-example : three₁.fst = 17 := by sorry
-example : three₁'.fst = 1 := by sorry
-
-/- So in reality Lean is first using the first variable (`M` or `two`), possibly throwing away
-useless stuff, and then using what follows to complete them -/
-
-example : three₁ = three₁' := sorry
-
-
-def M₂ : Mix := {fst := 13, right := 11}
-def three₂' : ThreeNatExt := {two, M₂ with}
-
-example : three₂'.fst = 1 := sorry
-example : three₁' = three₂' := sorry
-
-structure TwoNatExtLeft extends TwoNat where
-  left : ℕ
-
-example (x : ThreeNat) (y : Couple) : TwoNatExtLeft := sorry
-
-
--- `⌘`
-
-
-/- ### In True Math
-Remember the piece of code-/
-
--- We can now go back to what we saw last week: remember that we defined
-class AddMonoidBad (M : Type) extends Add M, AddZeroClass M
-
-instance : AddMonoidBad ℕ := sorry
-
-instance : AddMonoidBad ℕ := ⟨Nat.zero_add, Nat.add_zero⟩
--- instance : AddMonoidBad ℕ := ⟨Nat.add_zero, Nat.zero_add⟩ -- order matters!
-
-instance : AddMonoidBad ℕ := sorry
-
-instance : AddMonoidBad ℕ := sorry
-
 end Structures
 
 section Exercises
@@ -448,7 +326,8 @@ instance (M N : Type*) [AddCommGroup M] [AddCommGroup N] [ModuleWithRel M] [Modu
     ModuleWithRel (M × N) where
   rel := fun ⟨m1, n1⟩ ⟨m2, n2⟩ ↦ (rel m1 m2) ∧ (rel n1 n2)
 
-variable (p : ∀ {T : Type}, (T → Prop) → Prop)
+--variable (p : ∀ {T : Type}, (T → Prop) → Prop)
+
 /- When defining a `ModuleWithRel` instance on any `NormedModuleBad` we used the relation "being in the
 same ball of radius `1`. Clearly the choice of `1` was arbitrary.
 
@@ -462,7 +341,7 @@ There are (at least) two ways:
 good choices, so a kind of "internal rewriting" is needed.
 -/
 
-instance (M : Type) [AddCommGroup M] [NormedModuleBad M] (ρ : ℝ := 1) : ModuleWithRel M where
+instance (M : Type) [AddCommGroup M] [NormedModuleBad M] (ρ : ℝ≥0 := 1) : ModuleWithRel M where
   rel a b := ‖ a - b ‖₀ ≤ ρ
 
 
@@ -475,6 +354,12 @@ Prove the following claims, stated in the section about the non-discrete metric 
 4. For any `α`, the discrete topology is the bottom element `⊥` of the type `TopologicalSpace α`.
 -/
 
+#synth PseudoMetricSpace ℕ
 
+#print PSM_Nat
+
+example : PseudoMetricSpace.toUniformSpace.uniformity.sets = 𝒫 (@idRel ℕ) := by
+
+  sorry
 
 end Exercises
