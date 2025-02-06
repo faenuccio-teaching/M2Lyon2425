@@ -24,9 +24,10 @@ structure NonFlatCat where
     id : (X : Obj) → Mor X X
     comp : (X : Obj) → (Y : Obj) → (Z : Obj) →
         (f : Mor X Y) → (g : Mor Y Z) → Mor X Z
-    id_comp : sorry
-    comp_id : sorry
-    comp_assoc : sorry
+    id_comp : ∀ (X Y : Obj), ∀ (f : Mor X Y), comp X X Y (id X) f = f
+    comp_id : ∀ (X Y : Obj), ∀ (f : Mor X Y), comp X Y Y f (id Y) = f
+    comp_assoc : ∀ (X Y Z T : Obj), ∀ (f : Mor X Y) (g : Mor Y Z) (h : Mor Z T),
+      comp X Z T (comp X Y Z f g) h = comp X Y T f (comp Y Z T g h)
 -- This is not the actual definition. In fact, as you can see
 -- formulating the associativity
 -- of composition will get painful if we do it this way.
@@ -130,7 +131,7 @@ that an object is the limit of a diagram:
 end Generalities
 
 
-open CategoryTheory
+open CategoryTheory Category
 -- A lot of the category theory stuff is in the namespace
 -- `CategoryTheory`, so it's a good idea to open it now.
 
@@ -280,25 +281,72 @@ def HomLeft : C ⥤ Type v where
   obj Y := X ⟶ Y
   map f g := g ≫ f
 
-def HomRight : Cᵒᵖ ⥤ Type v where
-  obj Y := Opposite.unop Y ⟶ X
-  map f g := sorry
-  map_id := sorry
-  map_comp := sorry
+#print Category
+#print Opposite.unop
+#print CategoryStruct.id
+#print types_id_apply
 
-#check Opposite.op
+def HomRight : Cᵒᵖ ⥤ Type v where
+  obj := by
+    intro Y
+    exact Opposite.unop Y ⟶ X
+  map := by
+    intros X' Y f g
+    exact (Opposite.unop f) ≫ g
+  map_id := by
+    intro Y
+    dsimp
+    ext g
+    have : Opposite.unop (𝟙 Y) = 𝟙 (Opposite.unop Y) := by
+      rfl
+    rw [this, id_comp g, types_id_apply]
+  map_comp := by
+    intros X' Y Z f g
+    dsimp
+    ext h
+    dsimp
+    have : Opposite.unop (f ≫ g) = Opposite.unop g ≫ Opposite.unop f := by
+      rfl
+    rw [this, assoc]
+
+#print Opposite.op
 #check Opposite.unop
 #check Quiver.Hom.op
 #check Quiver.Hom.unop
+#print CategoryStruct.id
 
 variable {D : Type*} [Category D]
 
 example (F : C ⥤ D) : Cᵒᵖ ⥤ Dᵒᵖ where
-  obj := sorry
-  map := sorry
-  map_id := sorry
-  map_comp := sorry
-
+  obj := by
+    intro X
+    exact Opposite.op (F.obj (Opposite.unop X))
+  map := by
+    intros X Y f
+    exact Opposite.op (F.map (Opposite.unop f))
+  map_id := by
+    intro Y
+    dsimp
+    have : Opposite.unop (𝟙 Y) = 𝟙 (Opposite.unop Y) := by
+      rfl
+    rw [this]
+    have : F.map (𝟙 (Opposite.unop Y)) = 𝟙 (F.obj (Opposite.unop Y)) := by
+      rw [CategoryTheory.Functor.map_id]
+    rw [this]
+    have : Opposite.op (𝟙 (F.obj (Opposite.unop Y))) = 𝟙 (Opposite.op (F.obj (Opposite.unop Y))) := by
+      rfl
+    rw [this]
+  map_comp := by
+    intros Y Z T f g
+    dsimp
+    have : Opposite.unop (f ≫ g) = (Opposite.unop g) ≫ (Opposite.unop f) := by
+      rfl
+    rw [this]
+    have : F.map (Opposite.unop g ≫ Opposite.unop f) =
+      (F.map (Opposite.unop g)) ≫ (F.map (Opposite.unop f)) := by
+      rw [Functor.map_comp]
+    rw [this]
+    rfl
 
 /-
 We can compose functors, and this is written `F ⋙ G` (\ + ggg), if `F : C ⥤ D`
@@ -376,17 +424,33 @@ def CategoryTheory.NatTrans.hcomp {C : Type u₁} [Category.{v₁, u₁} C]
 
 /- The Yoneda functors.-/
 
+#print HomRight
+
+@[simp]
 def Yon : C ⥤ (Cᵒᵖ ⥤ Type v) where
   obj := HomRight
-  map {Y Y'} f := sorry
-  map_id := sorry
-  map_comp := sorry
+  map {Y Y'} f :=
+    {app := by
+      intro X
+      change (fun Z ↦ Opposite.unop Z ⟶ Y) X ⟶ (fun Z ↦ Opposite.unop Z ⟶ Y') X
+      dsimp
+      intro f'
+      exact f' ≫ f,
+     naturality := by
+      intros X Z f'
+      dsimp
+      ext g
+      dsimp [HomRight]
+      simp}
 -- What happens if I try to do `Yon : C ⥤ (Cᵒᵖ ⥤ Type)`?
 
-
+#print HomLeft
 def YonOp : Cᵒᵖ ⥤ (C ⥤ Type v) where
-  obj X := sorry -- try `HomLeft X`, what happens?
-  map := sorry
+  obj X := HomLeft (Opposite.unop X) -- try `HomLeft X`, what happens?
+  map := by
+    intros Y Z f
+    dsimp
+    sorry
   map_id := sorry
   map_comp := sorry
 
@@ -396,7 +460,7 @@ The Yoneda lemma. Of course it's already in mathlib, but let's
 do it as an exercise.
 
 First we should decide how to state it. One statement is that
-the Yoneda embedding `Yon : C ⥤ (Cᵒᵖ ⥤ Type)` is fully faithful
+the Yoneda embedding `Yon : C ⥤ (Cᵒᵖ ⥤ Type v)` is fully faithful
 (as well the as `YonOp`), but this is not the most general
 version.
 
@@ -411,15 +475,29 @@ open Opposite
 
 @[simp]
 def YonedaEquivFun {X : C} {F : Cᵒᵖ ⥤ Type v} (u : Yon.obj X ⟶ F) :
-    F.obj (op X) := sorry
+    F.obj (op X) := u.app (op X) (𝟙 X)
 
 @[simp]
 def YonedaEquivInv {X : C} {F : Cᵒᵖ ⥤ Type v} (x : F.obj (op X)) :
-    Yon.obj X ⟶ F := sorry
+    Yon.obj X ⟶ F where
+      app Y f := F.map f.op x
 
 @[simp]
 def YonedaEquiv (X : C) (F : Cᵒᵖ ⥤ Type v) :
-    (Yon.obj X ⟶ F) ≃ F.obj (op X) := sorry
+    (Yon.obj X ⟶ F) ≃ F.obj (op X) where
+      toFun := YonedaEquivFun
+      invFun := YonedaEquivInv
+      left_inv u := by
+        dsimp
+        refine NatTrans.ext ?_
+        refine funext (fun Y ↦ ?_)
+        dsimp
+        ext f
+        change (u.app (op X) ≫ F.map f.op) _ = _
+        rw [← u.naturality]
+        simp
+        sorry
+      right_inv := by aesop_cat
 
 /-
 Of course we could go further, because both sides of the
@@ -680,7 +758,10 @@ Let's try to do some classical adjunctions.
 def FunctorAbelianization : Grp ⥤ CommGrp where
   obj G := CommGrp.of (Abelianization G)
   map f := CommGrp.ofHom (Abelianization.map f)
-  map_id _ := by sorry
+  map_id := by
+    intro G
+    dsimp
+    sorry
   map_comp _ _ := by sorry
 
 #check Adjunction.mkOfHomEquiv
