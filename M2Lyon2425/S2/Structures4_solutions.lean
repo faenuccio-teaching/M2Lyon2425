@@ -458,6 +458,8 @@ inductive Stations : Type
   | Guillotiere : Stations
   | VieuxLyon : Stations
 
+instance : Inhabited Stations := ⟨Stations.PartDieu⟩
+
 open Stations List Classical
 
 inductive IsDirection : List Stations → Prop
@@ -473,6 +475,9 @@ structure Directions where
 
 def Directions.reverse : Directions → Directions :=
   fun D ↦ ⟨D.stops.reverse, IsDirection.back D.isDir⟩
+
+@[simp]
+lemma Directions.reverse_eq (D : Directions) : D.reverse.1 = D.1.reverse := rfl
 
 def A_SN : Directions where
   stops := [Perrache, Ampere, Bellecour, Cordeliers, HotelDeVille]
@@ -505,6 +510,57 @@ example : A = A' := by
   constructor
   rfl
 
+/-
+inductive IsPermitted : Prop
+| (S : Stat) => IsPerm [S]
+| S , M => IsPerm M=> exist D, [M.last, S] ≤ D=> IsPerm M ++ S
+| the same with M.head
+
+structure Trip where
+L : List Stat
+perm : IsPermittes L
+-/
+
+inductive IsPermitted : List Stations → Prop
+  | no_move (S : Stations) : IsPermitted [S]
+  | after_last (S : Stations) (M : List Stations)/-  (hM : M ≠ [])  -/(D : Directions) :
+      IsPermitted M → (M.getLastD Stations.PartDieu /- hM -/) :: [S] <:+: D.1 → IsPermitted (M ++ [S]) -- M ++ [S] is `simp` normal form for `M.concat S`
+  | before_head (S : Stations) (M : List Stations) /- (hM : M ≠ [])  -/(D : Directions) :
+      IsPermitted M → S :: [M.headD Stations.PartDieu/- hM -/] <:+: D.1 → IsPermitted (S :: M)
+
+lemma IsPermitted.ne_nil {L : List Stations} (hL : IsPermitted L) : L ≠ [] := by
+  cases hL <;> simp
+
+open IsPermitted
+
+lemma IsPermitted_rfl (S : Stations) : IsPermitted [S] := no_move S
+
+lemma IsPermitted_symm {L : List Stations} (hL : IsPermitted L) : IsPermitted L.reverse := by
+  rcases hL with _ | ⟨S, M, D, hM, hDM⟩ | ⟨S, M, D, hM, hDM⟩
+  · simpa using IsPermitted.no_move _
+  · simp only [reverse_append, reverse_cons, reverse_nil, nil_append, singleton_append]
+    apply before_head _ _ D.reverse
+    · apply IsPermitted_symm hM
+    · simp
+      rwa [← List.reverse_infix, reverse_reverse, ← getLastD_eq_getLast?]
+  · rw [reverse_cons/- , ← concat_eq_append -/]
+    apply after_last _ _ D.reverse
+    · apply IsPermitted_symm hM
+    · rw [← List.reverse_infix, /- reverse_reverse, -/ getLastD_eq_getLast?]
+      simp
+      convert hDM
+
+  termination_by L.length
+
+
+
+
+
+
+
+
+
+#exit
 structure Trip (start arrival : Stations) where
   stops : List Stations
   not_empty : stops ≠ []

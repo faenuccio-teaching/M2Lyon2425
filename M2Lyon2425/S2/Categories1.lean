@@ -280,21 +280,37 @@ def HomLeft : C ⥤ Type v where
   obj Y := X ⟶ Y
   map f g := g ≫ f
 
+@[simp]
 def HomRight : Cᵒᵖ ⥤ Type v where
   obj Y := Opposite.unop Y ⟶ X
-  map f g := sorry
-  map_id := sorry
-  map_comp := sorry
+  map {X' Y'} f g := by -- adding {X' Y'} introduces explicit names
+    -- dsimp at g ⊢
+    let h := f.unop ≫ g
+    use h
+  map_id := by
+    intro X'
+    simp
+    aesop_cat
+  -- map_comp := sorry
 
 #check Opposite.op
 #check Opposite.unop
 #check Quiver.Hom.op
 #check Quiver.Hom.unop
 
+#print Opposite -- to create something in `Opposite C` you should provide "the element that will be the `unop`"
+
+variable {X : C}
+
+example : Opposite C := {unop := X}
+-- example : Opposite C := {X with}
+
 variable {D : Type*} [Category D]
 
+open Opposite in
 example (F : C ⥤ D) : Cᵒᵖ ⥤ Dᵒᵖ where
-  obj := sorry
+  obj X := by
+    exact op (F.obj X.unop)
   map := sorry
   map_id := sorry
   map_comp := sorry
@@ -347,6 +363,9 @@ structure NatTrans {C : Type u₁} [Category.{v₁, u₁} C]
   naturality : ∀ ⦃X Y : C⦄ (f : X ⟶ Y),
     F.map f ≫ app Y = app X ≫ G.map f := by aesop_cat
 -/
+-- variables (C D : Type*) [Category C] [Category D]
+
+#synth Category (C ⥤ D)
 
 /-
 The type of natural transformations from `F` to `G` is writte
@@ -376,11 +395,25 @@ def CategoryTheory.NatTrans.hcomp {C : Type u₁} [Category.{v₁, u₁} C]
 
 /- The Yoneda functors.-/
 
+-- @[simp]
 def Yon : C ⥤ (Cᵒᵖ ⥤ Type v) where
   obj := HomRight
-  map {Y Y'} f := sorry
-  map_id := sorry
-  map_comp := sorry
+  map {Y Y'} f :=
+    { app := by
+        intro X g
+        exact g ≫ f
+      -- naturality := by -- aesop_cat this does not work because `HomCat` is not rightly tagged
+        -- intro X X' h
+        -- ext g
+        -- dsimp [HomRight]
+        -- simp
+
+
+        }
+
+
+  map_id := by aesop_cat
+  map_comp := by aesop_cat
 -- What happens if I try to do `Yon : C ⥤ (Cᵒᵖ ⥤ Type)`?
 
 
@@ -409,17 +442,40 @@ prove this first.
 
 open Opposite
 
+-- #check (Yon C).op
 @[simp]
 def YonedaEquivFun {X : C} {F : Cᵒᵖ ⥤ Type v} (u : Yon.obj X ⟶ F) :
-    F.obj (op X) := sorry
+    F.obj (op X) := by
+  exact u.app (op X) (𝟙 X)
 
 @[simp]
 def YonedaEquivInv {X : C} {F : Cᵒᵖ ⥤ Type v} (x : F.obj (op X)) :
-    Yon.obj X ⟶ F := sorry
+    Yon.obj X ⟶ F where
+  app Y f := by
+    dsimp [Yon, HomRight] at f
+    exact F.map (f.op) x
+  naturality := by aesop_cat
 
 @[simp]
 def YonedaEquiv (X : C) (F : Cᵒᵖ ⥤ Type v) :
-    (Yon.obj X ⟶ F) ≃ F.obj (op X) := sorry
+    (Yon.obj X ⟶ F) ≃ F.obj (op X) where
+  toFun := YonedaEquivFun
+  invFun := YonedaEquivInv
+  left_inv u := by
+    dsimp
+    ext Y f
+    dsimp at f ⊢ -- the only problem is to explain Lean "which naturality it needs"
+    change (u.app (op X) ≫ F.map f.op) (𝟙 X) = _
+    rw [← u.naturality f.op]
+    simp [Yon]
+    -- rfl
+
+
+    -- have := u.naturality f.op
+    -- apply_fun (fun h ↦ h (𝟙 X)) at this
+    -- simp at this
+    -- exact this.symm
+  right_inv v := by aesop_cat
 
 /-
 Of course we could go further, because both sides of the
@@ -478,13 +534,16 @@ variable [Preorder J]
 -- The category whose objects are terms of type `J`, such that
 -- there is a morphism `i ⟶ j` if and only if `i ≤ j`.
 
+#check PLift
+
 #print Preorder.smallCategory
+
 /-
 instance (priority := 100) smallCategory (α : Type u)
     [Preorder α] : SmallCategory α where
   Hom U V := ULift (PLift (U ≤ V))
   id X := ⟨⟨le_refl X⟩⟩
-  comp f g := ⟨⟨le_trans _ _ _ f.down.down g.down.down⟩⟩
+  comp f g := ⟨fun _ _ ↦ ⟨le_trans _ _ _ f.down.down g.down.down⟩⟩
 
 Yikes! The horrible definition of `Hom U V` is because we don't
 allow `Hom` types to be in `Prop`, and `U ≤ V` is.
@@ -569,7 +628,7 @@ example {G H : Type*} [Group G] [Group H] (f : G →* H) :
 -- in the same universe
 
 example {G H : Type u} [Group G] [Group H] (f : G →* H) :
-    Grp.of G ⟶ Grp.of H := Grp.ofHom f
+    Grp.of G ⟶ Grp.of H := f --Grp.ofHom f
 
 -- There are coercions in place to make things less painful.
 -- Here for example I am applying a morphism of `Grp` to an
@@ -680,7 +739,12 @@ Let's try to do some classical adjunctions.
 def FunctorAbelianization : Grp ⥤ CommGrp where
   obj G := CommGrp.of (Abelianization G)
   map f := CommGrp.ofHom (Abelianization.map f)
-  map_id _ := by sorry
+  map_id G := by
+    dsimp
+    ext x
+    simp
+    have := Abelianization.map_id (G := G)
+    sorry
   map_comp _ _ := by sorry
 
 #check Adjunction.mkOfHomEquiv
@@ -710,7 +774,16 @@ def DiscreteFunctor : Type ⥤ TopCat where
 
 def coreTop : Adjunction.CoreHomEquiv DiscreteFunctor
     (forget TopCat) where
-  homEquiv X Y := by sorry
+  homEquiv X Y :=
+    { toFun := by
+        intro f x
+        exact f x
+      invFun := by
+        intro g
+        refine ⟨g, ⟨fun _ _ ↦ trivial⟩ ⟩
+      left_inv := _
+      right_inv := _ }
+
   homEquiv_naturality_left_symm := sorry
   homEquiv_naturality_right := sorry
 
