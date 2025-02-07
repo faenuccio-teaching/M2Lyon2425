@@ -70,7 +70,6 @@ that injects into all fields.
 #print IsInitial
 #check isInitialEquivUnique
 
-
 /-
 First direction: if `G` has a left adjoint, then each category
 `StructuredArrow X G` has an initial object. We will use
@@ -677,7 +676,7 @@ variable {C : Type u} [Category.{v} C]
 
 variable {J : Type w} [Category.{w'} J]
 
-section Generalities
+section LimitsColimits
 /-
 Limits and colimits.
 
@@ -900,13 +899,11 @@ Unlike limits, colimits generally have different definitions in
 the various algebraic categories.
 -/
 
-end Generalities
+end LimitsColimits
 
 /- Let's do some exercises to learn to manipulate (co)limits, and
 let's open the namespace `Limits` to shorten the declarations.
 -/
-
-open Limits
 
 variable {D : Type u'} [Category.{v'} D] (G : D ⥤ C)
 
