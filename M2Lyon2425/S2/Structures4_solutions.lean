@@ -1,4 +1,5 @@
 import Init.Data.List.Basic
+import Init.Data.List.Nat.TakeDrop
 import Mathlib.Data.NNReal.Basic
 import Mathlib.Data.PNat.Basic
 import Mathlib.Data.Real.Basic
@@ -301,6 +302,7 @@ noncomputable section
 
 section Exercises
 
+section Ex1
 -- ## Exercise 1
 open scoped NNReal
 --Recall from last lecture the two classes below, and the test-variable `p`:
@@ -403,6 +405,9 @@ example (hp : ∀ M : Type, ∀ ρ : ℝ≥0, [AddCommGroup M] → [AsAliasR M �
   convert hp
   simp only [eq_rec_constant]
 
+end Ex1
+
+section Ex2
 -- ## Exercise 2
 /- "Prove the following claims, stated in the section about the non-discrete metric on `ℕ`:
 1. The uniformity is discrete if the metric is discrete.
@@ -427,6 +432,9 @@ example (X : Type*) [MetricSpace X] (hdisc : ∀ x y : X, x ≠ y → dist x y =
 
 example (X : Type*) : (⊥ : UniformSpace X).uniformity = 𝓟 (idRel) := rfl
 
+end Ex2
+
+section Ex3
 
 /- ## Exercise 3
 "In the attached file `PlanMetro.pdf` you find a reduced version of Lyon's subway network. I have
@@ -443,6 +451,7 @@ connected.
 4. Prove that in the above configuration with a "circle line" every trip requires of at most two
 changes."
 -/
+
 
 inductive Stations : Type
   | JeanMace : Stations
@@ -487,6 +496,15 @@ def A_NS : Directions where
   stops := [Perrache, Ampere, Bellecour, Cordeliers, HotelDeVille].reverse
   isDir := IsDirection.back IsDirection.a_SN
 
+def B_SN : Directions where
+  stops := [JeanMace, SaxeGambetta, PlaceGuichard, PartDieu]
+  isDir := IsDirection.b_SN
+
+
+def D_EW : Directions where
+  stops := [Guillotiere, Bellecour, VieuxLyon]
+  isDir := IsDirection.d_EW
+
 instance Directions.Setoid : Setoid Directions where
   r := fun L M ↦ L.stops = M.stops.reverse ∨ L.stops = M.stops
   iseqv := by
@@ -519,38 +537,420 @@ inductive IsPermitted : Prop
 structure Trip where
 L : List Stat
 perm : IsPermittes L
+
+
 -/
+
+-- #synth DecidableEq Directions-- := by infer_instance
+-- #help tactic dec
+
+inductive IsQ (L : List Stations) : Prop
+  | nom (s : Stations) (_ : L = [s]) : IsQ L
+  | two : 2 ≤ L.length → (∀ s t : Stations, [s, t] <:+: L → ∃ D : Directions, [s,t] <:+: D.1) → IsQ L
+
+example : IsQ [JeanMace, SaxeGambetta] := by
+  apply IsQ.two
+  · rfl
+  intro s t hst
+  rw [IsInfix.eq_of_length hst]
+  use B_SN
+  use []
+  use [PlaceGuichard, PartDieu]
+  rfl
+  rfl
+
+example : IsQ [Ampere, Bellecour, Guillotiere] := by
+  apply IsQ.two
+  · decide
+  rintro s t ⟨l₁, l₂, H⟩
+  rcases l₁ with _ | ⟨u, xu⟩
+  · simp at H
+    rw [H.1, H.2.1]
+    use A_SN
+    use [Perrache]
+    use [Cordeliers, HotelDeVille]
+    rfl
+  · simp at H
+    replace H := H.2
+    rcases xu with _ | ⟨v, xv⟩
+    · simp at H
+      rw [H.1, H.2.1]
+      use D_EW.reverse
+      simp
+      rw [← reverse_reverse [Bellecour, _]]
+      apply IsInfix.reverse
+      use []
+      use [VieuxLyon]
+      rfl
+    · simp at H
+      replace H := H.2
+      simp at H
+      exfalso
+      apply_fun List.length at H
+      simp at H
+      omega
+
+lemma not_nil_Q {L : List Stations} (hL : IsQ L) : L ≠ [] := by
+  cases hL <;> simp_all
+
+lemma two_append {α : Type} (x y : α) (L M : List α) (hL : L ≠ []) (hM : M ≠ []) (H : [x, y] <:+: L ++ M) :
+    [x, y] <:+: M ∨ [x, y] <:+: L ∨ [x] <:+ L ∧ [y] <+: M := by sorry
+
+lemma IsQ_trans (L M : List Stations) (hL : IsQ L) (hM : IsQ M) (H : ∃ D : Directions,
+    [M.getLast (not_nil_Q hM), L.head (not_nil_Q hL)] <:+: D.1) : IsQ (M ++ L) := by
+  let hL' := hL
+  let hM' := hM
+  rcases hL with ⟨s, rfl⟩ | ⟨_, hs⟩ <;> rcases hM with ⟨t, rfl⟩ | ⟨_, ht⟩
+  · apply IsQ.two (by rfl)
+    intro x y hxy
+    obtain ⟨D, hD⟩ := H
+    simp at hD
+    use D
+    simp at hxy
+    apply IsInfix.trans hxy
+    exact hD
+  · apply IsQ.two
+    · rw [length_append]
+      omega
+    · intro x y hxy
+      simp at H
+      specialize ht x y--fino a qui si capisce
+      obtain ⟨l₁, l₂, hl⟩ := hxy
+      -- let hl' := hl
+      -- rw [append_assoc] at hl'
+      rw [append_eq_append_iff] at hl
+      rcases hl with ⟨l₃, h3, _⟩ | ⟨l₃, hk, h3⟩
+      · apply ht
+        refine ⟨l₁, l₃, h3.symm⟩
+      · by_cases h₀ : l₃ = []
+        · rw [h₀] at h3 hk
+          simp at h3 hk
+
+        -- rw [append_assoc] at hl'
+        -- rw [append_right_inj] at hl'
+
+
+
+
+
+
+
+
+  · apply IsQ.two
+    · rw [length_append]
+      omega
+    · intro x y hxy
+      simp at H
+      specialize hs x y
+      sorry
+  · apply IsQ.two
+    · rw [length_append]
+      omega
+    · intro x y hxy
+      have := two_append x y M L (not_nil_Q hM') (not_nil_Q hL') hxy
+      rcases this with h | h | ⟨hx, hy⟩
+      · exact hs x y h
+      · exact ht x y h
+      · replace hy := hy.head_eq (by simp)
+        rw [← hy] at H
+        have : M.getLast (not_nil_Q hM') = x := by
+          obtain ⟨l, hl⟩ := hx
+          convert getLast_append_singleton (a := x) l
+          exact hl.symm
+        rw [this] at H
+        simp at H
+        exact H
+
+
+
+
+
+
+
+
+
+
+
 
 inductive IsPermitted : List Stations → Prop
   | no_move (S : Stations) : IsPermitted [S]
-  | after_last (S : Stations) (M : List Stations)/-  (hM : M ≠ [])  -/(D : Directions) :
-      IsPermitted M → (M.getLastD Stations.PartDieu /- hM -/) :: [S] <:+: D.1 → IsPermitted (M ++ [S]) -- M ++ [S] is `simp` normal form for `M.concat S`
-  | before_head (S : Stations) (M : List Stations) /- (hM : M ≠ [])  -/(D : Directions) :
-      IsPermitted M → S :: [M.headD Stations.PartDieu/- hM -/] <:+: D.1 → IsPermitted (S :: M)
+  -- | after_last (S : Stations) (M : List Stations) (hM : M ≠ []) (D : Directions) :
+  --     IsPermitted M → (M.getLast hM /- hM -/) :: [S] <:+: D.1 → IsPermitted (M ++ [S]) -- M ++ [S] is `simp` normal form for `M.concat S`
+  | before_head (S : Stations) (M : List Stations) (hM : M ≠ []) (D : Directions) :
+      IsPermitted M → S :: [M.head hM] <:+: D.1 → IsPermitted (S :: M)
 
-lemma IsPermitted.ne_nil {L : List Stations} (hL : IsPermitted L) : L ≠ [] := by
+
+lemma isPermitted.ne_nil {L : List Stations} (hL : IsPermitted L) : L ≠ [] := by
   cases hL <;> simp
+
+
+
+inductive IsP : List Stations → Prop
+  | no_move (S : Stations) : IsP [S]
+  | after_last (M N : List Stations) (D : Directions)  (M_ne : M ≠ []) (N_ne : N ≠ []) :
+      IsP M → IsP N → (M.getLast M_ne) :: [N.head N_ne] <:+: D.1 → IsP (M ++ N) -- M ++ [S] is `simp` normal form for `M.concat S`
+
+lemma foo {L : List Stations} (hL : IsPermitted L) : IsP L := by
+  rcases hL with _ | ⟨s, M, hM, D, H⟩
+  · exact IsP.no_move _
+  · apply IsP.after_last _ _ D (isPermitted.ne_nil H)
+    · apply foo H
+    · exact IsP.no_move _
+    · simpa
+    · simp
+  termination_by L.length
+    -- · sorry
+
+lemma bar {L : List Stations} (hL : IsP L) : IsPermitted L := by
+  rcases hL with _ | ⟨M, N, D, M_ne, N_ne, hM⟩
+  · exact IsPermitted.no_move _
+  · match N with
+    | [s] =>
+      apply IsPermitted.after_last
+      apply bar hM
+      assumption
+    | s :: xs =>
+      by_cases hxs : xs = []
+      · rw [hxs]
+        apply IsPermitted.after_last s M M_ne D (bar hM)
+        assumption
+      · have h_ex : M ++ s :: xs = M ++ ([s]) ++ [(xs.getLast hxs)] := sorry
+        rw [h_ex]
+        apply IsPermitted.after_last (xs.getLast hxs) (M ++ [s]) (by simp) D
+        · apply IsPermitted.after_last s M M_ne D (bar hM)
+          sorry
+        · sorry
+      termination_by L.length
+      -- termination_by M.length
+      -- rw [append_cons
+      -- rw [append_cons]
+      -- rw [← concat_append]
+      -- apply IsPermitted.before_head
+  -- termination_by L.length
+
+
+
+-- inductive IsP : List Stations → Prop
+--   | no_move (S : Stations) : IsP [S]
+--   | findD (L : List Stations) (D : Directions) (s t : Stations) :
+--     [s, t] <:+: L → [s, t] <:+: D.1 → IsP L
+
+-- lemma empty_not_isP : ¬ IsP [] := by
+--   intro habs
+  -- cases habs
+  -- cases habs
+  -- aesop
+
+open IsP
+
+lemma isP_ne_nil {L : List Stations} (hL : IsP L) : L ≠ [] := by
+  cases hL <;> simp_all
+
+lemma isP_trans {M N : List Stations} (hM : IsP M) (hN : IsP N) (D : Directions) :
+    (M.getLast (isP_ne_nil hM)) :: [N.head (isP_ne_nil hN)] <:+: D.1 → IsP (M ++ N) := by
+  intro H
+  apply after_last _ _ D (isP_ne_nil hM) (isP_ne_nil hN) hM hN
+  exact H
+
+lemma iP_refl (s : Stations) : IsP [s] := no_move _
+
+-- lemma isP_symm {L : List Stations} (hL : IsP L) : IsP L.reverse := by
+--   rcases hL with s | ⟨M, N, D, M_me, N_ne, hM, hN, H⟩
+--   · simp
+--     exact no_move _
+--   · simp
+--     induction' M with x xs h_ind_M
+--     · simp
+--       induction' N with y yx h_ind_N
+--       · simpa
+--       · simp
+--         exfalso
+--         apply M_me
+--         rfl
+--     · have N_e : N.reverse ≠ [] := sorry
+--       have xx_e : (x :: xs).reverse ≠ [] := sorry
+--       apply after_last _ _ D.reverse N_e xx_e
+--       · apply isP_symm hN
+--       · apply isP_symm hM
+--       · simp
+--         sorry
+
+
+
+
+
+
+
+
+    -- have h1 : M.length < (N.reverse ++ M.reverse).length := sorry
+    -- have h2 : N.length < (N.reverse ++ M.reverse).length := sorry
+    -- apply after_last N.reverse M.reverse D.reverse ?_ ?_
+    -- apply isP_symm hN
+    -- apply isP_symm hM
+    -- sorry
+    -- simpa [reverse_eq_nil_iff] using isP_ne_nil hN
+    -- simpa [reverse_eq_nil_iff] using isP_ne_nil hM
+  -- termination_by (N.reverse ++ M.reverse).length
+
+
+
+-- lemma refl_isP (s : Stations) : IsP [s] := no_move s
+
+-- lemma refl_isP' (s : Stations) : IsP [s, s] := by
+--   cases s
+--   · apply findD _ _ JeanMace JeanMace
+--     · simp
+--     ·
+
+-- lemma trans_isP {L M : List Stations} (hL : IsP L) (hM : IsP M)
+--     (H : L.head (isP_not_empty hL) = M.getLast (isP_not_empty hM)) : IsP (L ++ M) := by
+--   rcases hM with s | as
+--   · rcases hL with x | ax
+--     simp at H
+--     rw [H]
+--     simp
+
+
+
 
 open IsPermitted
 
 lemma IsPermitted_rfl (S : Stations) : IsPermitted [S] := no_move S
 
-lemma IsPermitted_symm {L : List Stations} (hL : IsPermitted L) : IsPermitted L.reverse := by
-  rcases hL with _ | ⟨S, M, D, hM, hDM⟩ | ⟨S, M, D, hM, hDM⟩
-  · simpa using IsPermitted.no_move _
-  · simp only [reverse_append, reverse_cons, reverse_nil, nil_append, singleton_append]
-    apply before_head _ _ D.reverse
-    · apply IsPermitted_symm hM
-    · simp
-      rwa [← List.reverse_infix, reverse_reverse, ← getLastD_eq_getLast?]
-  · rw [reverse_cons/- , ← concat_eq_append -/]
-    apply after_last _ _ D.reverse
-    · apply IsPermitted_symm hM
-    · rw [← List.reverse_infix, /- reverse_reverse, -/ getLastD_eq_getLast?]
+-- lemma IsPermitted_symm {L : List Stations} (hL : IsPermitted L) : IsPermitted L.reverse := by
+--   rcases hL with _ | ⟨S, M, D, hM, hDM⟩ | ⟨S, M, D, hM, hDM⟩
+--   · simpa using IsPermitted.no_move _
+--   · simp only [reverse_append, reverse_cons, reverse_nil, nil_append, singleton_append]
+--     apply before_head _ _ D.reverse
+--     · apply IsPermitted_symm hM
+--     · simp
+--       rwa [← List.reverse_infix, reverse_reverse, ← getLastD_eq_getLast?]
+--   · rw [reverse_cons/- , ← concat_eq_append -/]
+--     apply IsPermitted.after_last _ _ D.reverse
+--     · apply IsPermitted_symm hM
+--     · rw [← List.reverse_infix, /- reverse_reverse, -/ getLastD_eq_getLast?]
+--       simp
+--       convert hDM
+
+--   termination_by L.length
+open isPermitted
+
+lemma two_append {α : Type} (x y : α) (L M : List α) (hL : L ≠ []) (hM : M ≠ []) (H : [x, y] <:+: L ++ M) :
+    [x, y] <:+: M ∨ [x, y] <:+: L ∨ [x] <:+ L ∧ [y] <+: M := by sorry
+  -- obtain ⟨l₁, l₂, H⟩ := H
+  -- rw [append_eq_append_iff] at H
+  -- rcases H with ⟨l₃, H1, H2⟩ | ⟨l₃, H1, H2⟩
+  -- · right
+  --   left
+  --   use l₁
+  --   use l₃
+  --   exact H1.symm
+  -- · rw [append_eq_append_iff] at H1
+  --   rcases H1 with ⟨l₄, h1, h2⟩ | ⟨l₄, _, H⟩
+  --   · right
+  --     right
+  --     sorry
+
+
+    -- by_cases h_emp : l₄ = []
+    -- · sorry
+    -- · right
+    --   right
+    --   constructor
+    --   · replace h2 : [x] <+: l₄ := by --[x, y] = l₄ ++ l₃
+    --       rw [cons_eq_append] at h2
+    --       simp only [h_emp, false_and, false_or] at h2
+    --       obtain ⟨l₇, h7, h8⟩ := h2
+    --       by_cases H8 : l₇ = []
+    --       · use l₇
+    --         rw [H8, append_nil]
+    --         rw [H8] at h7
+    --         exact h7.symm
+    --       · use l₇
+    --         sorry
+    --     obtain ⟨l₅, h⟩ := h2
+    --     rw [← h] at h1
+    --     rw [← append_assoc] at h1
+    --     use l₁ ++ l₅
+    --     exact h1.symm
+    --   · sorry
+
+    -- · rw [H] at H2
+    --   left
+    --   use l₄
+    --   use l₂
+    --   exact H2.symm
+
+
+lemma isPermitted_of_subDir (D : Directions) (L : List Stations) (L_ne : L ≠ []) (h : L <:+: D.1) :
+    IsPermitted L := by
+  match L with
+  | [s] => exact IsPermitted.no_move _
+  | s :: xs =>
+    by_cases hxs : xs = []
+    · rw [hxs]
+      exact IsPermitted.no_move _
+    · apply IsPermitted.before_head s xs hxs D _
+      rw [infix_iff_prefix_suffix] at h ⊢
+      obtain ⟨t, ht1, ht2⟩ := h
+      refine ⟨t, ?_, ht2⟩
+      apply IsPrefix.trans _ ht1
+      · simp
+        convert List.take_prefix 1 xs using 1
+        cases xs
+        · simp
+          tauto
+        · simp only [head_cons, take_succ_cons, take_zero]
+      · have : xs <:+: D.1 := by
+          obtain ⟨l₁, l₂, H⟩ := h
+          use l₁ ++ [s]
+          use l₂
+          rw [← H, append_assoc, append_assoc, append_assoc, append_right_inj, ← append_assoc,
+            append_left_inj]
+          rfl
+        exact isPermitted_of_subDir D xs hxs this
+
+
+          -- use xs ++ l₂
+
+      -- · simp only [cons_prefix_cons, true_and]
+      --   apply prefix_me
+
+      -- have : [s, xs.head hxs] = s :: [xs.head hxs] := rfl
+      -- rw [this]
+
+lemma IsPermitted_trans (M N : List Stations) (hM : IsPermitted M) (hN : IsPermitted N)
+    (D : Directions) (h : M.getLast (ne_nil hM) :: [N.head (ne_nil hN)] <:+: D.1) :
+    IsPermitted (M ++ N) := by
+  match M with
+  | [s] =>
+    apply IsPermitted.before_head _ _ (isPermitted.ne_nil hN) D hN
+    exact h
+  | s :: xs =>
+    rcases hM with _ | ⟨_, _, xs_ne, D₀, h_xs, h₀⟩
+    · apply IsPermitted.before_head
       simp
-      convert hDM
+      exact hN
+      simp
+      simp at h
+      exact h
+      simp
+      exact isPermitted.ne_nil hN
+    match N with
+    | [t] =>
+        apply IsPermitted.before_head
+        swap
+        · convert h₀ using 1
+          simp
+          exact head_append_of_ne_nil xs_ne
+        · sorry
+    | t :: xt => sorry
 
-  termination_by L.length
+
+    -- · apply IsPermitted_trans
+    --   · exact h
+    --   · apply IsPermitted.before_head _ _ _ _ h_xs h₀
+    --   · exact hN
 
 
 
@@ -560,7 +960,12 @@ lemma IsPermitted_symm {L : List Stations} (hL : IsPermitted L) : IsPermitted L.
 
 
 
-#exit
+
+
+
+
+
+-- #exit
 structure Trip (start arrival : Stations) where
   stops : List Stations
   not_empty : stops ≠ []
@@ -608,5 +1013,7 @@ lemma Connected_trans {pt₁ pt₂ pt₃} (h12 : Connected pt₁ pt₂) (h23 : C
     · by_cases in_23 : IsInfix l t23.stops
       · sorry
       · sorry
+
+end Ex3
 
 end Exercises
