@@ -591,7 +591,12 @@ example : IsQ [Ampere, Bellecour, Guillotiere] := by
       omega
 
 lemma not_nil_Q {L : List Stations} (hL : IsQ L) : L ≠ [] := by
-  cases hL <;> simp_all
+  rcases hL with _ | H
+  · simp_all
+  · rw [← length_pos_iff_ne_nil]
+    exact lt_of_lt_of_le two_pos H
+
+
 
 lemma two_append {α : Type} (x y : α) (L M : List α) (hL : L ≠ []) (hM : M ≠ []) (H : [x, y] <:+: L ++ M) :
     [x, y] <:+: M ∨ [x, y] <:+: L ∨ [x] <:+ L ∧ [y] <+: M := by sorry
@@ -614,20 +619,53 @@ lemma IsQ_trans (L M : List Stations) (hL : IsQ L) (hM : IsQ M) (H : ∃ D : Dir
       omega
     · intro x y hxy
       simp at H
-      specialize ht x y--fino a qui si capisce
+      specialize ht x y
       obtain ⟨l₁, l₂, hl⟩ := hxy
-      -- let hl' := hl
-      -- rw [append_assoc] at hl'
-      rw [append_eq_append_iff] at hl
-      rcases hl with ⟨l₃, h3, _⟩ | ⟨l₃, hk, h3⟩
-      · apply ht
-        refine ⟨l₁, l₃, h3.symm⟩
-      · by_cases h₀ : l₃ = []
-        · rw [h₀] at h3 hk
-          simp at h3 hk
+      by_cases h₀ : l₂ = []
+      · rw [h₀] at hl
+        simp at hl
+        rw [append_eq_append_iff] at hl
+        rcases hl with ⟨l₃, h3, hs⟩ | ⟨_, _, h_abs⟩
+        · rw [cons_eq_append] at hs
+          simp at hs
+          obtain ⟨l₄, h4, hy⟩ := hs
+          have hy' := hy
+          apply_fun List.length at hy
+          simp at hy
+          rw [hy] at h4 hy'
+          simp at hy'
+          rw [h4] at h3
+          replace h3 : M.getLast (not_nil_Q hM') = x := by
+            rw [← getLast_append_singleton (a := x) l₁]
+            congr
+          rw [h3, ← hy'] at H
+          exact H
+        · exfalso
+          apply_fun List.length at h_abs
+          simp at h_abs
+      · rw [append_eq_append_iff] at hl
+        rcases hl with ⟨l₃, h3, hs⟩ | ⟨l₃, hM₀, h_abs⟩
+        . apply ht
+          refine ⟨l₁, l₃, h3.symm⟩
+        · apply_fun List.length at h_abs
+          simp at h_abs
+          have h3 : l₃ = [] := by
+            apply eq_nil_of_length_eq_zero
+            rw [← ne_eq, ← length_pos_iff_ne_nil] at h₀
+            omega
+          rw [h3] at hM₀
+          apply ht
+          refine ⟨l₁, [], by simp [hM₀]⟩
 
-        -- rw [append_assoc] at hl'
-        -- rw [append_right_inj] at hl'
+
+
+      -- rw [append_eq_append_iff] at hl
+      -- rcases hl with ⟨l₃, h3, _⟩ | ⟨l₃, hk, h3⟩
+      -- · apply ht
+      --   refine ⟨l₁, l₃, h3.symm⟩
+      -- · by_cases h₀ : l₃ = []
+      --   · rw [h₀] at h3 hk
+      --     simp at h3 hk
 
 
 
@@ -660,6 +698,28 @@ lemma IsQ_trans (L M : List Stations) (hL : IsQ L) (hM : IsQ M) (H : ∃ D : Dir
         rw [this] at H
         simp at H
         exact H
+
+lemma isQ_symm {L : List Stations} (hL : IsQ L) : IsQ L.reverse := by
+  rcases hL with ⟨s, hs⟩ | ⟨_, H⟩
+  · apply IsQ.nom s
+    simp [hs]
+  · apply IsQ.two
+    · simp_all
+    intro s t hst
+    -- rw [← reverse_reverse [s, _]] at hst
+    specialize H t s _
+    have := IsInfix.reverse hst
+    simp at this
+    exact this
+    obtain ⟨D, hD⟩ := H
+    use D.reverse
+
+
+
+
+    -- rw [infix_reverse] at hst
+    -- obtain D := hst s t
+
 
 
 
