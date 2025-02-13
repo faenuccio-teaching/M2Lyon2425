@@ -110,8 +110,28 @@ def HasInitialOfLeftAdjoint {F : C ⥤ D} (adj : F ⊣ G) (X : C) :
   have : ∀ (A : StructuredArrow X G), Unique (I ⟶ A) := by
     intro A
     refine @Unique.mk' _ ?_ ?_
-    · sorry
-    · sorry
+    · refine Inhabited.mk ?_
+      refine StructuredArrow.homMk ?_ ?_
+      · dsimp [I]
+        apply (adj.homEquiv _ _).invFun
+        exact A.hom
+      · dsimp [I]
+        simp
+    · apply Subsingleton.intro ?_
+      intro f g
+      ext
+      apply_fun (adj.homEquiv _ _).toFun
+      simp
+      have := f.w
+      simp only [Functor.const_obj_obj, StructuredArrow.left_eq_id, id_comp] at this
+      dsimp [I] at this
+      rw [← this]
+      erw [← g.w]
+      simp
+
+      -- congr 1
+      -- apply (adj.homEquiv _ _).injective
+      -- simp
   exact hasInitial_of_unique I
 
 /- The other direction: if each category `StructuredArrow X G`
@@ -139,8 +159,22 @@ variable (h : ∀ (X : C), HasInitial (StructuredArrow X G))
 
 noncomputable def FunctorOfInitial : C ⥤ D where
       obj X := FunctorOfInitialObj G X (h X)
-      map {X X'} f := sorry
-      map_id X := sorry
+      map {X X'} f := by
+        dsimp [FunctorOfInitialObj]
+        let Y := (StructuredArrow.map (T := G) f).obj (⊥_ _)
+        let φ := Limits.initial.to Y
+        exact φ.right
+      map_id X := by
+        simp
+        -- let _ := StructuredArrow
+
+        -- let ψ := Limits.initial.to (C := StructuredArrow X G) (⊥_ _)
+        -- let φ := ψ.right
+        let Y := FunctorOfInitialObj (X := X) (D := D) G (h X)-- ⟶ (FunctorOfInitialObj X) := sorry
+        let φ := 𝟙 Y
+        set ψ := G.map φ with hψ
+        sorry
+
       map_comp {X X' X''} f g := sorry
 
 noncomputable def UnitOfInitial :
