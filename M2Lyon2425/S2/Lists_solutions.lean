@@ -1,4 +1,5 @@
 import Init.Data.List.Nat.TakeDrop
+import Init.Data.List.Lemmas
 import Mathlib.Data.NNReal.Basic
 
 section Metro
@@ -127,131 +128,132 @@ lemma not_nil_Q {L : List Stations} (hL : IsQ L) : L ≠ [] := by
   · rw [← length_pos_iff_ne_nil]
     exact lt_of_lt_of_le two_pos H
 
+lemma length_pos_Q {L : List Stations} (hL : IsQ L) : 0 < L.length := by
+  rw [length_pos]
+  exact not_nil_Q hL
+
 -- lemma isQ_of_append_isQ {L : List Stations} (s : Stations) (h : IsQ (s :: L)) : IsQ L := by
 --   rcases L with _ | _ using not_nil_Q h
   -- ·
 #eval [1,2,3].drop 1
 
 
-lemma two_append {α : Type} (x y : α) (L M : List α) (hL : L ≠ []) (hM : M ≠ [])
- (H : [x, y] <:+: L ++ M) : [x, y] <:+: M ∨ [x, y] <:+: L ∨ [x] <:+ L ∧ [y] <+: M := by sorry
+-- lemma two_append {α : Type} (x y : α) (L M : List α) (hL : L ≠ []) (hM : M ≠ [])
+--  (H : [x, y] <:+: L ++ M) : [x, y] <:+: M ∨ [x, y] <:+: L ∨ [x] <:+ L ∧ [y] <+: M := by sorry
 
-lemma isQ_trans {M L : List Stations} (hM : IsQ M) (hL : IsQ L)
-    (H : M.getLast (not_nil_Q hM) = L.head (not_nil_Q hL)) : IsQ (M ++ (L.drop 1)) := by sorry
-  -- rcases M with ⟨s, rfl⟩ | ⟨s, xs⟩ <;> rcases L with ⟨t, rfl⟩ | ⟨t, xt⟩
-  -- · tauto
-  -- · have := not_nil_Q hL
-  --   tauto
-  -- · have := not_nil_Q hL
-  --   tauto
-  -- · simp at H ⊢
-  --   rcases xs with ⟨a, rfl⟩ | ⟨a, xa⟩ <;> rcases xt with ⟨b, rfl⟩ | ⟨b, xb⟩
-  --   · simp
-  --     simp at H
-  --     rw [H]
+lemma isQ_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsQ L) (H : l <:+: L) :
+    IsQ l := by
+  match l with
+  | [s] => apply IsQ.nom s rfl
+  | x :: y :: xs =>
+    apply IsQ.two (by simp)
+    intro s t h_ne ⟨l₁, l₂, hl⟩
+    sorry
 
 
 
+lemma isQ_tail {L : List Stations} (hL : IsQ L) (h_len : 1 < L.length) : IsQ (L.tail) := by
+  apply isQ_infix _ hL <| IsSuffix.isInfix <| tail_suffix L
+  rw [← length_pos, length_tail]
+  omega
 
+lemma isQ_left' {s : Stations} {L : List Stations} (hL : IsQ L)
+  (hs : IsQ [s, L[0]'(length_pos_Q hL)]) : IsQ (s :: L) := by sorry
 
-
--- lemma isQ_trans {M L : List Stations} (hM : IsQ M) (hL : IsQ L) (H : ∃ D : Directions,
---     [M.getLast (not_nil_Q hM), L.head (not_nil_Q hL)] <:+: D.1) : IsQ (M ++ L) := by
---   let hL' := hL
---   let hM' := hM
---   rcases hL with ⟨s, rfl⟩ | ⟨_, hs⟩ <;> rcases hM with ⟨t, rfl⟩ | ⟨_, ht⟩
---   · apply IsQ.two (by rfl)
---     intro x y hxy
---     obtain ⟨D, hD⟩ := H
---     simp at hD
---     use D
---     simp at hxy
---     apply IsInfix.trans hxy
---     exact hD
---   · apply IsQ.two
---     · rw [length_append]
---       omega
---     · intro x y hxy
---       simp at H
---       specialize ht x y
---       obtain ⟨l₁, l₂, hl⟩ := hxy
---       by_cases h₀ : l₂ = []
---       · rw [h₀] at hl
---         simp at hl
---         rw [append_eq_append_iff] at hl
---         rcases hl with ⟨l₃, h3, hs⟩ | ⟨_, _, h_abs⟩
---         · rw [cons_eq_append] at hs
---           simp at hs
---           obtain ⟨l₄, h4, hy⟩ := hs
---           have hy' := hy
---           apply_fun List.length at hy
---           simp at hy
---           rw [hy] at h4 hy'
---           simp at hy'
---           rw [h4] at h3
---           replace h3 : M.getLast (not_nil_Q hM') = x := by
---             rw [← getLast_append_singleton (a := x) l₁]
---             congr
---           rw [h3, ← hy'] at H
---           exact H
---         · exfalso
---           apply_fun List.length at h_abs
---           simp at h_abs
---       · rw [append_eq_append_iff] at hl
---         rcases hl with ⟨l₃, h3, hs⟩ | ⟨l₃, hM₀, h_abs⟩
---         . apply ht
---           refine ⟨l₁, l₃, h3.symm⟩
---         · apply_fun List.length at h_abs
---           simp at h_abs
---           have h3 : l₃ = [] := by
---             apply eq_nil_of_length_eq_zero
---             rw [← ne_eq, ← length_pos_iff_ne_nil] at h₀
---             omega
---           rw [h3] at hM₀
---           apply ht
---           refine ⟨l₁, [], by simp [hM₀]⟩
-
-
-
---       -- rw [append_eq_append_iff] at hl
---       -- rcases hl with ⟨l₃, h3, _⟩ | ⟨l₃, hk, h3⟩
---       -- · apply ht
---       --   refine ⟨l₁, l₃, h3.symm⟩
---       -- · by_cases h₀ : l₃ = []
---       --   · rw [h₀] at h3 hk
---       --     simp at h3 hk
+lemma isQ_left {s : Stations} {L : List Stations} (hL : IsQ L)
+    (hs : IsQ [s, L.head (not_nil_Q hL)]) : IsQ (s :: L) := by
+  rcases hs with _ | ⟨_, H⟩
+  · simp_all
+  have h_len : 1 ≤ L.length := by simp [Nat.one_le_iff_ne_zero, not_nil_Q hL]
+  apply IsQ.two (by simp [h_len])
+  intro x y h_ne ⟨l₁, l₂, hl⟩
+  by_cases h_nil : l₁ = []
+  · rw [h_nil] at hl
+    simp only [nil_append, cons_append, singleton_append, cons.injEq] at hl
+    have hl' : L.head (not_nil_Q hL) = y := by
+      simp_rw [← hl.2, head_cons]
+    rw [hl.1, ← hl'] at h_ne ⊢
+    exact H h_ne (infix_rfl)
+  · have hl' : [x, y] ++ l₂ <:+: L := by
+      rw [← head_cons_tail l₁ h_nil, cons_append, cons_append, cons_eq_cons] at hl
+      refine ⟨l₁.tail, [], ?_⟩
+      simp only [← hl.2, cons_append, singleton_append, append_nil, append_assoc]
+    rcases hL with ⟨z, rfl⟩ | ⟨_, H'⟩
+    · rw [← ne_eq, ← length_pos] at h_nil
+      apply_fun List.length at hl
+      simp_all only [ne_eq, length_singleton, le_refl, cons_append, singleton_append, head_cons,
+        length_cons, append_assoc, length_append, not_false_eq_true]-- at hl
+      linarith
+    · apply H' h_ne
+      apply IsInfix.trans _ hl'
+      exact ⟨[], l₂, by simp⟩
 
 
 
 
 
-
-
-
---   · apply IsQ.two
---     · rw [length_append]
---       omega
---     · intro x y hxy
---       simp at H
---       specialize hs x y
---       sorry
---   · apply IsQ.two
---     · rw [length_append]
---       omega
---     · intro x y hxy
---       have := two_append x y M L (not_nil_Q hM') (not_nil_Q hL') hxy
---       rcases this with h | h | ⟨hx, hy⟩
---       · exact hs x y h
---       · exact ht x y h
---       · replace hy := hy.head_eq (by simp)
---         rw [← hy] at H
---         have : M.getLast (not_nil_Q hM') = x := by
---           obtain ⟨l, hl⟩ := hx
---           convert getLast_append_singleton (a := x) l
---           exact hl.symm
---         rw [this] at H
---         simp at H
---         exact H
+lemma isQ_trans {L M : List Stations} (hL : IsQ L)  (hM : IsQ M)
+    (H : L.getLast (not_nil_Q hL) = M.head (not_nil_Q hM)) : IsQ (L ++ M.tail) := by
+  induction' L with s L h_ind
+  · have := not_nil_Q hL
+    tauto
+  · by_cases L_ne : L = []
+    · by_cases M_ne : 1 < M.length
+      · rw [L_ne]
+        simp
+        apply isQ_left' --remove left'
+        · simp_rw [L_ne] at H
+          simp at H
+          rw [H]
+          -- simp
+          have uno : M.head (not_nil_Q hM) = M[0] := by
+            rw [getElem_zero]
+          have M_ne' : 0 < M.tail.length := by
+            rw [length_tail]
+            omega
+          have due : M.tail[0]'M_ne' = M[1] := by
+            have := get_tail M 0 M_ne'
+            simpa [this]
+          rw [uno, due]
+          apply isQ_infix (by simp) hM
+          apply IsPrefix.isInfix
+          convert take_prefix 2 M using 1
+          apply List.ext_getElem
+          · simp_all
+            omega
+          · simp
+            intro n hn hn'
+            rcases hn with _ | hn
+            · simp
+              rw [getElem_take]
+              omega
+            · simp at hn
+              simp only [@getElem_take _ M 1 2 M_ne _,
+                @getElem_take _ M 0 2 _ (by omega), hn, getElem_cons_zero]
+        · apply isQ_tail hM M_ne
+      · simp at M_ne
+        replace M_ne : M.length = 1 := by
+          apply eq_of_le_of_not_lt M_ne
+          simpa [Nat.lt_one_iff] using not_nil_Q hM
+        rw [length_eq_one] at M_ne
+        obtain ⟨_, rfl⟩ := M_ne
+        simpa
+    · show IsQ ([s] ++ L ++ M.tail)
+      have : 1 < (s :: L).length := by
+        rw [length_cons]
+        rw [← ne_eq, ← length_pos] at L_ne
+        omega
+      apply isQ_left _
+      · apply isQ_infix (by simp) hL
+        refine ⟨[], L.tail, ?_⟩
+        simp
+        rw [head_append_of_ne_nil L_ne]
+        exact head_cons_tail L L_ne
+        · apply h_ind
+          rw [← H]
+          refine (getLast_cons L_ne).symm
+          have := isQ_tail hL this
+          simpa
 
 lemma isQ_symm {L : List Stations} (hL : IsQ L) : IsQ L.reverse := by
   rcases hL with ⟨s, hs⟩ | ⟨_, H⟩
@@ -266,42 +268,6 @@ lemma isQ_symm {L : List Stations} (hL : IsQ L) : IsQ L.reverse := by
     obtain ⟨D, hD⟩ := H this
     use D.reverse
     rwa [Directions.reverse_eq, ← reverse_reverse [s, _], reverse_infix]
-
-
-  -- rcases hL with ⟨s, hs⟩ | ⟨len, h⟩
-  -- · apply IsQ.nom s
-  --   simp_all
-  -- · obtain ⟨a, l, rfl⟩ : ∃ a l, L = a :: l := sorry
-  --   rw [reverse_cons]
-  --   apply isQ_trans
-
-
-  -- · have : [s].length < L.length := sorry
-  --   apply isQ_symm
-  --   sorry
-  -- · sorry
-  -- termination_by L.length
-
-
-  -- by_cases len : L.length = 1
-  -- · sorry
-  -- · have : L = xs ++ [
-  -- match L with
-  -- | [s] => exact IsQ.nom s (by simp)
-  -- | s :: t :: xs =>
-  --   rcases xs with _ | ⟨t, xt⟩
-  --   · have : [s, t].reverse.length < L.length := sorry
-  --     apply isQ_symm hL
-  --   · sorry
-  -- -- termination_by L.length
-
-
-      -- apply IsQ.two
-      -- · sorry
-      -- intro x y hxy
-
-
-
 
 
   structure Trip (start arrival : Stations) where
@@ -369,12 +335,12 @@ def ConnectedEquiv : Equivalence Connected where
       obtain ⟨_, rfl⟩ := length_eq_one.mp u_ne
       simp at arrival_tu start_tu
       rw [arrival_st, ← arrival_tu, ← start_tu]
-    use trip_st ++ (trip_tu.drop 1)
+    use trip_st ++ (trip_tu.tail)
     · apply isQ_trans (perm_st) (perm_tu)
       rw [arrival_st, start_tu]
     · rwa [head_append_of_ne_nil (not_nil_Q perm_st)]
     · rw [getLast_append_of_ne_nil]
-      · rwa [getLast_drop]
+      · simp_rw [drop_zero _ ▸ (tail_drop trip_tu 0), zero_add, getLast_drop, arrival_tu]
       · apply ne_nil_of_length_pos
         simp only [drop_one, length_tail, tsub_pos_iff_lt]
         have : 0 < trip_tu.length := by
