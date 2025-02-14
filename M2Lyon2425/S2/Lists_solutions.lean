@@ -267,6 +267,7 @@ lemma isQ_symm {L : List Stations} (hL : IsQ L) : IsQ L.reverse := by
     use D.reverse
     rwa [Directions.reverse_eq, ← reverse_reverse [s, _], reverse_infix]
 
+
   -- rcases hL with ⟨s, hs⟩ | ⟨len, h⟩
   -- · apply IsQ.nom s
   --   simp_all
@@ -363,13 +364,23 @@ def ConnectedEquiv : Equivalence Connected where
     · rwa [getLast_reverse]
   trans := by
     intro s t u ⟨trip_st, perm_st, start_st, arrival_st⟩ ⟨trip_tu, perm_tu, start_tu, arrival_tu⟩
-    use trip_st ++ trip_tu
+    by_cases u_ne : trip_tu.length = 1
+    · use trip_st
+      obtain ⟨_, rfl⟩ := length_eq_one.mp u_ne
+      simp at arrival_tu start_tu
+      rw [arrival_st, ← arrival_tu, ← start_tu]
+    use trip_st ++ (trip_tu.drop 1)
     · apply isQ_trans (perm_st) (perm_tu)
       rw [arrival_st, start_tu]
     · rwa [head_append_of_ne_nil (not_nil_Q perm_st)]
-    · rwa [getLast_append_of_ne_nil (not_nil_Q perm_tu)]
-
-
+    · rw [getLast_append_of_ne_nil]
+      · rwa [getLast_drop]
+      · apply ne_nil_of_length_pos
+        simp only [drop_one, length_tail, tsub_pos_iff_lt]
+        have : 0 < trip_tu.length := by
+          rw [length_pos]
+          exact not_nil_Q perm_tu
+        omega
 
 lemma IsQ_of_subDir {L : List Stations} (hL_ne : L ≠ []) {D : Directions} (hL : L <+ D.1) :
   IsQ L := by sorry--use `<+` and not only `<:+:` **FALSO**
