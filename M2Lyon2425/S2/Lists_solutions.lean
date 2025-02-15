@@ -113,8 +113,6 @@ perm : IsPermittes L
 
 -/
 
--- #synth DecidableEq Directions-- := by infer_instance
--- #help tactic dec
 
 inductive IsQ (L : List Stations) : Prop
   | nom (s : Stations) (_ : L = [s]) : IsQ L
@@ -178,8 +176,6 @@ lemma isQ_left {s : Stations} {L : List Stations} (hL : IsQ L)
     · apply H' h_ne
       apply IsInfix.trans _ hl'
       exact ⟨[], l₂, by simp⟩
--- lemma two_append {α : Type} (x y : α) (L M : List α) (hL : L ≠ []) (hM : M ≠ [])
---  (H : [x, y] <:+: L ++ M) : [x, y] <:+: M ∨ [x, y] <:+: L ∨ [x] <:+ L ∧ [y] <+: M := by sorry
 
 lemma isQ_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsQ L) (H : l <:+: L) :
     IsQ l := by
@@ -199,25 +195,10 @@ lemma isQ_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : Is
         apply isQ_infix_pair tre hL
       · apply isQ_infix h_ne hL uno
 
-      -- have h_len : xs.length < L.length := by
-      --   obtain ⟨_, _, hl⟩ := H
-      --   apply_fun List.length at hl
-      --   rw [← hl]
-      --   simp only [append_assoc, cons_append, length_append, length_cons]
-      --   omega
-
-
-
-
-
 lemma isQ_tail {L : List Stations} (hL : IsQ L) (h_len : 1 < L.length) : IsQ (L.tail) := by
   apply isQ_infix _ hL <| IsSuffix.isInfix <| tail_suffix L
   rw [← length_pos, length_tail]
   omega
-
-lemma isQ_left' {s : Stations} {L : List Stations} (hL : IsQ L)
-  (hs : IsQ [s, L[0]'(length_pos_Q hL)]) : IsQ (s :: L) := by sorry
-
 
 lemma isQ_trans {L M : List Stations} (hL : IsQ L)  (hM : IsQ M)
     (H : L.getLast (not_nil_Q hL) = M.head (not_nil_Q hM)) : IsQ (L ++ M.tail) := by
@@ -228,36 +209,18 @@ lemma isQ_trans {L M : List Stations} (hL : IsQ L)  (hM : IsQ M)
     · by_cases M_ne : 1 < M.length
       · rw [L_ne]
         simp
-        apply isQ_left' --remove left'
+        apply isQ_left
         · simp_rw [L_ne] at H
           simp at H
           rw [H]
-          -- simp
-          have uno : M.head (not_nil_Q hM) = M[0] := by
-            rw [getElem_zero]
-          have M_ne' : 0 < M.tail.length := by
-            rw [length_tail]
-            omega
-          have due : M.tail[0]'M_ne' = M[1] := by
-            have := get_tail M 0 M_ne'
-            simpa [this]
-          rw [uno, due]
-          apply isQ_infix (by simp) hM
-          apply IsPrefix.isInfix
-          convert take_prefix 2 M using 1
-          apply List.ext_getElem
-          · simp_all
-            omega
-          · simp
-            intro n hn hn'
-            rcases hn with _ | hn
-            · simp
-              rw [getElem_take]
-              omega
-            · simp at hn
-              simp only [@getElem_take _ M 1 2 M_ne _,
-                @getElem_take _ M 0 2 _ (by omega), hn, getElem_cons_zero]
-        · apply isQ_tail hM M_ne
+          apply isQ_infix_pair _ hM
+          · apply isQ_infix _ hM
+            · refine ⟨[M.head (not_nil_Q hM)], [], ?_⟩
+              simp
+            · apply ne_nil_of_length_pos
+              simpa [length_tail, tsub_pos_iff_lt]
+          · refine ⟨[], M.tail.tail, ?_⟩
+            simp only [nil_append, cons_append, singleton_append, head_cons_tail]
       · simp at M_ne
         replace M_ne : M.length = 1 := by
           apply eq_of_le_of_not_lt M_ne
@@ -305,12 +268,17 @@ lemma isQ_symm {L : List Stations} (hL : IsQ L) : IsQ L.reverse := by
 
 def Connected : Stations → Stations → Prop := fun S A ↦ Nonempty (Trip S A)
 
-example : Connected JeanMace SaxeGambetta := by sorry
-  -- use [JeanMace, SaxeGambetta]
-  -- · refine IsQ.two (by rfl) (fun h_ne ⟨l₁, l₂, hl⟩ ↦ ?_)
-  --   refine ⟨B_SN, ⟨[], [PlaceGuichard, PartDieu], ?_⟩⟩
-  --   simp_all
-  -- all_goals rfl
+#synth DecidableRel (LT.lt : ℤ → ℤ → Prop)
+
+instance : DecidableRel Connected := sorry
+
+example : Connected JeanMace SaxeGambetta := by-- sorry
+  use [JeanMace, SaxeGambetta]
+  · refine IsQ.two (by rfl) (fun _ hl ↦ ?_)
+    refine ⟨B_SN, ⟨[], [PlaceGuichard, PartDieu], ?_⟩⟩
+    simp only [nil_append, cons_append, singleton_append, cons.injEq, and_true,
+      hl.eq_of_length (by simp)]
+  all_goals rfl
 
 example : Connected Ampere Guillotiere  := by sorry
   -- use [Ampere, Bellecour, Guillotiere]
