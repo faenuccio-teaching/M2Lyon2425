@@ -121,6 +121,24 @@ inductive IsQ (L : List Stations) : Prop
   | two : 2 ≤ L.length → (∀ {s t : Stations} (_ : s ≠ t), [s, t] <:+: L → ∃ D : Directions,
     [s,t] <:+: D.1) → IsQ L
 
+lemma isQ_infix_pair {L : List Stations} {s t : Stations} (H  : [s, t] <:+: L) (hL : IsQ L) :
+    IsQ [s, t] := by
+  apply IsQ.two (by simp)
+  intro x y h_ne hxy
+  replace hxy : [x, y] = [s, t] := IsInfix.eq_of_length hxy (by simp)
+  replace hxy : x = s ∧ y = t := by simp_all
+  by_cases hst : s = t
+  · rw [hxy.1, hxy.2] at h_ne
+    tauto
+  · rw [← ne_eq] at hst
+    rcases hL with ⟨_, h_abs⟩ | ⟨-, h⟩
+    · obtain ⟨l₁, l₂, hl⟩ := H
+      apply_fun List.length at hl
+      simp [h_abs] at hl
+      linarith
+    · obtain ⟨D, hD⟩ := h hst H
+      rw [← hxy.1, ← hxy.2] at hD
+      exact ⟨D, hD⟩
 
 lemma not_nil_Q {L : List Stations} (hL : IsQ L) : L ≠ [] := by
   rcases hL with _ | H
@@ -132,33 +150,6 @@ lemma length_pos_Q {L : List Stations} (hL : IsQ L) : 0 < L.length := by
   rw [length_pos]
   exact not_nil_Q hL
 
--- lemma isQ_of_append_isQ {L : List Stations} (s : Stations) (h : IsQ (s :: L)) : IsQ L := by
---   rcases L with _ | _ using not_nil_Q h
-  -- ·
-#eval [1,2,3].drop 1
-
-
--- lemma two_append {α : Type} (x y : α) (L M : List α) (hL : L ≠ []) (hM : M ≠ [])
---  (H : [x, y] <:+: L ++ M) : [x, y] <:+: M ∨ [x, y] <:+: L ∨ [x] <:+ L ∧ [y] <+: M := by sorry
-
-lemma isQ_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsQ L) (H : l <:+: L) :
-    IsQ l := by
-  match l with
-  | [s] => apply IsQ.nom s rfl
-  | x :: y :: xs =>
-    apply IsQ.two (by simp)
-    intro s t h_ne ⟨l₁, l₂, hl⟩
-    sorry
-
-
-
-lemma isQ_tail {L : List Stations} (hL : IsQ L) (h_len : 1 < L.length) : IsQ (L.tail) := by
-  apply isQ_infix _ hL <| IsSuffix.isInfix <| tail_suffix L
-  rw [← length_pos, length_tail]
-  omega
-
-lemma isQ_left' {s : Stations} {L : List Stations} (hL : IsQ L)
-  (hs : IsQ [s, L[0]'(length_pos_Q hL)]) : IsQ (s :: L) := by sorry
 
 lemma isQ_left {s : Stations} {L : List Stations} (hL : IsQ L)
     (hs : IsQ [s, L.head (not_nil_Q hL)]) : IsQ (s :: L) := by
@@ -187,9 +178,45 @@ lemma isQ_left {s : Stations} {L : List Stations} (hL : IsQ L)
     · apply H' h_ne
       apply IsInfix.trans _ hl'
       exact ⟨[], l₂, by simp⟩
+-- lemma two_append {α : Type} (x y : α) (L M : List α) (hL : L ≠ []) (hM : M ≠ [])
+--  (H : [x, y] <:+: L ++ M) : [x, y] <:+: M ∨ [x, y] <:+: L ∨ [x] <:+ L ∧ [y] <+: M := by sorry
+
+lemma isQ_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsQ L) (H : l <:+: L) :
+    IsQ l := by
+  match l with
+  | [s] => apply IsQ.nom s rfl
+  | x :: xs =>
+    by_cases h_ne : xs = []
+    · rw [h_ne]
+      apply IsQ.nom x rfl
+    · have uno : xs <:+: L := by
+        apply IsInfix.trans _ H
+        refine ⟨[x], [], by simp⟩
+      apply isQ_left
+      · have tre : [x, xs.head h_ne] <:+: L := by
+          apply IsInfix.trans _ H
+          refine ⟨[], xs.tail, by simp⟩
+        apply isQ_infix_pair tre hL
+      · apply isQ_infix h_ne hL uno
+
+      -- have h_len : xs.length < L.length := by
+      --   obtain ⟨_, _, hl⟩ := H
+      --   apply_fun List.length at hl
+      --   rw [← hl]
+      --   simp only [append_assoc, cons_append, length_append, length_cons]
+      --   omega
 
 
 
+
+
+lemma isQ_tail {L : List Stations} (hL : IsQ L) (h_len : 1 < L.length) : IsQ (L.tail) := by
+  apply isQ_infix _ hL <| IsSuffix.isInfix <| tail_suffix L
+  rw [← length_pos, length_tail]
+  omega
+
+lemma isQ_left' {s : Stations} {L : List Stations} (hL : IsQ L)
+  (hs : IsQ [s, L[0]'(length_pos_Q hL)]) : IsQ (s :: L) := by sorry
 
 
 lemma isQ_trans {L M : List Stations} (hL : IsQ L)  (hM : IsQ M)
