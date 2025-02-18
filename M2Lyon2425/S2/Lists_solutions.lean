@@ -1,6 +1,7 @@
 import Init.Data.List.Nat.TakeDrop
 import Init.Data.List.Lemmas
 import Mathlib.Data.NNReal.Basic
+import Mathlib.Tactic.FinCases
 
 section Metro
 
@@ -33,7 +34,7 @@ inductive Stations : Type
   | Cordeliers : Stations
   | Guillotiere : Stations
   | VieuxLyon : Stations
--- deriving DecidableEq
+deriving DecidableEq --try to comment out
 
 open Stations List
 
@@ -45,6 +46,8 @@ inductive IsDirection : List Stations → Prop
   | back {L : List Stations} : IsDirection L → IsDirection L.reverse
 
 abbrev Directions := {D : List Stations // IsDirection D}
+
+#synth DecidableEq Directions -- effect of commenting out?
 
 def Directions.reverse : Directions → Directions :=
 fun D ↦ ⟨D.1.reverse, IsDirection.back D.2⟩
@@ -80,16 +83,6 @@ abbrev D_EW : Directions := ⟨_, IsDirection.d_EW⟩
 abbrev D_WE : Directions := ⟨_, IsDirection.back IsDirection.d_EW⟩
 
 
--- instance : Fintype (Stations) := by
---   apply Fintype.ofList
---       [JeanMace, SaxeGambetta, PlaceGuichard, PartDieu, HotelDeVille, CroixPacquet, Perrache,
---   Ampere, Bellecour, Cordeliers, Guillotiere, VieuxLyon]
---   intro s
---   cases s
---   all_goals {simp}
-
--- instance : DecidableEq Directions := Subtype.instDecidableEq
-
 instance Directions.Setoid : Setoid Directions where
   r := fun L M ↦ L.1 = M.1.reverse ∨ L.1 = M.1
   iseqv := by
@@ -103,7 +96,7 @@ instance Directions.Setoid : Setoid Directions where
 
 def Lines := Quotient Directions.Setoid
 
--- Several way to write a line
+-- Several ways to write a line
 abbrev A : Lines := Quotient.mk'' A_NS
 abbrev A'' : Lines := ⟦A_NS⟧
 abbrev A' : Lines := Quotient.mk'' A_SN
@@ -269,6 +262,7 @@ structure Trip (start arrival : Stations) where
   permitted : IsTrip stops
   start : stops.head (ne_nil_Trip permitted) = start
   arrival : stops.getLast (ne_nil_Trip permitted) = arrival
+deriving DecidableEq
 
 def IsConnected : Stations → Stations → Prop := fun S A ↦ Nonempty (Trip S A)
 
@@ -294,14 +288,6 @@ example : IsConnected Ampere Guillotiere  := by
     · apply isTrip_ofDirection
   · simp
   · simp
-
-
-lemma exists_mem_Direction (s : Stations) : ∃ D : Directions, s ∈  D.1 := by
-  induction s
-  all_goals try {use B_SN ; simp_all}
-  all_goals try {use A_NS ; simp_all}
-  all_goals try {use C_SN ; simp_all}
-  all_goals try {use D_EW; simp_all}
 
 
 def Connected : Equivalence IsConnected where
@@ -376,12 +362,21 @@ lemma IsConnected_within_Direction {s t : Stations} {D : Directions} (hst : s �
     rwa [← getElem_take]
     omega
 
+-- See at the end for a better solution once `Directions` is a `Fintype`
+lemma exists_mem_Direction (s : Stations) : ∃ D : Directions, s ∈  D.1 := by
+  induction s
+  all_goals try {use B_SN ; simp_all}
+  all_goals try {use A_NS ; simp_all}
+  all_goals try {use C_SN ; simp_all}
+  all_goals try {use D_EW; simp_all}
 
 lemma IsConnected_to_Terminus (s : Stations) : ∃ D, IsConnected s (Terminus D) := by
   obtain ⟨D, hD⟩ := exists_mem_Direction s
   exact ⟨D, IsConnected_within_Direction ⟨hD, Terminus_mem_line _⟩⟩
 
-lemma Direction.alternative (D : Directions) : D = A_SN ∨ D = B_SN ∨ D = C_SN ∨ D = D_EW ∨
+
+-- See at the end for a better solution once `Directions` is a `Fintype`
+lemma Directions.alternative (D : Directions) : D = A_SN ∨ D = B_SN ∨ D = C_SN ∨ D = D_EW ∨
     D.1.reverse = A_SN ∨ D.1.reverse = B_SN ∨ D.1.reverse = C_SN ∨ D.1.reverse = D_EW := by
   rcases D with ⟨D, hD⟩
   induction' hD with M hM H
@@ -392,8 +387,8 @@ lemma Direction.alternative (D : Directions) : D = A_SN ∨ D = B_SN ∨ D = C_S
   · simp at H ⊢
     tauto
 
-lemma Terminus_mem_CircleDirection (D : Directions) : Terminus D ∈ CircleDirection.1 := by
-  have := Direction.alternative D
+  lemma Terminus_mem_CircleDirection (D : Directions) : Terminus D ∈ CircleDirection.1 := by
+  have := Directions.alternative D
   rcases this with H | H | H | H | H | H | H | H
   · rw [H, Terminus]
     simp
@@ -425,5 +420,39 @@ lemma Everything_IsConnected (s t : Stations) : IsConnected s t := by
   apply Connected.trans h1
   exact Connected.trans IsConnected_Terminus (Connected.symm h2)
 
+/- Let's provide a `Fintype` instance on `Distances` to make things computable-/
+
+def Directions.listAll : List Directions := [A_SN, B_SN, C_SN, D_EW, A_SN.reverse, B_SN.reverse,
+    C_SN.reverse, D_EW.reverse]
+
+lemma mem_Directions_ListAll (D : Directions) : D ∈ Directions.listAll := by
+  rcases D with ⟨D, hD⟩
+  induction' hD with M hM H
+  all_goals try decide
+  fin_cases H <;> exact mem_of_elem_eq_true (by rfl)
+
+instance : Fintype (Directions) := Fintype.ofList Directions.listAll mem_Directions_ListAll
+
+lemma Terminus_mem_CircleDirection' (D : Directions) : Terminus D ∈ CircleDirection.1 := by
+  have := mem_Directions_ListAll D
+  fin_cases this <;> decide
+
+lemma exists_mem_Direction' (s : Stations) : ∃ D : Directions, s ∈  D.1 := by
+  induction s <;> decide
+
+-- instance : DecidableRel IsConnected :=
+-- fun
+-- | .JeanMace => _
+-- | .SaxeGambetta => _
+-- | .PlaceGuichard => _
+-- | .PartDieu => _
+-- | .HotelDeVille => _
+-- | .CroixPacquet => _
+-- | .Perrache => _
+-- | .Ampere => _
+-- | .Bellecour => _
+-- | .Cordeliers => _
+-- | .Guillotiere => _
+-- | .VieuxLyon => _
 
 end Metro
