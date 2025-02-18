@@ -34,7 +34,7 @@ inductive Stations : Type
   | Cordeliers : Stations
   | Guillotiere : Stations
   | VieuxLyon : Stations
--- deriving DecidableEq --try to comment out
+deriving DecidableEq --try to comment out
 
 open Stations List
 
