@@ -13,7 +13,7 @@ being connected by a path.
 
 2. Prove that being connected is an equivalence relation.
 
-3. Prove that if we add a "circle line" connecting all terminus', then every two stations become
+3. Prove that if we add a "circle line" connecting all Terminus', then every two stations become
 connected.
 
 -/
@@ -33,7 +33,7 @@ inductive Stations : Type
   | Cordeliers : Stations
   | Guillotiere : Stations
   | VieuxLyon : Stations
-deriving DecidableEq
+-- deriving DecidableEq
 
 open Stations List
 
@@ -44,26 +44,25 @@ inductive IsDirection : List Stations → Prop
   | d_EW : IsDirection [Guillotiere, Bellecour, VieuxLyon]
   | back {L : List Stations} : IsDirection L → IsDirection L.reverse
 
-
 abbrev Directions := {D : List Stations // IsDirection D}
 
-lemma Direction_two_le_length (D : Directions) : 2 ≤ D.1.length := by
+def Directions.reverse : Directions → Directions :=
+fun D ↦ ⟨D.1.reverse, IsDirection.back D.2⟩
+
+@[simp]
+lemma Directions.reverse_eq (D : Directions) : D.reverse.1 = D.1.reverse := rfl
+
+lemma two_le_length_ofDirection (D : Directions) : 2 ≤ D.1.length := by
   rcases D with ⟨L, hL⟩
   induction' hL with _ _ h_ind
   all_goals simp
   apply h_ind
 
-lemma ne_nil_D (D : Directions) : D.1 ≠ [] := by
+lemma ne_nil_Direction (D : Directions) : D.1 ≠ [] := by
   apply ne_nil_of_length_pos
-  linarith [Direction_two_le_length D]
+  linarith [two_le_length_ofDirection D]
 
-
-def Directions.reverse : Directions → Directions :=
-  fun D ↦ ⟨D.1.reverse, IsDirection.back D.2⟩
-
-@[simp]
-lemma Directions.reverse_eq (D : Directions) : D.reverse.1 = D.1.reverse := rfl
-
+-- The directions
 abbrev A_SN : Directions := ⟨_, IsDirection.a_SN⟩
 
 abbrev A_NS : Directions := ⟨_, IsDirection.back IsDirection.a_SN⟩
@@ -81,15 +80,15 @@ abbrev D_EW : Directions := ⟨_, IsDirection.d_EW⟩
 abbrev D_WE : Directions := ⟨_, IsDirection.back IsDirection.d_EW⟩
 
 
-instance : Fintype (Stations) := by
-  apply Fintype.ofList
-      [JeanMace, SaxeGambetta, PlaceGuichard, PartDieu, HotelDeVille, CroixPacquet, Perrache,
-  Ampere, Bellecour, Cordeliers, Guillotiere, VieuxLyon]
-  intro s
-  cases s
-  all_goals {simp}
+-- instance : Fintype (Stations) := by
+--   apply Fintype.ofList
+--       [JeanMace, SaxeGambetta, PlaceGuichard, PartDieu, HotelDeVille, CroixPacquet, Perrache,
+--   Ampere, Bellecour, Cordeliers, Guillotiere, VieuxLyon]
+--   intro s
+--   cases s
+--   all_goals {simp}
 
-instance : DecidableEq Directions := Subtype.instDecidableEq
+-- instance : DecidableEq Directions := Subtype.instDecidableEq
 
 instance Directions.Setoid : Setoid Directions where
   r := fun L M ↦ L.1 = M.1.reverse ∨ L.1 = M.1
@@ -104,6 +103,7 @@ instance Directions.Setoid : Setoid Directions where
 
 def Lines := Quotient Directions.Setoid
 
+-- Several way to write a line
 abbrev A : Lines := Quotient.mk'' A_NS
 abbrev A'' : Lines := ⟦A_NS⟧
 abbrev A' : Lines := Quotient.mk'' A_SN
@@ -115,21 +115,21 @@ example : A = A' := by
   rfl
 
 
-inductive IsQ (L : List Stations) : Prop
-  | nom (s : Stations) (_ : L = [s]) : IsQ L
-  | two : 2 ≤ L.length → (∀ {s t : Stations} (_ : s ≠ t), [s, t] <:+: L → ∃ D : Directions,
-    [s,t] <:+: D.1) → IsQ L
+inductive IsTrip (L : List Stations) : Prop
+  | no_move (s : Stations) (_ : L = [s]) : IsTrip L
+  | change : 2 ≤ L.length → (∀ {s t : Stations} (_ : s ≠ t), [s, t] <:+: L → ∃ D : Directions,
+    [s,t] <:+: D.1) → IsTrip L
 
 
-lemma isQ_D (D : Directions) : IsQ D.1 := by
-  apply IsQ.two
-  · exact Direction_two_le_length _
+lemma isTrip_ofDirection (D : Directions) : IsTrip D.1 := by
+  apply IsTrip.change
+  · exact two_le_length_ofDirection _
   · refine fun _ H ↦ ⟨D, H⟩
 
 
-lemma isQ_infix_pair {L : List Stations} {s t : Stations} (H  : [s, t] <:+: L) (hL : IsQ L) :
-    IsQ [s, t] := by
-  apply IsQ.two (by simp)
+lemma isTrip_infix_pair {L : List Stations} {s t : Stations} (H  : [s, t] <:+: L) (hL : IsTrip L) :
+    IsTrip [s, t] := by
+  apply IsTrip.change (by simp)
   intro x y h_ne hxy
   replace hxy : [x, y] = [s, t] := IsInfix.eq_of_length hxy (by simp)
   replace hxy : x = s ∧ y = t := by simp_all
@@ -146,28 +146,24 @@ lemma isQ_infix_pair {L : List Stations} {s t : Stations} (H  : [s, t] <:+: L) (
       rw [← hxy.1, ← hxy.2] at hD
       exact ⟨D, hD⟩
 
-lemma not_nil_Q {L : List Stations} (hL : IsQ L) : L ≠ [] := by
+lemma ne_nil_Trip {L : List Stations} (hL : IsTrip L) : L ≠ [] := by
   rcases hL with _ | H
   · simp_all
   · rw [← length_pos_iff_ne_nil]
     exact lt_of_lt_of_le two_pos H
 
-lemma length_pos_Q {L : List Stations} (hL : IsQ L) : 0 < L.length := by
-  rw [length_pos]
-  exact not_nil_Q hL
 
-
-lemma isQ_left {s : Stations} {L : List Stations} (hL : IsQ L)
-    (hs : IsQ [s, L.head (not_nil_Q hL)]) : IsQ (s :: L) := by
+lemma cons_isTrip {s : Stations} {L : List Stations} (hL : IsTrip L)
+    (hs : IsTrip [s, L.head (ne_nil_Trip hL)]) : IsTrip (s :: L) := by
   rcases hs with _ | ⟨_, H⟩
   · simp_all
-  have h_len : 1 ≤ L.length := by simp [Nat.one_le_iff_ne_zero, not_nil_Q hL]
-  apply IsQ.two (by simp [h_len])
+  have h_len : 1 ≤ L.length := by simp [Nat.one_le_iff_ne_zero, ne_nil_Trip hL]
+  apply IsTrip.change (by simp [h_len])
   intro x y h_ne ⟨l₁, l₂, hl⟩
   by_cases h_nil : l₁ = []
   · rw [h_nil] at hl
     simp only [nil_append, cons_append, singleton_append, cons.injEq] at hl
-    have hl' : L.head (not_nil_Q hL) = y := by
+    have hl' : L.head (ne_nil_Trip hL) = y := by
       simp_rw [← hl.2, head_cons]
     rw [hl.1, ← hl'] at h_ne ⊢
     exact H h_ne (infix_rfl)
@@ -185,45 +181,45 @@ lemma isQ_left {s : Stations} {L : List Stations} (hL : IsQ L)
       apply IsInfix.trans _ hl'
       exact ⟨[], l₂, by simp⟩
 
-lemma isQ_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsQ L) (H : l <:+: L) :
-    IsQ l := by
+lemma isTrip_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsTrip L)
+    (H : l <:+: L) : IsTrip l := by
   match l with
-  | [s] => apply IsQ.nom s rfl
+  | [s] => apply IsTrip.no_move s rfl
   | x :: xs =>
     by_cases h_ne : xs = []
     · rw [h_ne]
-      apply IsQ.nom x rfl
+      apply IsTrip.no_move x rfl
     · have uno : xs <:+: L := by
         apply IsInfix.trans _ H
         refine ⟨[x], [], by simp⟩
-      apply isQ_left
+      apply cons_isTrip
       · have tre : [x, xs.head h_ne] <:+: L := by
           apply IsInfix.trans _ H
           refine ⟨[], xs.tail, by simp⟩
-        apply isQ_infix_pair tre hL
-      · apply isQ_infix h_ne hL uno
+        apply isTrip_infix_pair tre hL
+      · apply isTrip_infix h_ne hL uno
 
-lemma isQ_tail {L : List Stations} (hL : IsQ L) (h_len : 1 < L.length) : IsQ (L.tail) := by
-  apply isQ_infix _ hL <| IsSuffix.isInfix <| tail_suffix L
+lemma isTrip_tail {L : List Stations} (hL : IsTrip L) (h_len : 1 < L.length) : IsTrip (L.tail) := by
+  apply isTrip_infix _ hL <| IsSuffix.isInfix <| tail_suffix L
   rw [← length_pos, length_tail]
   omega
 
-lemma isQ_trans {L M : List Stations} (hL : IsQ L)  (hM : IsQ M)
-    (H : L.getLast (not_nil_Q hL) = M.head (not_nil_Q hM)) : IsQ (L ++ M.tail) := by
+lemma isTrip_trans {L M : List Stations} (hL : IsTrip L)  (hM : IsTrip M)
+    (H : L.getLast (ne_nil_Trip hL) = M.head (ne_nil_Trip hM)) : IsTrip (L ++ M.tail) := by
   induction' L with s L h_ind
-  · have := not_nil_Q hL
+  · have := ne_nil_Trip hL
     tauto
   · by_cases L_ne : L = []
     · by_cases M_ne : 1 < M.length
       · rw [L_ne]
         simp
-        apply isQ_left
+        apply cons_isTrip
         · simp_rw [L_ne] at H
           simp at H
           rw [H]
-          apply isQ_infix_pair _ hM
-          · apply isQ_infix _ hM
-            · refine ⟨[M.head (not_nil_Q hM)], [], ?_⟩
+          apply isTrip_infix_pair _ hM
+          · apply isTrip_infix _ hM
+            · refine ⟨[M.head (ne_nil_Trip hM)], [], ?_⟩
               simp
             · apply ne_nil_of_length_pos
               simpa [length_tail, tsub_pos_iff_lt]
@@ -232,17 +228,17 @@ lemma isQ_trans {L M : List Stations} (hL : IsQ L)  (hM : IsQ M)
       · simp at M_ne
         replace M_ne : M.length = 1 := by
           apply eq_of_le_of_not_lt M_ne
-          simpa [Nat.lt_one_iff] using not_nil_Q hM
+          simpa [Nat.lt_one_iff] using ne_nil_Trip hM
         rw [length_eq_one] at M_ne
         obtain ⟨_, rfl⟩ := M_ne
         simpa
-    · show IsQ ([s] ++ L ++ M.tail)
+    · show IsTrip ([s] ++ L ++ M.tail)
       have : 1 < (s :: L).length := by
         rw [length_cons]
         rw [← ne_eq, ← length_pos] at L_ne
         omega
-      apply isQ_left _
-      · apply isQ_infix (by simp) hL
+      apply cons_isTrip _
+      · apply isTrip_infix (by simp) hL
         refine ⟨[], L.tail, ?_⟩
         simp
         rw [head_append_of_ne_nil L_ne]
@@ -250,14 +246,14 @@ lemma isQ_trans {L M : List Stations} (hL : IsQ L)  (hM : IsQ M)
         · apply h_ind
           rw [← H]
           refine (getLast_cons L_ne).symm
-          have := isQ_tail hL this
+          have := isTrip_tail hL this
           simpa
 
-lemma isQ_symm {L : List Stations} (hL : IsQ L) : IsQ L.reverse := by
+lemma isTrip_symm {L : List Stations} (hL : IsTrip L) : IsTrip L.reverse := by
   rcases hL with ⟨s, hs⟩ | ⟨_, H⟩
-  · apply IsQ.nom s
+  · apply IsTrip.no_move s
     simp [hs]
-  · apply IsQ.two
+  · apply IsTrip.change
     · simp_all
     intro s t h_ne hst
     specialize H h_ne.symm
@@ -268,39 +264,39 @@ lemma isQ_symm {L : List Stations} (hL : IsQ L) : IsQ L.reverse := by
     rwa [Directions.reverse_eq, ← reverse_reverse [s, _], reverse_infix]
 
 
-  structure Trip (start arrival : Stations) where
+structure Trip (start arrival : Stations) where
   stops : List Stations
-  permitted : IsQ stops
-  start : stops.head (not_nil_Q permitted) = start
-  arrival : stops.getLast (not_nil_Q permitted) = arrival
+  permitted : IsTrip stops
+  start : stops.head (ne_nil_Trip permitted) = start
+  arrival : stops.getLast (ne_nil_Trip permitted) = arrival
 
-def Connected : Stations → Stations → Prop := fun S A ↦ Nonempty (Trip S A)
+def IsConnected : Stations → Stations → Prop := fun S A ↦ Nonempty (Trip S A)
 
-example : Connected JeanMace SaxeGambetta := by
+example : IsConnected JeanMace SaxeGambetta := by
   use [JeanMace, SaxeGambetta]
-  · refine IsQ.two (by rfl) (fun _ hl ↦ ?_)
+  · refine IsTrip.change (by rfl) (fun _ hl ↦ ?_)
     refine ⟨B_SN, ⟨[], [PlaceGuichard, PartDieu], ?_⟩⟩
     simp only [nil_append, cons_append, singleton_append, cons.injEq, and_true,
       hl.eq_of_length (by simp)]
   all_goals rfl
 
-example : Connected Ampere Guillotiere  := by
+example : IsConnected Ampere Guillotiere  := by
   use [Ampere, Bellecour, Guillotiere]
-  apply isQ_trans (L := [Ampere, Bellecour]) (M := [Bellecour, Guillotiere])
+  apply isTrip_trans (L := [Ampere, Bellecour]) (M := [Bellecour, Guillotiere])
   · simp
-  · apply isQ_infix_pair (L := A_SN.1)
+  · apply isTrip_infix_pair (L := A_SN.1)
     · use [Perrache]
       simp
-    · apply isQ_D
-  · apply isQ_infix_pair (L := D_WE.1)
+    · apply isTrip_ofDirection
+  · apply isTrip_infix_pair (L := D_WE.1)
     apply IsSuffix.isInfix
     simp
-    · apply isQ_D
+    · apply isTrip_ofDirection
   · simp
   · simp
 
 
-lemma exists_Direction (s : Stations) : ∃ D : Directions, s ∈  D.1 := by
+lemma exists_mem_Direction (s : Stations) : ∃ D : Directions, s ∈  D.1 := by
   induction s
   all_goals try {use B_SN ; simp_all}
   all_goals try {use A_NS ; simp_all}
@@ -308,14 +304,14 @@ lemma exists_Direction (s : Stations) : ∃ D : Directions, s ∈  D.1 := by
   all_goals try {use D_EW; simp_all}
 
 
-def ConnectedEquiv : Equivalence Connected where
+def Connected : Equivalence IsConnected where
   refl := by
     intro
-    exact ⟨[_], IsQ.nom _ (rfl), head_cons, getLast_singleton _ (by simp)⟩
+    exact ⟨[_], IsTrip.no_move _ (rfl), head_cons, getLast_singleton _ (by simp)⟩
   symm := by
     intro s t ⟨trip, permitted, start, arrival⟩
     use trip.reverse
-    · apply isQ_symm permitted
+    · apply isTrip_symm permitted
     · rwa [head_reverse]
     · rwa [getLast_reverse]
   trans := by
@@ -326,44 +322,45 @@ def ConnectedEquiv : Equivalence Connected where
       simp at arrival_tu start_tu
       rw [arrival_st, ← arrival_tu, ← start_tu]
     use trip_st ++ (trip_tu.tail)
-    · apply isQ_trans (perm_st) (perm_tu)
+    · apply isTrip_trans (perm_st) (perm_tu)
       rw [arrival_st, start_tu]
-    · rwa [head_append_of_ne_nil (not_nil_Q perm_st)]
+    · rwa [head_append_of_ne_nil (ne_nil_Trip perm_st)]
     · rw [getLast_append_of_ne_nil]
       · simp_rw [drop_zero _ ▸ (tail_drop trip_tu 0), zero_add, getLast_drop, arrival_tu]
       · apply ne_nil_of_length_pos
         simp only [drop_one, length_tail, tsub_pos_iff_lt]
         have : 0 < trip_tu.length := by
           rw [length_pos]
-          exact not_nil_Q perm_tu
+          exact ne_nil_Trip perm_tu
         omega
 
 
-def terminus (D : Directions) : Stations := D.1.getLast (ne_nil_D _)
+def Terminus (D : Directions) : Stations := D.1.getLast (ne_nil_Direction _)
 
-lemma mem_line_terminus (D : Directions) : terminus D ∈ D.1 := getLast_mem _
+lemma Terminus_mem_line (D : Directions) : Terminus D ∈ D.1 := getLast_mem _
 
-axiom Q_circleLine : IsDirection
+axiom IsTrip_circleLine : IsDirection
   [CroixPacquet, HotelDeVille, VieuxLyon, Perrache, Guillotiere, JeanMace, PartDieu]
 
-abbrev CircleLine : Directions := by
+abbrev CircleDirection : Directions := by
   use [CroixPacquet, HotelDeVille, VieuxLyon, Perrache, Guillotiere, JeanMace, PartDieu]
-  exact Q_circleLine
+  exact IsTrip_circleLine
 
+abbrev CircleLine : Lines := ⟦CircleDirection⟧
 
-lemma connected_with_D {s t : Stations} {D : Directions} (hst : s ∈ D.1 ∧ t ∈ D.1) :
-    Connected s t := by
+lemma IsConnected_within_Direction {s t : Stations} {D : Directions} (hst : s ∈ D.1 ∧ t ∈ D.1) :
+    IsConnected s t := by
   obtain ⟨ns, ns_le, hns⟩ := List.getElem_of_mem hst.1
   obtain ⟨nt, nt_le, hnt⟩ := List.getElem_of_mem hst.2
   wlog h_wlog : ns ≤ nt
-  · apply ConnectedEquiv.symm
+  · apply Connected.symm
     exact this hst.symm nt nt_le hnt ns ns_le hns (le_of_lt (lt_of_not_le h_wlog))
   by_cases h_eq : ns = nt
   · simp_all only [le_refl, and_self]
-    apply ConnectedEquiv.refl
+    apply Connected.refl
   set L := (D.1.drop ns).take (nt - ns + 1) with hL
   use L
-  apply isQ_infix _ (isQ_D D)
+  apply isTrip_infix _ (isTrip_ofDirection D)
   · apply IsInfix.trans (l₂ := drop ns D.1) (IsPrefix.isInfix ?_) (IsSuffix.isInfix ?_)
     apply take_prefix
     apply drop_suffix
@@ -380,11 +377,11 @@ lemma connected_with_D {s t : Stations} {D : Directions} (hst : s ∈ D.1 ∧ t 
     omega
 
 
-lemma connected_to_terminus (s : Stations) : ∃ D, Connected s (terminus D) := by
-  obtain ⟨D, hD⟩ := exists_Direction s
-  exact ⟨D, connected_with_D ⟨hD, mem_line_terminus _⟩⟩
+lemma IsConnected_to_Terminus (s : Stations) : ∃ D, IsConnected s (Terminus D) := by
+  obtain ⟨D, hD⟩ := exists_mem_Direction s
+  exact ⟨D, IsConnected_within_Direction ⟨hD, Terminus_mem_line _⟩⟩
 
-lemma alternative (D : Directions) : D = A_SN ∨ D = B_SN ∨ D = C_SN ∨ D = D_EW ∨
+lemma Direction.alternative (D : Directions) : D = A_SN ∨ D = B_SN ∨ D = C_SN ∨ D = D_EW ∨
     D.1.reverse = A_SN ∨ D.1.reverse = B_SN ∨ D.1.reverse = C_SN ∨ D.1.reverse = D_EW := by
   rcases D with ⟨D, hD⟩
   induction' hD with M hM H
@@ -395,40 +392,38 @@ lemma alternative (D : Directions) : D = A_SN ∨ D = B_SN ∨ D = C_SN ∨ D = 
   · simp at H ⊢
     tauto
 
-#help tactic nth
-
-lemma mem_terminus_CircleLine (D : Directions) : terminus D ∈ CircleLine.1 := by
-  have := alternative D
+lemma Terminus_mem_CircleDirection (D : Directions) : Terminus D ∈ CircleDirection.1 := by
+  have := Direction.alternative D
   rcases this with H | H | H | H | H | H | H | H
-  · rw [H, terminus]
+  · rw [H, Terminus]
     simp
-  · rw [H, terminus]
+  · rw [H, Terminus]
     simp
-  · rw [H, terminus]
+  · rw [H, Terminus]
     simp
-  · rw [H, terminus]
+  · rw [H, Terminus]
     simp
   · rw [← reverse_involutive A_SN.1, reverse_inj] at H
-    simp [terminus, H]
+    simp [Terminus, H]
   · rw [← reverse_involutive B_SN.1, reverse_inj] at H
-    simp [terminus, H]
+    simp [Terminus, H]
   · rw [← reverse_involutive C_SN.1, reverse_inj] at H
-    simp [terminus, H]
+    simp [Terminus, H]
   · rw [← reverse_involutive D_EW.1, reverse_inj] at H
-    simp [terminus, H]
+    simp [Terminus, H]
 
 
-lemma Terminus_Connected {D₁ D₂ : Directions} : Connected (terminus D₁) (terminus D₂) := by
-  apply connected_with_D (D := CircleLine)
+lemma IsConnected_Terminus {D₁ D₂ : Directions} : IsConnected (Terminus D₁) (Terminus D₂) := by
+  apply IsConnected_within_Direction (D := CircleDirection)
   constructor <;>
-  apply mem_terminus_CircleLine
+  apply Terminus_mem_CircleDirection
 
 
-lemma Everything_Connected (s t : Stations) : Connected s t := by
-  obtain ⟨D1, h1⟩ := connected_to_terminus s
-  obtain ⟨D2, h2⟩ := connected_to_terminus t
-  apply ConnectedEquiv.trans h1
-  exact ConnectedEquiv.trans Terminus_Connected (ConnectedEquiv.symm h2)
+lemma Everything_IsConnected (s t : Stations) : IsConnected s t := by
+  obtain ⟨D1, h1⟩ := IsConnected_to_Terminus s
+  obtain ⟨D2, h2⟩ := IsConnected_to_Terminus t
+  apply Connected.trans h1
+  exact Connected.trans IsConnected_Terminus (Connected.symm h2)
 
 
 end Metro
