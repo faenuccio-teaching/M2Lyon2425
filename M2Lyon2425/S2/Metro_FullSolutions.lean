@@ -34,7 +34,7 @@ inductive Stations : Type
   | Cordeliers : Stations
   | Guillotiere : Stations
   | VieuxLyon : Stations
-deriving DecidableEq --try to comment out
+-- deriving DecidableEq --try to comment out
 
 open Stations List
 
@@ -46,8 +46,6 @@ inductive IsDirection : List Stations → Prop
   | back {L : List Stations} : IsDirection L → IsDirection L.reverse
 
 abbrev Directions := {D : List Stations // IsDirection D}
-
-#synth DecidableEq Directions -- effect of commenting out?
 
 def Directions.reverse : Directions → Directions :=
 fun D ↦ ⟨D.1.reverse, IsDirection.back D.2⟩
@@ -262,7 +260,6 @@ structure Trip (start arrival : Stations) where
   permitted : IsTrip stops
   start : stops.head (ne_nil_Trip permitted) = start
   arrival : stops.getLast (ne_nil_Trip permitted) = arrival
-deriving DecidableEq
 
 def IsConnected : Stations → Stations → Prop := fun S A ↦ Nonempty (Trip S A)
 
@@ -439,20 +436,5 @@ lemma Terminus_mem_CircleDirection' (D : Directions) : Terminus D ∈ CircleDire
 
 lemma exists_mem_Direction' (s : Stations) : ∃ D : Directions, s ∈  D.1 := by
   induction s <;> decide
-
--- instance : DecidableRel IsConnected :=
--- fun
--- | .JeanMace => _
--- | .SaxeGambetta => _
--- | .PlaceGuichard => _
--- | .PartDieu => _
--- | .HotelDeVille => _
--- | .CroixPacquet => _
--- | .Perrache => _
--- | .Ampere => _
--- | .Bellecour => _
--- | .Cordeliers => _
--- | .Guillotiere => _
--- | .VieuxLyon => _
 
 end Metro
