@@ -37,6 +37,7 @@ example : [2, 37, 101] = 2 :: 37 :: [101] := rfl
 example : [true, false] = true :: [false] := rfl
 example : [false, true] = (true :: [false]).reverse := rfl
 example : ([2 < 3, 1 = 1] ++ [0 = 0, True] : List Prop )= [2 < 3, 1 = 1, 0 = 0, True] := rfl
+example : 2 :: [3] = [2] ++ [3]  := rfl
 
 inductive Stations : Type
   | JeanMace : Stations
