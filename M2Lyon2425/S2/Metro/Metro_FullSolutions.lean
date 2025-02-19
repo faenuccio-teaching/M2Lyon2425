@@ -386,6 +386,7 @@ lemma Directions.alternative (D : Directions) : D = A_SN ∨ D = B_SN ∨ D = C_
   · simp at H ⊢
     tauto
 
+-- See at the end for a better solution once `Directions` is a `Fintype`
   lemma Terminus_mem_CircleDirection (D : Directions) : Terminus D ∈ CircleDirection.1 := by
   have := Directions.alternative D
   rcases this with H | H | H | H | H | H | H | H
