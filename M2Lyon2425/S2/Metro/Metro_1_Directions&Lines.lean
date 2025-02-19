@@ -47,21 +47,14 @@ inductive IsDirection : List Stations → Prop
 abbrev Directions := {D : List Stations // IsDirection D}
 
 
-def Directions.reverse : Directions → Directions :=
-fun D ↦ ⟨D.1.reverse, IsDirection.back D.2⟩
+def Directions.reverse : Directions → Directions := sorry
 
 @[simp]
-lemma Directions.reverse_eq (D : Directions) : D.reverse.1 = D.1.reverse := rfl
+lemma Directions.reverse_eq (D : Directions) : D.reverse.1 = D.1.reverse := sorry
 
-lemma two_le_length_ofDirection (D : Directions) : 2 ≤ D.1.length := by
-  rcases D with ⟨L, hL⟩
-  induction' hL with _ _ h_ind
-  all_goals simp
-  apply h_ind
+lemma two_le_length_ofDirection (D : Directions) : 2 ≤ D.1.length := by sorry
 
-lemma ne_nil_Direction (D : Directions) : D.1 ≠ [] := by
-  apply ne_nil_of_length_pos
-  linarith [two_le_length_ofDirection D]
+lemma ne_nil_Direction (D : Directions) : D.1 ≠ [] := sorry
 
 -- The directions
 abbrev A_SN : Directions := ⟨_, IsDirection.a_SN⟩
@@ -81,29 +74,15 @@ abbrev D_EW : Directions := ⟨_, IsDirection.d_EW⟩
 abbrev D_WE : Directions := ⟨_, IsDirection.back IsDirection.d_EW⟩
 
 
-instance Directions.Setoid : Setoid Directions where
-  r := fun L M ↦ L.1 = M.1.reverse ∨ L.1 = M.1
-  iseqv := by
-    constructor
-    · tauto
-    · intros
-      rw [← reverse_eq_iff]
-      tauto
-    · intro _ _ _
-      rintro (h1 | h1) (_ | _) <;> simp_all
+instance Directions.Setoid : Setoid Directions := sorry
 
-def Lines := Quotient Directions.Setoid
+def Lines : Type* := sorry
 
 -- Several ways to write a line
-abbrev A : Lines := Quotient.mk'' A_NS
-abbrev A'' : Lines := ⟦A_NS⟧
-abbrev A' : Lines := Quotient.mk'' A_SN
-abbrev A''' : Lines := Quotient.mk'' A_NS
+abbrev A : Lines := sorry
+abbrev A' : Lines := sorry
 
-example : A = A' := by
-  rw [Quotient.eq'']
-  constructor
-  rfl
+example : A = A' := by sorry
 
 
 end Metro

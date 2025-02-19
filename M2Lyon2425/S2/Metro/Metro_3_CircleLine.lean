@@ -317,103 +317,40 @@ def Connected : Equivalence IsConnected where
         omega
 
 
-def Terminus (D : Directions) : Stations := D.1.getLast (ne_nil_Direction _)
+def Terminus (D : Directions) : Stations := sorry
 
-lemma Terminus_mem_line (D : Directions) : Terminus D ∈ D.1 := getLast_mem _
+lemma Terminus_mem_line (D : Directions) : Terminus D ∈ D.1 := sorry
 
-axiom IsTrip_circleLine : IsDirection
-  [CroixPacquet, HotelDeVille, VieuxLyon, Perrache, Guillotiere, JeanMace, PartDieu]
 
-abbrev CircleDirection : Directions := by
-  use [CroixPacquet, HotelDeVille, VieuxLyon, Perrache, Guillotiere, JeanMace, PartDieu]
-  exact IsTrip_circleLine
+abbrev CircleDirection : Directions := by sorry
 
 abbrev CircleLine : Lines := ⟦CircleDirection⟧
 
 lemma IsConnected_within_Direction {s t : Stations} {D : Directions} (hst : s ∈ D.1 ∧ t ∈ D.1) :
     IsConnected s t := by
-  obtain ⟨ns, ns_le, hns⟩ := List.getElem_of_mem hst.1
-  obtain ⟨nt, nt_le, hnt⟩ := List.getElem_of_mem hst.2
-  wlog h_wlog : ns ≤ nt
-  · apply Connected.symm
-    exact this hst.symm nt nt_le hnt ns ns_le hns (le_of_lt (lt_of_not_le h_wlog))
-  by_cases h_eq : ns = nt
-  · simp_all only [le_refl, and_self]
-    apply Connected.refl
-  set L := (D.1.drop ns).take (nt - ns + 1) with hL
-  use L
-  apply isTrip_infix _ (isTrip_ofDirection D)
-  · apply IsInfix.trans (l₂ := drop ns D.1) (IsPrefix.isInfix ?_) (IsSuffix.isInfix ?_)
-    apply take_prefix
-    apply drop_suffix
-  · apply ne_nil_of_length_pos
-    rw [hL, length_take, length_drop]
-    omega
-  · simp_rw [hL]
-    rwa [head_take, head_drop]
-  · simp_rw [hL, take_drop, getLast_drop, getLast_eq_getElem, length_take]
-    have : min (ns + (nt - ns + 1)) D.1.length - 1 = nt := by
-      omega
-    simp_rw [this]
-    rwa [← getElem_take]
-    omega
+  sorry
 
--- See at the end for a better solution once `Directions` is a `Fintype`
+
 lemma exists_mem_Direction (s : Stations) : ∃ D : Directions, s ∈  D.1 := by
-  induction s
-  all_goals try {use B_SN ; simp_all}
-  all_goals try {use A_NS ; simp_all}
-  all_goals try {use C_SN ; simp_all}
-  all_goals try {use D_EW; simp_all}
+  sorry
 
 lemma IsConnected_to_Terminus (s : Stations) : ∃ D, IsConnected s (Terminus D) := by
-  obtain ⟨D, hD⟩ := exists_mem_Direction s
-  exact ⟨D, IsConnected_within_Direction ⟨hD, Terminus_mem_line _⟩⟩
+  sorry
 
 
--- See at the end for a better solution once `Directions` is a `Fintype`
 lemma Directions.alternative (D : Directions) : D = A_SN ∨ D = B_SN ∨ D = C_SN ∨ D = D_EW ∨
     D.1.reverse = A_SN ∨ D.1.reverse = B_SN ∨ D.1.reverse = C_SN ∨ D.1.reverse = D_EW := by
-  rcases D with ⟨D, hD⟩
-  induction' hD with M hM H
-  · simp
-  · simp
-  · simp
-  · simp
-  · simp at H ⊢
-    tauto
+  sorry
 
-  lemma Terminus_mem_CircleDirection (D : Directions) : Terminus D ∈ CircleDirection.1 := by
-  have := Directions.alternative D
-  rcases this with H | H | H | H | H | H | H | H
-  · rw [H, Terminus]
-    simp
-  · rw [H, Terminus]
-    simp
-  · rw [H, Terminus]
-    simp
-  · rw [H, Terminus]
-    simp
-  · rw [← reverse_involutive A_SN.1, reverse_inj] at H
-    simp [Terminus, H]
-  · rw [← reverse_involutive B_SN.1, reverse_inj] at H
-    simp [Terminus, H]
-  · rw [← reverse_involutive C_SN.1, reverse_inj] at H
-    simp [Terminus, H]
-  · rw [← reverse_involutive D_EW.1, reverse_inj] at H
-    simp [Terminus, H]
 
+lemma Terminus_mem_CircleDirection (D : Directions) : Terminus D ∈ CircleDirection.1 := by
+  sorry
 
 lemma IsConnected_Terminus {D₁ D₂ : Directions} : IsConnected (Terminus D₁) (Terminus D₂) := by
-  apply IsConnected_within_Direction (D := CircleDirection)
-  constructor <;>
-  apply Terminus_mem_CircleDirection
-
+  sorry
 
 lemma Everything_IsConnected (s t : Stations) : IsConnected s t := by
-  obtain ⟨D1, h1⟩ := IsConnected_to_Terminus s
-  obtain ⟨D2, h2⟩ := IsConnected_to_Terminus t
-  apply Connected.trans h1
-  exact Connected.trans IsConnected_Terminus (Connected.symm h2)
+  sorry
+
 
 end Metro

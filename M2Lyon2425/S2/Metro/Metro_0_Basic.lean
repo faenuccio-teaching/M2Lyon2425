@@ -20,6 +20,23 @@ connected.
 -/
 
 
+namespace Metro -- just to avoid overwriting the root definition.
+inductive List (α : Type*) where
+  /-- `[]` is the empty list. -/
+  | nil : List α
+  /-- If `a : α` and `l : List α`, then `cons a l`, or `a :: l`, is the
+  list whose first element is `a` and with `l` as the rest of the list. -/
+  | cons (head : α) (tail : List α) : List α
+end Metro
+
+#check ([2, 3] : List ℕ)
+#check (Prop :: [ℤ, Bool] : List Type)
+#check ([Prop, Nat] ++ [ℤ, Bool] : List Type)
+
+example : [2, 37, 101] = 2 :: 37 :: [101] := rfl
+example : [true, false] = true :: [false] := rfl
+example : [false, true] = (true :: [false]).reverse := rfl
+example : ([2 < 3, 1 = 1] ++ [0 = 0, True] : List Prop )= [2 < 3, 1 = 1, 0 = 0, True] := rfl
 
 inductive Stations : Type
   | JeanMace : Stations
