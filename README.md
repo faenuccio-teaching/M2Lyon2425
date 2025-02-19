@@ -47,16 +47,14 @@ Classes are on Wednesday, from 10.00AM to 1.0PM, at <a href="https://www.ens-lyo
 |-----------|---------------|---------|---------------
 | **Jan 5th** | **Deadline for project submissions** | --- | 
 | Jan 8th | Structures | X. Roblot | **The class will finish at 12PM**
-| Jan 15th | Inductive Types | F. Nuccio | Accompanying <a href="https://github.com/faenuccio/M2Lyon2425/blob/094259206fa74c94e94913475dd3759715eb9244/M2Lyon2425/Lectures/Structures2_lecture.pdf">pdf file</a>
+| Jan 15th | Structures 2 | F. Nuccio | Accompanying <a href="https://github.com/faenuccio/M2Lyon2425/blob/094259206fa74c94e94913475dd3759715eb9244/M2Lyon2425/Lectures/Structures2_lecture.pdf">pdf file</a>
 | **Jan 15th** | **Projects presentations** | Starting 1PM
-| Jan 22nd | Classes and Instances 1 | F. Nuccio |
-| Jan 29th | Classes and Instances 2 | F. Nuccio |
+| Jan 22nd | Class and Structures 3 | F. Nuccio | Accompanying <a href="https://github.com/faenuccio-teaching/M2Lyon2425/blob/master/M2Lyon2425/Lectures/Structures3_lecture.pdf">pdf file</a>
+| Jan 29th | Classes and Structures 4 | F. Nuccio | Accompanying <a href="https://github.com/faenuccio-teaching/M2Lyon2425/blob/master/M2Lyon2425/Lectures/Structures4_lecture.pdf">pdf file</a>
 | Feb 5th | Categories in Lean 1 | S. Morel
 | Feb 12th | Categories in Lean 2 | S. Morel
-| Feb 19th | Introduction to Metaprogramming 1 | F. Nuccio |
+| Feb 19th | Lists | F. Nuccio | **The class will finish at 12:30PM**
 | Feb 26th  | Categories in Lean 3 | S. Morel
 | Mar 5th | _Holidays_ | ---
-| Mar 12th | Introduction to Metaprogramming 2 | F. Nuccio |
-
-## Exams
+| Mar 12th | Introduction to Metaprogramming | F. Nuccio |
 
