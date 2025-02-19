@@ -53,12 +53,14 @@ fun D ↦ ⟨D.1.reverse, IsDirection.back D.2⟩
 @[simp]
 lemma Directions.reverse_eq (D : Directions) : D.reverse.1 = D.1.reverse := rfl
 
+-- See at the end for a better solution once `Directions` is a `Fintype`
 lemma two_le_length_ofDirection (D : Directions) : 2 ≤ D.1.length := by
   rcases D with ⟨L, hL⟩
   induction' hL with _ _ h_ind
   all_goals simp
   apply h_ind
 
+-- See at the end for a better solution once `Directions` is a `Fintype`
 lemma ne_nil_Direction (D : Directions) : D.1 ≠ [] := by
   apply ne_nil_of_length_pos
   linarith [two_le_length_ofDirection D]
@@ -171,6 +173,50 @@ lemma cons_isTrip {s : Stations} {L : List Stations} (hL : IsTrip L)
     · apply H' h_ne
       apply IsInfix.trans _ hl'
       exact ⟨[], l₂, by simp⟩
+
+-- lemma isTrip_infix' {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsTrip L)
+--     (H : l <:+: L) : IsTrip l := by
+--   obtain ⟨s, M, hl'⟩ := exists_cons_of_ne_nil hl
+--   by_cases hM : M = []
+--   · rw [hl', hM]
+--     exact IsTrip.no_move s rfl
+--   have : M.length < l.length := sorry --ovvio
+--   have : IsTrip M := by
+--     apply isTrip_infix' hM hL
+--     sorry
+--   rw [hl']
+--   apply cons_isTrip this
+--   rw [hl'] at H
+--   have term : M.length < L.length := by
+--     sorry --ovvio, guarda H
+--   apply isTrip_infix' (by simp) this
+--   sorry --ovvio, guarda H
+--   termination_by l.length
+--   termination_by L.length
+
+
+
+
+
+
+
+
+  -- · by_cases h_ne : xs = []
+  --   · rw [h_ne]
+  --     apply IsTrip.no_move x rfl
+  --   · have uno : xs <:+: L := by
+  --       apply IsInfix.trans _ H
+  --       refine ⟨[x], [], by simp⟩
+  --     apply cons_isTrip
+  --     · have tre : [x, xs.head h_ne] <:+: L := by
+  --         apply IsInfix.trans _ H
+  --         refine ⟨[], xs.tail, by simp⟩
+  --       apply isTrip_infix_pair tre hL
+  --     · apply isTrip_infix' h_ne hL uno
+
+
+
+
 
 lemma isTrip_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsTrip L)
     (H : l <:+: L) : IsTrip l := by
@@ -436,5 +482,8 @@ lemma Terminus_mem_CircleDirection' (D : Directions) : Terminus D ∈ CircleDire
 
 lemma exists_mem_Direction' (s : Stations) : ∃ D : Directions, s ∈  D.1 := by
   induction s <;> decide
+
+lemma two_le_length_ofDirection' (D : Directions) : 2 ≤ D.1.length := by
+  fin_cases D <;> decide
 
 end Metro

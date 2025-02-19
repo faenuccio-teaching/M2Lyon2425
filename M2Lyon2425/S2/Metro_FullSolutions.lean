@@ -53,12 +53,14 @@ fun D ↦ ⟨D.1.reverse, IsDirection.back D.2⟩
 @[simp]
 lemma Directions.reverse_eq (D : Directions) : D.reverse.1 = D.1.reverse := rfl
 
+-- See at the end for a better solution once `Directions` is a `Fintype`
 lemma two_le_length_ofDirection (D : Directions) : 2 ≤ D.1.length := by
   rcases D with ⟨L, hL⟩
   induction' hL with _ _ h_ind
   all_goals simp
   apply h_ind
 
+-- See at the end for a better solution once `Directions` is a `Fintype`
 lemma ne_nil_Direction (D : Directions) : D.1 ≠ [] := by
   apply ne_nil_of_length_pos
   linarith [two_le_length_ofDirection D]
@@ -180,15 +182,15 @@ lemma isTrip_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL :
     by_cases h_ne : xs = []
     · rw [h_ne]
       apply IsTrip.no_move x rfl
-    · have uno : xs <:+: L := by
+    · have : xs <:+: L := by
         apply IsInfix.trans _ H
         refine ⟨[x], [], by simp⟩
       apply cons_isTrip
-      · have tre : [x, xs.head h_ne] <:+: L := by
+      · have HL : [x, xs.head h_ne] <:+: L := by
           apply IsInfix.trans _ H
           refine ⟨[], xs.tail, by simp⟩
-        apply isTrip_infix_pair tre hL
-      · apply isTrip_infix h_ne hL uno
+        apply isTrip_infix_pair HL hL
+      · apply isTrip_infix h_ne hL this
 
 lemma isTrip_tail {L : List Stations} (hL : IsTrip L) (h_len : 1 < L.length) : IsTrip (L.tail) := by
   apply isTrip_infix _ hL <| IsSuffix.isInfix <| tail_suffix L
@@ -436,5 +438,11 @@ lemma Terminus_mem_CircleDirection' (D : Directions) : Terminus D ∈ CircleDire
 
 lemma exists_mem_Direction' (s : Stations) : ∃ D : Directions, s ∈  D.1 := by
   induction s <;> decide
+
+lemma two_le_length_ofDirection' (D : Directions) : 2 ≤ D.1.length := by
+  fin_cases D <;> decide
+
+lemma ne_nil_Direction' (D : Directions) : D.1 ≠ [] := by
+  fin_cases D <;> decide
 
 end Metro
