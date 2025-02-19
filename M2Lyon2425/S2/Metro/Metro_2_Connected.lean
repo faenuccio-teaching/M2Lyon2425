@@ -110,7 +110,27 @@ inductive IsTrip (L : List Stations) : Prop
     [s,t] <:+: D.1) → IsTrip L
 
 
-lemma isTrip_ofDirection (D : Directions) : IsTrip D.1 := by sorry
+lemma isTrip_ofDirection (D : Directions) : IsTrip D.1 := by
+
+  sorry
+
+lemma isTrip_ofDirection' (D : Directions) : IsTrip D.1 := by
+  rcases D with ⟨l, hl⟩
+  cases l with
+  | nil =>
+    exfalso
+    apply ne_nil_Direction ⟨_, hl⟩
+    rfl
+  | cons h t =>
+    cases t with
+    | nil =>
+      exact IsTrip.no_move h (by rfl)
+    | cons th tt =>
+      refine IsTrip.change ?_ ?_
+      · simp
+      · intro s t hdiff hstsuite
+
+        sorry
 
 
 lemma isTrip_infix_pair {L : List Stations} {s t : Stations} (H  : [s, t] <:+: L) (hL : IsTrip L) :
@@ -120,8 +140,11 @@ lemma ne_nil_Trip {L : List Stations} (hL : IsTrip L) : L ≠ [] := by sorry
 
 
 lemma cons_isTrip {s : Stations} {L : List Stations} (hL : IsTrip L)
-    (hs : IsTrip [s, L.head (ne_nil_Trip hL)]) : IsTrip (s :: L) := by
-  sorry
+  (hs : IsTrip [s, L.head (ne_nil_Trip hL)]) : IsTrip (s :: L) := by
+    rcases hs with _ | ⟨_, H⟩
+    · simp_all
+    · apply IsTrip.change (by sorry)
+      sorry
 
 lemma isTrip_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsTrip L)
     (H : l <:+: L) : IsTrip l := by

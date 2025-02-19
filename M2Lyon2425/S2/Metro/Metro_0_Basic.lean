@@ -58,10 +58,10 @@ open Stations List
 
 #print Finset.card
 
-structure LigneOrdonnee where
-  data : Finset (List Stations)
-  deuxSens : Finset.card data = 2
-  bienInverse : ∀ s ∈ data, ∃ t ∈ data, s = t.reverse
+structure LigneNonOrdonnee where
+  directions : Finset (List Stations)
+  deuxSens : Finset.card directions = 2
+  bienInverse : ∀ s ∈ directions, ∃ t ∈ directions, s = t.reverse
 
 structure LigneDesordonnee where
   lesStations : Finset Stations
