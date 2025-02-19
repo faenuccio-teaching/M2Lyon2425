@@ -46,15 +46,34 @@ inductive IsDirection : List Stations → Prop
 
 abbrev Directions := {D : List Stations // IsDirection D}
 
-
-def Directions.reverse : Directions → Directions := sorry
+def Directions.reverse : Directions → Directions := by
+  intro l
+  obtain ⟨l, hl⟩ := l
+  exact ⟨l.reverse, IsDirection.back hl⟩
 
 @[simp]
-lemma Directions.reverse_eq (D : Directions) : D.reverse.1 = D.1.reverse := sorry
+lemma Directions.reverse_eq (D : Directions) : D.reverse.1 = D.1.reverse := by
+  rfl
 
-lemma two_le_length_ofDirection (D : Directions) : 2 ≤ D.1.length := by sorry
+lemma two_le_length_ofDirection (D : Directions) : 2 ≤ D.1.length := by
+  cases' D with D hD
+  induction' hD with s hs hs₂
+  · simp only [length_cons, length_singleton, Nat.reduceAdd, Nat.reduceLeDiff]
+  · simp only [length_cons, length_singleton, Nat.reduceAdd, Nat.reduceLeDiff]
+  · simp only [length_cons, length_singleton, Nat.reduceAdd, le_refl, length_nil]
+  · simp only [length_cons, length_singleton, Nat.reduceAdd, Nat.reduceLeDiff]
+  · simp only [length_reverse] at hs₂ ⊢
+    exact hs₂
 
-lemma ne_nil_Direction (D : Directions) : D.1 ≠ [] := sorry
+lemma ne_nil_Direction (D : Directions) : D.1 ≠ [] := by
+  cases' D with D hD
+  induction' hD with s hs hs₂
+  · simp only [ne_eq, not_false_eq_true]
+  · simp only [ne_eq, not_false_eq_true]
+  · simp only [ne_eq, not_false_eq_true]
+  · simp only [ne_eq, not_false_eq_true]
+  · simp only [ne_eq, reverse_eq_nil_iff] at hs₂ ⊢
+    exact hs₂
 
 -- The directions
 abbrev A_SN : Directions := ⟨_, IsDirection.a_SN⟩
@@ -74,15 +93,42 @@ abbrev D_EW : Directions := ⟨_, IsDirection.d_EW⟩
 abbrev D_WE : Directions := ⟨_, IsDirection.back IsDirection.d_EW⟩
 
 
-instance Directions.Setoid : Setoid Directions := sorry
+instance Directions.Setoid : Setoid Directions where
+  r := fun D D' ↦ D.1 = D'.1.reverse ∨ D.1 = D'.1
+  iseqv := by
+    constructor
+    · simp only [or_true, implies_true]
+    · intros
+      rw [← reverse_eq_iff]
+      tauto
+    · intro _ _ _
+      rintro (h1 | h2) (_ | _) <;> simp_all
 
-def Lines : Type* := sorry
+def Lines := Quotient Directions.Setoid
 
 -- Several ways to write a line
-abbrev A : Lines := sorry
+abbrev A : Lines := Quotient.mk'' A_NS
 abbrev A' : Lines := sorry
+abbrev A'' : Lines := Quotient.mk'' A_SN
 
-example : A = A' := by sorry
+example : A = A' := sorry
+example : A = A'' := by
+  rw [Quotient.eq'']
+  constructor
+  rfl
 
+-- Being connected
+
+-- In mathlib
+variable {α : Type*}
+def nthLe (l : List α) (n : ℕ) (h : n < l.length) : α := get l ⟨n, h⟩
+
+def connected (s₁ s₂ : Stations) :=
+    ∃ (D D' : Directions), (s₁ ∈ D.1 ∧ s₂ ∈ D'.1 ∧ ∃ (s : Stations), s ∈ D.1 ∧ s ∈ D'.1)
+
+instance : Equivalence (fun s₁ s₂ ↦ connected s₁ s₂) where
+  refl := sorry
+  symm := sorry
+  trans := sorry
 
 end Metro
