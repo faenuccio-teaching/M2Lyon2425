@@ -104,8 +104,10 @@ example : A = A' := by
   constructor
   rfl
 
---change to `inductive`
-def IsTrip (L : List Stations) : Prop := sorry
+inductive IsTrip (L : List Stations) : Prop
+  | no_move (s : Stations) (_ : L = [s]) : IsTrip L
+  | change : 2 ≤ L.length → (∀ {s t : Stations} (_ : s ≠ t), [s, t] <:+: L → ∃ D : Directions,
+    [s,t] <:+: D.1) → IsTrip L
 
 
 lemma isTrip_ofDirection (D : Directions) : IsTrip D.1 := by sorry
