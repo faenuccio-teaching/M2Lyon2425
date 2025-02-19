@@ -103,6 +103,9 @@ some condition, we want to prove that `v.right = v'.right`.
 But it suffices to do this after applying `adj.homEquiv`,
 which sends both morphisms to `A.hom`.
 -/
+
+#print Adjunction.unit
+
 def HasInitialOfLeftAdjoint {F : C ⥤ D} (adj : F ⊣ G) (X : C) :
     HasInitial (StructuredArrow X G) := by
   set I : StructuredArrow X G :=
@@ -110,8 +113,27 @@ def HasInitialOfLeftAdjoint {F : C ⥤ D} (adj : F ⊣ G) (X : C) :
   have : ∀ (A : StructuredArrow X G), Unique (I ⟶ A) := by
     intro A
     refine @Unique.mk' _ ?_ ?_
-    · sorry
-    · sorry
+    · apply Inhabited.mk
+      refine StructuredArrow.homMk ?_ ?_
+      apply (adj.homEquiv _ _).invFun
+      exact A.hom
+      dsimp [I]
+      simp
+    · constructor
+      intros a b
+      apply StructuredArrow.hom_ext
+      dsimp [I]
+      apply (adj.homEquiv _ _).injective
+      simp
+      have this := a.w
+      simp only [Functor.const_obj_obj, StructuredArrow.left_eq_id, Discrete.functor_map_id,
+        id_comp] at this
+      dsimp [I] at this
+      have this₂ := b.w
+      simp only [Functor.const_obj_obj, StructuredArrow.left_eq_id, Discrete.functor_map_id,
+        id_comp] at this₂
+      dsimp [I] at this₂
+      rw [← this, ← this₂]
   exact hasInitial_of_unique I
 
 /- The other direction: if each category `StructuredArrow X G`
@@ -139,9 +161,21 @@ variable (h : ∀ (X : C), HasInitial (StructuredArrow X G))
 
 noncomputable def FunctorOfInitial : C ⥤ D where
       obj X := FunctorOfInitialObj G X (h X)
-      map {X X'} f := sorry
-      map_id X := sorry
-      map_comp {X X' X''} f g := sorry
+      map {X X'} f := by
+        dsimp [FunctorOfInitialObj]
+        let g := initial.to ((StructuredArrow.map f (T := G)).obj (⊥_ _))
+        set u := g.right
+        dsimp at u
+        exact u
+      map_id X := by
+        dsimp [FunctorOfInitialObj]
+        suffices h' : (initial.to ((StructuredArrow.map (𝟙 X)).obj (⊥_ StructuredArrow X G))) = eqToHom (by simp) by
+          rw [h']
+          simp only [StructuredArrow.eqToHom_right, StructuredArrow.map_obj_right, eqToHom_refl]
+        exact initial.hom_ext _ _
+      map_comp {X X' X''} f g := by
+        dsimp
+        sorry
 
 noncomputable def UnitOfInitial :
     𝟭 C ⟶ FunctorOfInitial G h ⋙ G where
@@ -629,6 +663,9 @@ if `f ≫ g = f ≫ h`, then `g = h`.
 #check epi_of_epi_fac
 #check eq_of_epi_equalizer
 
+#print HasWideEqualizers
+#print HasEqualizer
+
 lemma InitialOfFamily [HasLimits C] {J : Type*} (x : J → C)
     (wi : ∀ (X : C), ∃ (j : J), Nonempty (x j ⟶ X)) [Small.{w} J] :
     HasInitial C := by
@@ -648,19 +685,45 @@ lemma InitialOfFamily [HasLimits C] {J : Type*} (x : J → C)
   -- the category `WalkingParallelFamily`.
   have IX : ∀ (A : C), Inhabited (X ⟶ A) := by
     intro A
+    let p := Limits.Pi.π x
+    specialize wi A
+    let j := wi.choose
+    let hj := wi.choose_spec
+    specialize p j
+    let hj₂ := Classical.choice hj
+    constructor
+    exact p ≫ hj₂
+
   -- First we show that every `A : C` admits a morphism from `X`.
   -- This is because `A` admits a morphism from some `x i`, and we
   -- have projection morphisms from `X` to all the `x i`.
-    sorry
+
   have : ∀ (A : C), Unique (I ⟶ A) := by
     intro A
     refine @Unique.mk' _ ?_ ?_
   -- Then we prove that each `A : C` admits a unique morphism from `Y`.
-    · sorry
+    · constructor
+      set u := (IX A).default
+      exact wideEqualizer.ι _ ≫ u
   -- For the existence, we use tha fact that there exists a morphism
   -- `i : Y ⟶ X`.
     · refine Subsingleton.intro (fun f g ↦ ?_)
-      sorry
+      set Z := equalizer f g
+      set i : I ⟶ X := wideEqualizer.ι _
+      set k : X ⟶ Z := (IX Z).default
+      set j : Z ⟶ I := equalizer.ι f g
+      have h1 : i ≫ k ≫ j ≫ i = i := by
+        have := wideEqualizer.condition (fun (u : X ⟶ X) ↦ u)
+          (k ≫ j ≫ i) (𝟙 _)
+        simp at this
+        exact this
+      have h2 : i ≫ k ≫ j = 𝟙 _ := by
+        apply_fun (fun x ↦ x ≫ i)
+        simp [assoc, h1]
+        aesop_cat
+      have h3 : Epi j := by
+        sorry
+      exact eq_of_epi_equalizer
   -- For the uniqueness, suppose that we have `f, g : Y ⟶ A`.
   -- We take `j : Z ⟶ Y` the equalizer of `f` and `g`.
   -- Then `i ≫ k ≫ j ≫ i = i` because `Y` is the (wide) equalizer of
