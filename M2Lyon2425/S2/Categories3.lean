@@ -2,6 +2,8 @@ import Mathlib.CategoryTheory.Category.Cat
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.Assoc
 import Mathlib.CategoryTheory.Limits.Shapes.Pullback.Iso
+import Mathlib.CategoryTheory.Bicategory.Functor.Pseudofunctor
+import Mathlib.CategoryTheory.Bicategory.LocallyDiscrete
 
 /-
 ## Bicategories
@@ -445,3 +447,127 @@ noncomputable instance : Bicategory (Span C) where
 
 -- Associativity of pullbacks.
 #check pullbackAssoc
+
+/-
+# Functors
+
+A pseudofunctor `F` between bicategories `B` and `B'` is
+a map `F.obj` between objects, a map `F.map` between
+1-morphisms (respecting source and target) and a map
+`F.map₂` between 2-morphisms (respecting source and target),
+such that `F.map₂` is compatible with identities and composition,
+and `F.map` is compatible with identities and composition *up
+to isomorphism* (+ compatibilities with whiskering, associators
+and left/right unitors).
+-/
+#print Pseudofunctor
+
+/-
+structure Pseudofunctor (B : Type u₁) [Bicategory.{w₁, v₁} B] (C : Type u₂)
+    [Bicategory.{w₂, v₂} C] extends PrelaxFunctor B C where
+  obj : B → C
+  map {X Y : B} : (X ⟶ Y) → (obj X ⟶ obj Y)
+  map₂ {a b : B} {f g : a ⟶ b} : (f ⟶ g) → (map f ⟶ map g)
+  map₂_id {a b : B} (f : a ⟶ b) : map₂ (𝟙 f) = 𝟙 (map f)
+  map₂_comp {a b : B} {f g h : a ⟶ b} (η : f ⟶ g) (θ : g ⟶ h) :
+    map₂ (η ≫ θ) = (map₂ η) ≫ (map₂ θ)
+  mapId (a : B) : map (𝟙 a) ≅ 𝟙 (obj a)
+  mapComp {a b c : B} (f : a ⟶ b) (g : b ⟶ c) :
+      map (f ≫ g) ≅ map f ≫ map g
+  map₂_whisker_left :
+    ∀ {a b c : B} (f : a ⟶ b) {g h : b ⟶ c} (η : g ⟶ h),
+      map₂ (f ◁ η) = (mapComp f g).hom ≫ map f ◁ map₂ η ≫
+      (mapComp f h).inv := by
+    aesop_cat
+  map₂_whisker_right :
+    ∀ {a b c : B} {f g : a ⟶ b} (η : f ⟶ g) (h : b ⟶ c),
+      map₂ (η ▷ h) = (mapComp f h).hom ≫ map₂ η ▷ map h ≫
+      (mapComp g h).inv := by
+    aesop_cat
+  map₂_associator :
+    ∀ {a b c d : B} (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d),
+      map₂ (α_ f g h).hom = (mapComp (f ≫ g) h).hom ≫
+      (mapComp f g).hom ▷ map h ≫
+      (α_ (map f) (map g) (map h)).hom ≫ map f ◁ (mapComp g h).inv ≫
+      (mapComp f (g ≫ h)).inv := by
+    aesop_cat
+  map₂_left_unitor :
+    ∀ {a b : B} (f : a ⟶ b),
+      map₂ (λ_ f).hom = (mapComp (𝟙 a) f).hom ≫
+      (mapId a).hom ▷ map f ≫ (λ_ (map f)).hom := by
+    aesop_cat
+  map₂_right_unitor :
+    ∀ {a b : B} (f : a ⟶ b),
+      map₂ (ρ_ f).hom = (mapComp f (𝟙 b)).hom ≫
+      map f ◁ (mapId b).hom ≫ (ρ_ (map f)).hom := by
+    aesop_cat
+-/
+
+/-
+As an example, we can define a pseudofunctor from `C` to
+`Span C`. Note that a regular category can be seen as a
+strict bicategory where the only 2-morphisms are identity
+morphisms. To avoid instance clashes, this is called
+`LocallyDiscrete C`.
+-/
+
+#synth Bicategory (LocallyDiscrete C)
+
+#print LocallyDiscrete
+-- This is again a structure with a unique field `as`.
+-- So if `X : LocallyDiscrete C`, the corresponding object of
+-- `C` is called `X.as`.
+-- Note that if `f : X ⟶ Y` is a 1-morphisms in `LocallyDiscrete C`,
+-- the corresponding morphisms of `C` is called `f.as`.
+
+/-
+The pseufunctor from `C` to `Span C` will be the identity on
+objects. It will send `f : X ⟶ Y` to the span
+   X
+ 𝟙/ \f
+X    Y
+As the only 2-morphisms in `C` are identity morphisms, it will
+send them to identity morphisms. In fact we will need to use
+`eqToHom`, and the following function (saying that if there
+is a 2-morphism between two 1-morphisms `f` and `g`, then `f` and
+`g` are equal):
+-/
+#check LocallyDiscrete.eq_of_hom
+
+def ToSpan : Pseudofunctor (LocallyDiscrete C) (Span C) where
+  obj X := {pt := X.as}
+  map {X Y} f := {roof := X.as, left := 𝟙 X.as, right := f.as}
+  map₂ {X Y f g} u := by
+    have eq := LocallyDiscrete.eq_of_hom u
+    refine eqToHom ?_
+    simp [eq]
+  map₂_id := by simp
+  map₂_comp := by simp
+  mapId X := by
+    refine TwoMor.isoMk (Iso.refl _) ?_ ?_
+    · simp; rfl
+    · simp; rfl
+  mapComp {X Y Z} f g := by
+    refine TwoMor.isoMk ?_ ?_ ?_
+    · exact (asIso (pullback.fst f.as (𝟙 _))).symm
+    · simp
+      change pullback.fst _ _ ≫ _ = _
+      simp
+    · simp
+      change pullback.snd _ _ ≫ _ = _
+      simp
+      rw [← assoc, pullback.condition]
+      simp
+  map₂_whisker_left := sorry
+  map₂_whisker_right := sorry
+  map₂_associator := sorry
+  map₂_left_unitor := sorry
+  map₂_right_unitor := sorry
+
+
+/-
+# Coherence
+
+
+
+-/
