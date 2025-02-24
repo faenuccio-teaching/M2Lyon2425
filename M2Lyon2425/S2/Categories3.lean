@@ -384,7 +384,7 @@ noncomputable def OneMorComp {X Y Z : Span C}
       right := pullback.snd _ _ ≫ b.right
 
 -- Now for bicategory structure on `Span C`:
-instance : Bicategory (Span C) where
+noncomputable instance : Bicategory (Span C) where
   Hom X Y := OneMor X Y
   id X := OneMorId X
   comp {X Y Z} a b := OneMorComp a b
