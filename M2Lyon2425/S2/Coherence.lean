@@ -3,6 +3,7 @@ import Mathlib.CategoryTheory.Bicategory.LocallyDiscrete
 import Mathlib.CategoryTheory.Functor.FullyFaithful
 import Mathlib.CategoryTheory.PathCategory
 import Mathlib.Algebra.Free
+import Mathlib.Tactic.CategoryTheory.BicategoryCoherence
 
 /-
 # Coherence
@@ -371,5 +372,9 @@ def inclusion (B : Type u) [Quiver.{v + 1} B] :
     mapComp := fun f g => inclusionMapCompAux f.as g.as }
 
 end FreeBicategory
+
+example (B : Type*) [Bicategory B] (X Y : B) (f g : X ⟶ Y)
+    (u v : f ⟶ g) : f = g := by
+  bicategory_coherence
 
 end CategoryTheory

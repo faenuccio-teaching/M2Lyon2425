@@ -15,8 +15,9 @@ morphism from `f` to `g`, which we call a 2-morphism
 (and we refer to `f` and `g` as 1-morphisms).
 
 A bit less informally, a bicategory is the data of a type
-`B` and, for all `X, Y : B`, of a category `Hom X Y`. We
-also want identity objects `id X : Hom X X` and composition
+`B` and, for all `X, Y : B`, of a category `Hom X Y` whose
+objects are the 1-morphisms from `X` to `Y`. We
+also want identity 1-morphisms `id X : Hom X X` and composition
 *functors* `Hom X Y × Hom Y Z ⥤ Hom X Z`.
 Associativity of composition and the unit property of the
 identities objects are not strictly true but are expressed by
@@ -48,7 +49,6 @@ later as `CategoryTheory.Bicategory.precomposing` or
 As another technical note, a bicategory can have three
 distinct universe levels: one for the objects, one for
 the 1-morphisms, and one for the 2-morphisms.
-
 -/
 
 universe u v w
@@ -164,7 +164,7 @@ and the identities and compositions inside the category
 `λ_ f`.
 - The right unitor of a 1-morphism `f` is denoted by
 `ρ_ f`.
-- The associator of three 1-morphisms `f,g,h` is denoted
+- The associator of three 1-morphisms `f, g, h` is denoted
 by `α_ f g h`.
 - We use `◁` (\ + lhd) for left whiskering.
 - We use `▷` (\ + rhd) for right whiskering.
@@ -193,8 +193,8 @@ variable (B : Type*) [Bicategory B] (X Y Z T U : B)
 #check Bicategory.triangle f
 #check Bicategory.pentagon f g h i
 
-#check Bicategory.precomposing
-#check Bicategory.postcomposing
+#check Bicategory.precomposing X Y Z
+#check Bicategory.postcomposing X Y Z
 
 /-
 # Examples.
@@ -216,7 +216,7 @@ a bicategory where the associators, left unitors and right
 unitors isomorphisms are just identity morphisms.
 
 In mathlib, as the type of 2-morphisms (where associators etc
-live) depends on the the 1-morphisms, we cannot use that
+live) depends on the 1-morphisms, we cannot use that
 definition immediately, so instead we use the construction
 `eqToIso` (the isomorphism version of `eqToHom`).
 -/
@@ -251,8 +251,8 @@ class Bicategory.Strict : Prop where
 
 /-
 Another example are monoidal categories. A monoidal
-category is often presented as a category with an
-extra operation on objects, often denote by `⊗`, which
+category is usually presented as a category with an
+extra operation on objects, often denoted by `⊗`, which
 also acts on morphisms and satisfies some compatibility
 conditions (associativity up to isomorphism, existence
 of units up to isomorphism...). Think of vector spaces with
@@ -310,47 +310,8 @@ structure OneMor (X Y : Span C) where
   left : roof ⟶ X.pt
   right : roof ⟶ Y.pt
 
--- The 2-morphisms are commutative diagrams between spans.
-@[ext]
-structure TwoMor {X Y : Span C} (a b : OneMor X Y) where
-  hom_roof : a.roof ⟶ b.roof
-  left_comp : hom_roof ≫ b.left = a.left := by aesop_cat
-  right_comp : hom_roof ≫ b.right = a.right := by aesop_cat
-
-@[simp, reassoc]
-lemma TwoMor.left_comp' {X Y : Span C} (a b : OneMor X Y)
-    (u : TwoMor a b) : u.hom_roof ≫ b.left = a.left :=
-  u.left_comp
-
-@[simp, reassoc]
-lemma TwoMor.right_comp' {X Y : Span C} (a b : OneMor X Y)
-    (u : TwoMor a b) : u.hom_roof ≫ b.right = a.right :=
-  u.right_comp
-
--- In fact, let's make `OneMor X Y` into a category right away:
-instance {X Y : Span C} : Category (OneMor X Y) where
-  Hom a b := TwoMor a b
-  id a := {hom_roof := 𝟙 a.roof}
-  comp {a b c} u v :=
-    {hom_roof := u.hom_roof ≫ v.hom_roof}
-  id_comp := by aesop_cat
-  comp_id := by aesop_cat
-  assoc := by aesop_cat
-
-def TwoMor.homMk {X Y : Span C} {a b : OneMor X Y}
-    (u : a.roof ⟶ b.roof) (comp₁ : u ≫ b.left = a.left)
-    (comp₂ : u ≫ b.right = a.right) : a ⟶ b where
-      hom_roof := u
-      left_comp := comp₁
-      right_comp := comp₂
-
-def TwoMor.isoMk {X Y : Span C} {a b : OneMor X Y}
-    (u : a.roof ≅ b.roof) (comp₁ : u.hom ≫ b.left = a.left)
-    (comp₂ : u.hom ≫ b.right = a.right) : a ≅ b where
-      hom := TwoMor.homMk u.hom comp₁ comp₂
-      inv := TwoMor.homMk u.inv sorry sorry
-      hom_inv_id := sorry
-      inv_hom_id := sorry
+instance : Quiver (Span C) where
+  Hom := OneMor
 
 -- The identity 1-morphism from `X` to `X` is given by
 -- taking `Z` equal to `X` and `f, g` equal to `𝟙 X`.
@@ -359,6 +320,8 @@ def OneMorId (X : Span C) : OneMor X X where
   roof := X.pt
   left := 𝟙 _
   right := 𝟙 _
+
+section OneMorComp
 
 variable [HasPullbacks C]
 
@@ -385,12 +348,84 @@ noncomputable def OneMorComp {X Y Z : Span C}
       left := pullback.fst _ _ ≫ a.left
       right := pullback.snd _ _ ≫ b.right
 
--- Now for bicategory structure on `Span C`:
+-- With this, we get the `CategoryStruct` on `Span C`:
+@[simp]
+noncomputable instance : CategoryStruct (Span C) where
+  id := OneMorId
+  comp a b := OneMorComp a b
+
+end OneMorComp
+
+
+-- The 2-morphisms are commutative diagrams between spans.
+@[ext]
+structure TwoMor {X Y : Span C} (a b : OneMor X Y) where
+  hom_roof : a.roof ⟶ b.roof
+  left_comp : hom_roof ≫ b.left = a.left := by aesop_cat
+  right_comp : hom_roof ≫ b.right = a.right := by aesop_cat
+
+@[simp, reassoc]
+lemma TwoMor.left_comp' {X Y : Span C} (a b : OneMor X Y)
+    (u : TwoMor a b) : u.hom_roof ≫ b.left = a.left :=
+  u.left_comp
+
+@[simp, reassoc]
+lemma TwoMor.right_comp' {X Y : Span C} (a b : OneMor X Y)
+    (u : TwoMor a b) : u.hom_roof ≫ b.right = a.right :=
+  u.right_comp
+
+-- Let's make `OneMor X Y` into a category:
+instance {X Y : Span C} : Category (X ⟶ Y) where
+  Hom a b := TwoMor a b
+  id a := {hom_roof := 𝟙 a.roof}
+  comp {a b c} u v := {hom_roof := u.hom_roof ≫ v.hom_roof}
+-- Note how a lot of the fields are filled by their default
+-- value `by aesop_cat`.
+
+@[simp]
+lemma TwoMor.id {X Y : Span C} {f : X ⟶ Y} :
+    (𝟙 f : TwoMor f f).hom_roof = 𝟙 f.roof := rfl
+
+@[simp]
+lemma TwoMor.comp {X Y : Span C} {f g h : X ⟶ Y} (u : f ⟶ g)
+    (v : g ⟶ h) :
+    (u ≫ v).hom_roof = u.hom_roof ≫ v.hom_roof := rfl
+
+-- The two lemmas above look useless, but you can check
+-- what happens in `TwoMor.isoMk` if you comment them.
+-- Suddenly `simp` cannot solve obvious goals anymore.
+
+
+@[ext (iff := false)]
+lemma TwoMor.ext' {X Y : Span C} {f g : X ⟶ Y}
+    {u v : (f : OneMor X Y) ⟶ g} (eq : u.hom_roof = v.hom_roof) : u = v :=
+  TwoMor.ext eq
+-- This allows us to use the `ext` tactic on 2-morphisms.
+-- If you remove it, `aesop_cat` loses a lot of its power.
+
+@[simp]
+def TwoMor.homMk {X Y : Span C} {a b : X ⟶ Y}
+    (u : a.roof ⟶ b.roof) (comp₁ : u ≫ b.left = a.left)
+    (comp₂ : u ≫ b.right = a.right) : a ⟶ b where
+      hom_roof := u
+      left_comp := comp₁
+      right_comp := comp₂
+
+@[simp]
+def TwoMor.isoMk {X Y : Span C} {a b : X ⟶ Y}
+    (u : a.roof ≅ b.roof) (comp₁ : u.hom ≫ b.left = a.left)
+    (comp₂ : u.hom ≫ b.right = a.right) : a ≅ b where
+      hom := TwoMor.homMk u.hom comp₁ comp₂
+      inv := TwoMor.homMk u.inv sorry sorry
+      hom_inv_id := sorry
+      inv_hom_id := sorry
+-- Hint: `cancel_epi`.
+
+variable [HasPullbacks C]
+
+-- Now for the bicategory structure on `Span C`:
 noncomputable instance : Bicategory (Span C) where
-  Hom X Y := OneMor X Y
-  id X := OneMorId X
-  comp {X Y Z} a b := OneMorComp a b
-  homCategory X Y := instCategoryOneMor
+  homCategory X Y := inferInstance
   whiskerLeft {X X' X''} a {b b'} u :=
     -- draw the diagram! (see below for useful functions)
     {
@@ -471,6 +506,7 @@ structure Pseudofunctor (B : Type u₁) [Bicategory.{w₁, v₁} B] (C : Type u�
   map₂_id {a b : B} (f : a ⟶ b) : map₂ (𝟙 f) = 𝟙 (map f)
   map₂_comp {a b : B} {f g h : a ⟶ b} (η : f ⟶ g) (θ : g ⟶ h) :
     map₂ (η ≫ θ) = (map₂ η) ≫ (map₂ θ)
+-- The first five fields are the `PrelaxFunctor` structure.
   mapId (a : B) : map (𝟙 a) ≅ 𝟙 (obj a)
   mapComp {a b c : B} (f : a ⟶ b) (g : b ⟶ c) :
       map (f ≫ g) ≅ map f ≫ map g
@@ -505,7 +541,7 @@ structure Pseudofunctor (B : Type u₁) [Bicategory.{w₁, v₁} B] (C : Type u�
 
 /-
 As an example, we can define a pseudofunctor from `C` to
-`Span C`. Note that a regular category can be seen as a
+`Span C`. Note that a 1-category can be seen as a
 strict bicategory where the only 2-morphisms are identity
 morphisms. To avoid instance clashes, this is called
 `LocallyDiscrete C`.
@@ -521,7 +557,7 @@ morphisms. To avoid instance clashes, this is called
 -- the corresponding morphisms of `C` is called `f.as`.
 
 /-
-The pseufunctor from `C` to `Span C` will be the identity on
+The pseudofunctor from `C` to `Span C` will be the identity on
 objects. It will send `f : X ⟶ Y` to the span
    X
  𝟙/ \f
@@ -529,8 +565,8 @@ X    Y
 As the only 2-morphisms in `C` are identity morphisms, it will
 send them to identity morphisms. In fact we will need to use
 `eqToHom`, and the following function (saying that if there
-is a 2-morphism between two 1-morphisms `f` and `g`, then `f` and
-`g` are equal):
+is a 2-morphism between two 1-morphisms `f` and `g` in a locally
+discrete bicategory, then `f` and `g` are equal):
 -/
 #check LocallyDiscrete.eq_of_hom
 
@@ -545,18 +581,18 @@ noncomputable def ToSpan :
   map₂_id := by simp
   map₂_comp := by simp
   mapId X := by
-    refine TwoMor.isoMk (Iso.refl _) ?_ ?_
-    · simp; rfl
-    · simp; rfl
+    refine TwoMor.isoMk (Iso.refl _) ?_ ?_ <;> simp <;> rfl
   mapComp {X Y Z} f g := by
     refine TwoMor.isoMk ?_ ?_ ?_
     · exact (asIso (pullback.fst f.as (𝟙 _))).symm
-    · simp
+    · simp only [LocallyDiscrete.comp_as, Iso.symm_hom, asIso_inv,
+        IsIso.inv_comp_eq, comp_id]
       change pullback.fst _ _ ≫ _ = _
       simp
-    · simp
+    · simp only [LocallyDiscrete.comp_as, Iso.symm_hom, asIso_inv,
+        IsIso.inv_comp_eq]
       change pullback.snd _ _ ≫ _ = _
-      simp
+      dsimp
       rw [← assoc, pullback.condition]
       simp
   map₂_whisker_left := sorry
