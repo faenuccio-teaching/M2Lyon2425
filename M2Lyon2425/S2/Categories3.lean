@@ -51,7 +51,7 @@ the 1-morphisms, and one for the 2-morphisms.
 
 -/
 
-universe u u' v v' w w'
+universe u v w
 
 open CategoryTheory Category
 open scoped Bicategory
@@ -534,7 +534,8 @@ is a 2-morphism between two 1-morphisms `f` and `g`, then `f` and
 -/
 #check LocallyDiscrete.eq_of_hom
 
-def ToSpan : Pseudofunctor (LocallyDiscrete C) (Span C) where
+noncomputable def ToSpan :
+    Pseudofunctor (LocallyDiscrete C) (Span C) where
   obj X := {pt := X.as}
   map {X Y} f := {roof := X.as, left := 𝟙 X.as, right := f.as}
   map₂ {X Y f g} u := by
@@ -563,11 +564,3 @@ def ToSpan : Pseudofunctor (LocallyDiscrete C) (Span C) where
   map₂_associator := sorry
   map₂_left_unitor := sorry
   map₂_right_unitor := sorry
-
-
-/-
-# Coherence
-
-
-
--/
