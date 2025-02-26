@@ -411,14 +411,20 @@ def TwoMor.homMk {X Y : Span C} {a b : X ⟶ Y}
       left_comp := comp₁
       right_comp := comp₂
 
+#check cancel_epi
+#check eqToIso
+
 @[simp]
 def TwoMor.isoMk {X Y : Span C} {a b : X ⟶ Y}
     (u : a.roof ≅ b.roof) (comp₁ : u.hom ≫ b.left = a.left)
     (comp₂ : u.hom ≫ b.right = a.right) : a ≅ b where
       hom := TwoMor.homMk u.hom comp₁ comp₂
-      inv := TwoMor.homMk u.inv sorry sorry
-      hom_inv_id := sorry
-      inv_hom_id := sorry
+      inv := by
+        refine TwoMor.homMk u.inv ?_ ?_
+        · rw [← cancel_epi u.hom]
+          aesop_cat
+        · rw [← cancel_epi u.hom]
+          aesop_cat
 -- Hint: `cancel_epi`.
 
 variable [HasPullbacks C]
@@ -457,9 +463,24 @@ noncomputable instance : Bicategory (Span C) where
     · exact asIso (pullback.fst a.right (𝟙 X'.pt))
     · sorry
     · sorry
-  whiskerLeft_id := sorry
+  whiskerLeft_id := by
+    intros a b c f g
+    ext
+    dsimp
+    refine pullback.hom_ext ?_ ?_
+    rw [pullback.lift_fst]
+    have := id_comp (pullback.fst f.right g.left)
+    rw [this]
+    simp only [comp_id, limit.lift_π, PullbackCone.mk_pt, PullbackCone.mk_π_app, id_comp]
   whiskerLeft_comp := sorry
-  id_whiskerLeft := sorry
+  id_whiskerLeft := by
+    intros a b c f g
+    ext
+    dsimp
+    refine pullback.hom_ext ?_ ?_
+    rw [pullback.lift_fst]
+    sorry
+    sorry
   comp_whiskerLeft := sorry
   id_whiskerRight := sorry
   comp_whiskerRight := sorry
@@ -467,7 +488,10 @@ noncomputable instance : Bicategory (Span C) where
   whiskerRight_comp := sorry
   whisker_assoc := sorry
   whisker_exchange := sorry
-  pentagon := sorry
+  pentagon := by
+    intros a b c d e f g h i
+    dsimp
+    sorry
   triangle := sorry
 
 -- We need the universal property of the pullback.
@@ -570,6 +594,11 @@ discrete bicategory, then `f` and `g` are equal):
 -/
 #check LocallyDiscrete.eq_of_hom
 
+@[simp]
+lemma eqToHom_hom_roof {X Y : Span C} {a b : X ⟶ Y} (eq : a = b) :
+    (eqToHom eq).hom_roof = eqToHom (by rw [eq]) := by
+  aesop_cat
+
 noncomputable def ToSpan :
     Pseudofunctor (LocallyDiscrete C) (Span C) where
   obj X := {pt := X.as}
@@ -595,8 +624,18 @@ noncomputable def ToSpan :
       dsimp
       rw [← assoc, pullback.condition]
       simp
-  map₂_whisker_left := sorry
-  map₂_whisker_right := sorry
+  map₂_whisker_left := by
+    intros a b c f g h η
+    dsimp
+    ext
+    simp only [eqToHom_hom_roof, eqToHom_refl, Bicategory.whiskerLeft_eqToHom, TwoMor.comp, id_comp,
+      IsIso.inv_hom_id]
+  map₂_whisker_right := by
+    intros a b c f g h η
+    dsimp
+    ext
+    simp
+    sorry
   map₂_associator := sorry
   map₂_left_unitor := sorry
   map₂_right_unitor := sorry

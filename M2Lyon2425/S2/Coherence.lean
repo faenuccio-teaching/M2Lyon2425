@@ -258,9 +258,12 @@ def normalizeIso {a : B} :
     ∀ {b c : B} (p : Path a b) (f : Hom b c),
       (preinclusion B).map ⟨p⟩ ≫ f ≅
       (preinclusion B).map ⟨normalizeAux p f⟩
-  | _, _, _, Hom.of _ => sorry
-  | _, _, _, Hom.id b => sorry
-  | _, _, p, Hom.comp f g => sorry
+  | _, _, _, Hom.of _ => Iso.refl _
+  | _, _, _, Hom.id b => rightUnitor _
+  | _, _, p, Hom.comp f g => by
+    simp
+    refine ?_ ≪≫ normalizeIso _ g
+    sorry
 
 #check whiskerRightIso
 -- Use ≪≫ to compose isomophisms. (\ + ll + \ + gg)

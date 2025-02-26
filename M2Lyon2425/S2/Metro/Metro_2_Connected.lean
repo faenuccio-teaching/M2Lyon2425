@@ -121,7 +121,22 @@ lemma ne_nil_Trip {L : List Stations} (hL : IsTrip L) : L ≠ [] := by sorry
 
 lemma cons_isTrip {s : Stations} {L : List Stations} (hL : IsTrip L)
     (hs : IsTrip [s, L.head (ne_nil_Trip hL)]) : IsTrip (s :: L) := by
-  sorry
+  rcases hs with _ | ⟨_, H⟩
+  · simp_all
+  · apply IsTrip.change (by sorry)
+    intro x y h_he ⟨l₁, l₂, hl⟩
+    by_cases hl_nil : l₁ = []
+    · rw [hl_nil] at hl
+      simp at hl
+      apply H h_he
+      use []
+      use []
+      simp
+      simp_rw [← hl.2]
+      rw [head_cons]
+      simp
+      exact hl.1
+    sorry
 
 lemma isTrip_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsTrip L)
     (H : l <:+: L) : IsTrip l := by
