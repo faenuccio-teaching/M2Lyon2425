@@ -1,5 +1,4 @@
 import Lean.Elab
--- import Init.Prelude
 import Mathlib.Tactic
 import Mathlib.Topology.Basic
 
