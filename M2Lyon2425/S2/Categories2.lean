@@ -1,1251 +1,612 @@
-import Mathlib.Algebra.Category.Grp.Basic
-import Mathlib.CategoryTheory.Limits.EssentiallySmall
-import Mathlib.CategoryTheory.Limits.Shapes.Types
-import Mathlib.CategoryTheory.Limits.Shapes.WideEqualizers
-import Mathlib.CategoryTheory.Subobject.Comma
+import Mathlib.CategoryTheory.Category.Cat
+import Mathlib.CategoryTheory.Limits.Shapes.Pullback.HasPullback
+import Mathlib.CategoryTheory.Limits.Shapes.Pullback.Assoc
+import Mathlib.CategoryTheory.Limits.Shapes.Pullback.Iso
+import Mathlib.CategoryTheory.Bicategory.Functor.Pseudofunctor
+import Mathlib.CategoryTheory.Bicategory.LocallyDiscrete
 
-open CategoryTheory Category Limits
+/-
+## Bicategories
 
-universe u u' v v' w w'
+A bicategory is, informally, a category`B` where the `Hom`
+types have themselves category structures. This means that,
+given `X, Y : B` and `f, g : X ⟶ Y`, there is a notion of
+morphism from `f` to `g`, which we call a 2-morphism
+(and we refer to `f` and `g` as 1-morphisms).
 
-section Initial
+A bit less informally, a bicategory is the data of a type
+`B` and, for all `X, Y : B`, of a category `Hom X Y` whose
+objects are the 1-morphisms from `X` to `Y`. We
+also want identity 1-morphisms `id X : Hom X X` and composition
+*functors* `Hom X Y × Hom Y Z ⥤ Hom X Z`.
+Associativity of composition and the unit property of the
+identities objects are not strictly true but are expressed by
+isomorphisms called `associator`, `leftUnitor` and
+`rightUnitor`, and there are two axioms called the
+`triangle` and `pentagon`. The triangle axiom expresses
+a compatibility between the associator and the left/right
+unitors, and the pentagon axiom is a compatibility property
+of associators.
 
-variable {C : Type u} [Category.{v} C] {D : Type u'}
-  [Category.{v'} D] (G : D ⥤ C)
+More precisely, the triangle axiom says that, for
+all `X, Y, Z : B` and for all `f : X ⟶ Y` and `g : Y ⟶ Z`,
+the two possible 2-isomorphisms from `(f ≫ 𝟙 Y) ≫ g` to
+`f ≫ (𝟙 Y ≫ g)` (one the associator, and the other
+formed by composing right and left unitors) are equal.
+The pentagon axiom says that, given `X, Y, Z, T, U : B`
+and 1-morphisms `f : X ⟶ Y`, `g : Y ⟶ Z`, `h : Z ⟶ T`
+and `i : T ⟶ U`, the two possible 2-isomorphisms
+from `((f ≫ g) ≫ h) ≫ i` to `f ≫ (g ≫ (h ≫ i))`
+(formed by applying associators in different ways) are
+equal.
+
+To get even more technical, composition of 1-morphisms in
+mathlib is not actually given as a functor but through the
+whiskering functions, though the functor is available
+later as `CategoryTheory.Bicategory.precomposing` or
+`CategoryTheory.Bicategory.postcomposing`.
+
+As another technical note, a bicategory can have three
+distinct universe levels: one for the objects, one for
+the 1-morphisms, and one for the 2-morphisms.
+-/
+
+universe u v w
+
+open CategoryTheory Category
+open scoped Bicategory
+
+#print Bicategory
+/-
+@[nolint checkUnivs]
+class Bicategory (B : Type u) extends CategoryStruct.{v} B where
+  -- remember that `CategoryStruct` is the data of the `Hom`
+  -- types, the composition and the identities, but without
+  -- the axioms
+  -- category structure on the collection of 1-morphisms:
+  homCategory : ∀ a b : B, Category.{w} (a ⟶ b) := by infer_instance
+  -- left whiskering:
+  whiskerLeft {a b c : B} (f : a ⟶ b) {g h : b ⟶ c} (η : g ⟶ h) :
+      f ≫ g ⟶ f ≫ h
+  -- right whiskering:
+  whiskerRight {a b c : B} {f g : a ⟶ b} (η : f ⟶ g) (h : b ⟶ c) :
+      f ≫ h ⟶ g ≫ h
+  -- associator:
+  associator {a b c d : B} (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d) :
+      (f ≫ g) ≫ h ≅ f ≫ g ≫ h
+  -- left unitor:
+  leftUnitor {a b : B} (f : a ⟶ b) : 𝟙 a ≫ f ≅ f
+  -- right unitor:
+  rightUnitor {a b : B} (f : a ⟶ b) : f ≫ 𝟙 b ≅ f
+  -- axioms for left whiskering:
+  whiskerLeft_id : ∀ {a b c} (f : a ⟶ b) (g : b ⟶ c),
+      whiskerLeft f (𝟙 g) = 𝟙 (f ≫ g) := by
+    aesop_cat
+  whiskerLeft_comp :
+    ∀ {a b c} (f : a ⟶ b) {g h i : b ⟶ c} (η : g ⟶ h) (θ : h ⟶ i),
+      whiskerLeft f (η ≫ θ) = whiskerLeft f η ≫ whiskerLeft f θ := by
+    aesop_cat
+  id_whiskerLeft :
+    ∀ {a b} {f g : a ⟶ b} (η : f ⟶ g),
+      whiskerLeft (𝟙 a) η =
+        (leftUnitor f).hom ≫ η ≫ (leftUnitor g).inv := by
+    aesop_cat
+  comp_whiskerLeft :
+    ∀ {a b c d} (f : a ⟶ b) (g : b ⟶ c) {h h' : c ⟶ d} (η : h ⟶ h'),
+      whiskerLeft (f ≫ g) η =
+        (associator f g h).hom ≫
+        whiskerLeft f (whiskerLeft g η) ≫
+        (associator f g h').inv := by
+    aesop_cat
+  -- axioms for right whiskering:
+  id_whiskerRight : ∀ {a b c} (f : a ⟶ b) (g : b ⟶ c),
+      whiskerRight (𝟙 f) g = 𝟙 (f ≫ g) := by
+    aesop_cat
+  comp_whiskerRight :
+    ∀ {a b c} {f g h : a ⟶ b} (η : f ⟶ g) (θ : g ⟶ h) (i : b ⟶ c),
+      whiskerRight (η ≫ θ) i = whiskerRight η i ≫ whiskerRight θ i := by
+    aesop_cat
+  whiskerRight_id :
+    ∀ {a b} {f g : a ⟶ b} (η : f ⟶ g),
+      whiskerRight η (𝟙 b) = (rightUnitor f).hom ≫ η ≫
+        (rightUnitor g).inv := by
+    aesop_cat
+  whiskerRight_comp :
+    ∀ {a b c d} {f f' : a ⟶ b} (η : f ⟶ f') (g : b ⟶ c) (h : c ⟶ d),
+      whiskerRight η (g ≫ h) =
+        (associator f g h).inv ≫
+          whiskerRight (whiskerRight η g) h ≫
+            (associator f' g h).hom := by
+    aesop_cat
+  -- associativity of whiskerings:
+  whisker_assoc :
+    ∀ {a b c d} (f : a ⟶ b) {g g' : b ⟶ c} (η : g ⟶ g') (h : c ⟶ d),
+      whiskerRight (whiskerLeft f η) h =
+        (associator f g h).hom ≫
+        whiskerLeft f (whiskerRight η h) ≫ (associator f g' h).inv := by
+    aesop_cat
+  -- exchange law of left and right whiskerings:
+  whisker_exchange :
+    ∀ {a b c} {f g : a ⟶ b} {h i : b ⟶ c} (η : f ⟶ g) (θ : h ⟶ i),
+      whiskerLeft f θ ≫ whiskerRight η i = whiskerRight η h ≫
+      whiskerLeft g θ := by
+    aesop_cat
+  -- pentagon identity:
+  pentagon :
+    ∀ {a b c d e} (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d) (i : d ⟶ e),
+      whiskerRight (associator f g h).hom i ≫
+          (associator f (g ≫ h) i).hom ≫
+          whiskerLeft f (associator g h i).hom =
+          (associator (f ≫ g) h i).hom ≫
+          (associator f g (h ≫ i)).hom := by
+    aesop_cat
+  -- triangle identity:
+  triangle :
+    ∀ {a b c} (f : a ⟶ b) (g : b ⟶ c),
+      (associator f (𝟙 b) g).hom ≫
+      whiskerLeft f (leftUnitor g).hom
+      = whiskerRight (rightUnitor f).hom g := by
+    aesop_cat
+-/
+
+--This of course unreadable.
+
+/-
+Notation:
+- For `X, Y : B`, the category `Hom X Y` is written `X ⟶ Y`.
+- For `X : B`, the identity in `X ⟶ X` is written `𝟙 X`.
+- Composition of 1-morphisms is denoted by `≫` and written
+in diagrammatic order.
+- We also use `⟶`, `𝟙` and `≫` to denote 2-morphisms,
+and the identities and compositions inside the category
+`X ⟶ Y`, so be careful.
+- The left unitor of a 1-morphism `f` is denoted by
+`λ_ f`.
+- The right unitor of a 1-morphism `f` is denoted by
+`ρ_ f`.
+- The associator of three 1-morphisms `f, g, h` is denoted
+by `α_ f g h`.
+- We use `◁` (\ + lhd) for left whiskering.
+- We use `▷` (\ + rhd) for right whiskering.
+
+(The last five are scoped notation, to make this available
+you need to `open` or `open scoped` the `Bicategory`
+namespace.)
+(Check if they know the difference between `open` and
+`open scoped`.)
+-/
+
+variable (B : Type*) [Bicategory B] (X Y Z T U : B)
+  (f f' f'' : X ⟶ Y) (g g' : Y ⟶ Z) (h : Z ⟶ T) (i : T ⟶ U)
+  (u : f ⟶ f') (u' : f' ⟶ f'') (v : g ⟶ g')
+
+
+#check 𝟙 X
+#check 𝟙 f
+#check f ≫ g
+#check u ≫ u'
+#check f ◁ v --whisker left: it is a 2-morphism, obtained from `v` by pre-composing with f
+#check u ▷ g -- whisker right, by composing on the right with f
+#check λ_ f
+#check ρ_ f
+#check α_ f g h
+
+#check Bicategory.triangle f
+#check Bicategory.pentagon f g h i
+
+#check Bicategory.precomposing X Y Z
+#check Bicategory.postcomposing X Y Z
+
+/-
+# Examples.
+
+The first example is the bicategory `Cat` of categories at
+fixed universe levels.
+-/
+#check Cat
+
+#synth Bicategory Cat.{v, u}
+
+#check Cat.bicategory
+
+#print Cat.bicategory
+
+/-
+Note that `Cat` is what is called a *strict* bicategory, i.e.
+a bicategory where the associators, left unitors and right
+unitors isomorphisms are just identity morphisms.
+
+In mathlib, as the type of 2-morphisms (where associators etc
+live) depends on the 1-morphisms, we cannot use that
+definition immediately, so instead we use the construction
+`eqToIso` (the isomorphism version of `eqToHom`).
+-/
+
+#check eqToIso -- from an equality between objects, produces
+               -- an isomorphism between them
+
+#print Bicategory.Strict
+
+/-
+class Bicategory.Strict : Prop where
+  /-- Identity morphisms are left *identities* for composition. -/ (instead of just `≅`)
+  id_comp : ∀ {a b : B} (f : a ⟶ b), 𝟙 a ≫ f = f := by aesop_cat
+  /-- Identity morphisms are right *identities* for composition. -/
+  comp_id : ∀ {a b : B} (f : a ⟶ b), f ≫ 𝟙 b = f := by aesop_cat
+  /-- Composition in a bicategory is associative. -/
+  assoc : ∀ {a b c d : B} (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d),
+      (f ≫ g) ≫ h = f ≫ g ≫ h := by
+    aesop_cat
+  /-- The left unitors are given by equalities -/
+  leftUnitor_eqToIso : ∀ {a b : B} (f : a ⟶ b),
+      λ_ f = eqToIso (id_comp f) := by aesop_cat **RMK** Simply writing `λ_ f = id_comp f` is not well-typed
+  /-- The right unitors are given by equalities -/
+  rightUnitor_eqToIso : ∀ {a b : B} (f : a ⟶ b),
+      ρ_ f = eqToIso (comp_id f) := by aesop_cat
+  /-- The associators are given by equalities -/
+  associator_eqToIso :
+    ∀ {a b c d : B} (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d),
+       α_ f g h = eqToIso (assoc f g h) := by
+    aesop_cat
+
+
+**RMK** A bicategory gives rise to a category (by forgetting 2-morphisms) **only if it is strict**
+Otherwise the required axiom that composing with `𝟙` is the identity is not guaranteed.
+
+Another example are monoidal categories. A monoidal
+category is usually presented as a category with an
+extra operation on objects, often denoted by `⊗`, which
+also acts on morphisms and satisfies some compatibility
+conditions (associativity up to isomorphism, existence
+of units up to isomorphism...). Think of vector spaces with
+the tensor product, or types with the Cartesian product.
+
+But we can also see a monoidal category as a (non-strict)
+bicategory with only one object `X`. The monoidal category
+is then `X ⟶ X`, and composition of 1-morphisms gives the
+extra operation `⊗`. The axioms are identical. See
+`Mathlib.CategoryTheory.Bicategory.SingleObj`.
+-/
+
+/-
+Another example is the fundamental 2-groupoid of a topological
+space `X`:
+- The objects are points of `X`;
+- The 1-morphisms `x ⟶ y` are paths from `x` to `y`, i.e.
+continuous maps `[0,1] → X` sending `0` to `x` and `1` to `y`.
+- Composition of 1-morphisms is given by concatenation, and
+the identities are constant paths.
+- The 2-morphisms between two paths are homotopies between
+the paths (fixing the end points).
+-/
+
+/-
+Another example is the bicategory of spans in a category
+`C` (admitting fiber products). It is not strict in general.
+
+We will construct this example.
+-/
 
 open Limits
 
-/- Let `G : D ⥤ C`. For every `X : C`, we have a category
-`StructuredArrow X G`, which is a special case of a
-comma category.
--/
-
-#print Comma
-#print StructuredArrow
-
-/-
-The objects of `StructuredArrow X G` are morphisms
-`X ⟶ G.obj Y` with `Y : D`. If `A : StructuredArrow X G`,
-its fields are called `A.right` (the object of `D`) and
-`A.hom` (the morphism `X ⟶ G.obj A.right`).
-
-If `A, B : StructuredArrow X G`, a morphism `f : A ⟶ B` is
-by definition a morphism `u : A.right ⟶ B.right` in `D`
-such that `A.hom ≫ G.map u = B.hom`. The morphism `u`
-is called `f.right` and the condition on `u` is called
-`f.w`.
--/
-
-example {X : C} {A B : StructuredArrow X G} (f : A ⟶ B) :
-    0 = 0 := by
-  have := A.right
-  have : X ⟶ G.obj A.right := A.hom
-  have := f.right
-  have := f.w
-  simp only [Functor.const_obj_obj, StructuredArrow.left_eq_id,
-    Functor.const_obj_map, id_comp] at this
-  rfl
-
-/-
-We will prove that the functor `G` has a
-left adjoint if and only if, for every `X : C`, the category
-`StructuredArrow X G` has an initial object.
-
-An initial object in a category `E` is a special case of
-colimit (we will see the general notion next if there is time):
-it is an object `I` of `E` such that, for every object `Z : E`,
-there exists a unique morphism `I ⟶ Z`.
-
-Examples of initial objects:
-- Empty types in `Type u`;
-- Trivial groups in `Grp` or `CommGrp`;
-- Empty topological spaces in `TopCat`;
-- Any ring isomorphism to `ℤ` in `Ring`.
-
-Some categories don't have initial objects. For example, the
-category of fields doesn't, because there doesn't exist a field
-that injects into all fields.
--/
-
-#print IsInitial
-#check isInitialEquivUnique
-
-/-
-First direction: if `G` has a left adjoint, then each category
-`StructuredArrow X G` has an initial object. We will use
-`Limits.hasInitial_of_unique` to construct the `HasInitial`
-classes. This requires us to find the initial object first.
--/
-
-#check Limits.hasInitial_of_unique
-#check Unique.mk'
-#check Inhabited.mk
-#check Subsingleton.intro
-#check StructuredArrow.homMk
-#check StructuredArrow.hom_ext
-#check Adjunction.homEquiv_unit
-
-/-
-Suppose that `G` has a left adjoint `F`. Then, for every `X : C`,
-the category `StructuredArrow X G` has an initial object, which
-is given by the object `I : StructuredArrow X G` defined as
-`adj.unit.app X : X ⟶ G.obj (F.obj X)`.
-
-Indeed, if `A` is any object of `StructuredArrow X G`,
-then applying the inverse of `adj.homEquiv` to
-`A.hom : X ⟶ G.obj A.right` gives a morphism `u : F.obj X ⟶ A.right`.
-We can prove that `u` defines a morphism `I ⟶ A` using the
-properties of the adjunction.
-
-If we have two morphisms `v, v' : I ⟶ A`, i.e.
-morphisms `v.right, v'.right : F.obj X ⟶ A.right` satisfying
-some condition, we want to prove that `v.right = v'.right`.
-But it suffices to do this after applying `adj.homEquiv`,
-which sends both morphisms to `A.hom`.
--/
-def HasInitialOfLeftAdjoint {F : C ⥤ D} (adj : F ⊣ G) (X : C) :
-    HasInitial (StructuredArrow X G) := by
-  set I : StructuredArrow X G :=
-    StructuredArrow.mk (adj.unit.app X)
-  have : ∀ (A : StructuredArrow X G), Unique (I ⟶ A) := by
-    intro A
-    refine @Unique.mk' _ ?_ ?_
-    · refine Inhabited.mk ?_
-      refine StructuredArrow.homMk ?_ ?_
-      · dsimp [I]
-        apply (adj.homEquiv _ _).invFun
-        exact A.hom
-      · dsimp [I]
-        simp
-    · apply Subsingleton.intro ?_
-      intro f g
-      ext
-      apply_fun (adj.homEquiv _ _).toFun
-      simp
-      have := f.w
-      simp only [Functor.const_obj_obj, StructuredArrow.left_eq_id, id_comp] at this
-      dsimp [I] at this
-      rw [← this]
-      erw [← g.w]
-      simp
-
-      -- congr 1
-      -- apply (adj.homEquiv _ _).injective
-      -- simp
-  exact hasInitial_of_unique I
-
-/- The other direction: if each category `StructuredArrow X G`
-has an initial object, then `G` has a left adjoint `F`. We will
-define `F.obj X` as the `right` component of the initial object
-of `StructuredArrow X G`, and the `hom` component will give us
-the unit of the adjunction at `X`.
-
-To check the requisite compatibilities, we use many times the
-fact that, if `X` is initial, then any two morphisms
-`f, g : X ⟶ Y` are equal. This is called `Limits.initial.hom_ext`.
--/
-
-#check Limits.initial
-#check Limits.initial.to
-#check StructuredArrow.map -- functor from `StructuredArrow X' G`
--- to `StructuredArrow X G` induced by a morphism `f : X ⟶ X'`
-#check Limits.initial.hom_ext
-
-noncomputable abbrev FunctorOfInitialObj (X : C)
-    (_ : HasInitial (StructuredArrow X G)) : D :=
-  (initial (StructuredArrow X G)).right
-
-variable (h : ∀ (X : C), HasInitial (StructuredArrow X G))
-
-noncomputable def FunctorOfInitial : C ⥤ D where
-      obj X := FunctorOfInitialObj G X (h X)
-      map {X X'} f := by
-        dsimp [FunctorOfInitialObj]
-        let Y := (StructuredArrow.map (T := G) f).obj (⊥_ _)
-        let φ := Limits.initial.to Y
-        exact φ.right
-      map_id X := by
-        simp
-        -- let _ := StructuredArrow
-
-        -- let ψ := Limits.initial.to (C := StructuredArrow X G) (⊥_ _)
-        -- let φ := ψ.right
-        let Y := FunctorOfInitialObj (X := X) (D := D) G (h X)-- ⟶ (FunctorOfInitialObj X) := sorry
-        let φ := 𝟙 Y
-        set ψ := G.map φ with hψ
-        sorry
-
-      map_comp {X X' X''} f g := sorry
-
-noncomputable def UnitOfInitial :
-    𝟭 C ⟶ FunctorOfInitial G h ⋙ G where
-      app X := (initial (StructuredArrow X G)).hom
-      naturality X X' f := sorry
-
-noncomputable def CounitOfInitial :
-    G ⋙ FunctorOfInitial G h ⟶ 𝟭 D where
-  app Y := sorry
-  naturality Y Y' f := sorry
-
-#check whiskerLeft
-#check whiskerRight
-#check Functor.associator
-#check initial.hom_ext
-
-lemma LeftTriangleOfInitial :
-    whiskerRight (UnitOfInitial G h) (FunctorOfInitial G h) ≫
-    ((FunctorOfInitial G h).associator G (FunctorOfInitial G h)).hom ≫
-    whiskerLeft (FunctorOfInitial G h) (CounitOfInitial G h) =
-    𝟙 (𝟭 C ⋙ FunctorOfInitial G h) := by
-  ext X
-  sorry
-
-lemma RightTriangleOfInitial :
-    whiskerLeft G (UnitOfInitial G h) ≫
-    (G.associator (FunctorOfInitial G h) G).inv ≫
-    whiskerRight (CounitOfInitial G h) G = 𝟙 (G ⋙ 𝟭 C) := by
-  ext X
-  sorry
-
-noncomputable def AdjunctionOfInitial : FunctorOfInitial G h ⊣ G :=
-  Adjunction.mkOfUnitCounit (Adjunction.CoreUnitCounit.mk
-  (UnitOfInitial G h) (CounitOfInitial G h)
-  (LeftTriangleOfInitial G h) (RightTriangleOfInitial G h))
-
-include h in
-lemma IsRightAdjointOfInitial : G.IsRightAdjoint where
-  exists_leftAdjoint :=
-    ⟨FunctorOfInitial G h,
-    Nonempty.intro (AdjunctionOfInitial G h)⟩
-
-lemma IsRightAdjointIffInitial :
-    G.IsRightAdjoint ↔ ∀ (X : C), HasInitial (StructuredArrow X G) :=
-  ⟨fun _ ↦ HasInitialOfLeftAdjoint G (Adjunction.ofIsRightAdjoint G),
-  IsRightAdjointOfInitial G⟩
-
-end Initial
-
-
-section GroupObject
-
 variable {C : Type u} [Category.{v} C]
 
-/-
-This section is intended to introduce you to categorical
-(binary) products and terminal/final objects.
-
-A terminal object in a category `C` is the dual notion of an
-initial object: it is an object `F : C` such that, for
-every `X : C`, there exists a unique morphism `X ⟶ F`.
-
-Examples of terminal objects:
-- Any one-point type in `Type u`;
-- Trivial groups in `Grp` and `CommGrp`;
-- Any one-point topological space in `TopCat`.
-
-Not all categories have terminal objects. For example, `Ring`
-does not, and neither does the category of fields. The category
-of rings without a unit does admit a final objects (take any
-zero ring).
--/
-
-#print IsTerminal
-#check isTerminalEquivUnique
-
-/-
-Now we define binary products. Let `X, Y : C`. A (binary) product
-of `X` and `Y` in `C` is the data of an object `P : C`
-and two morphisms `p : P ⟶ X`, `q : P ⟶ Y` such that, every
-time we take `Q : C` and morphisms `p' : Q ⟶ X`, `q' : Q ⟶ Y`,
-there exists a unique morphism `u : Q ⟶ P` such that
-`p' = u ≫ p` and `q' = u ≫ q`.
-
-A product of `X` and `Y` is unique up to unique isomorphism
-if it exists (because of the universal property). Please
-note that you should include the morphisms `p` and `q` to
-get uniqueness.
-
-Binary products are called "binary" because we could make
-the same definition with three, four etc objects, or actually
-with any family of objects of `C`. (For the empty family, we
-recover the notion of terminal objects. Think about it!)
-
-There are classes expressing the fact that `C` has terminal
-objects, binary products etc:
--/
-#print HasTerminal
-#print HasBinaryProducts
-#print HasFiniteProducts
-#print HasProducts
-
-
-/-
-If a product of `X, Y : C` exists, mathlib picks an arbitrary
-one using the axiom of choice and calls it `Limits.prod X Y` or
-`X ⨯ Y` (\ + X). Warning, the `⨯` is not the same as the
-Cartesian product symbol for types (which is `×` i.e. \ + x).
--/
-#check Limits.prod
-#check Limits.prod.fst -- first projection, i.e. morphism
-                       -- from `X ⨯ Y` to `X`
-#check Limits.prod.snd -- second projection, i.e. morphism
-                       -- from `X ⨯ Y` to `Y`
-#check Limits.prod.lift -- universal property of the product
-#check Limits.prod.lift_fst
-#check Limits.prod.lift_snd
-
-/-
-Now we come to group objects in `C`.
-Let's assume that `C` has finite products. This is equivalent
-to assuming the existence of terminal objects and binary products.
-(You can then construct all finite products by induction.)
--/
-variable [HasFiniteProducts C]
-
-/-
-The idea is that a group object in `C` is the data of:
-- An object of `C`, let's call it `X`.
-- A "multiplication" map, which should be a morphism `X ⨯ X ⟶ X`.
-- An "inversion" map, which should be a morphism `X ⟶ X`.
-- A "unit": If `X` were a type, the unit would be an element of
-`X`, but this does not make sense here. Instead, we will ask
-for a morphism `⊤_ C ⟶ X`, where `⊤_ C` is a terminal object of `C`.
-(If `C` is `Type u`, then `⊤_ C` is a one-point type, so giving a
-morphism `⊤_ C ⟶ X` is the same as giving an element of `X`.)
-(Type `⊤` using "\ + top".)
-
-Of course, these data should satisfy some axioms, such as associativity
-of multiplication, the fact that the unit is a unit, etc. The insight
-is that we can express all of these axioms categorically, as
-equalities betweem some morphisms.
--/
-
+-- The objects of `Span C` are objects of `C`.
 variable (C) in
-structure GroupObject where
-  X : C
-  mul : X ⨯ X ⟶ X    -- type ⨯ using \ + X
-  mul_assoc : prod.map mul (𝟙 X) ≫ mul =
-      (prod.associator X X X).hom ≫ prod.map (𝟙 X) mul ≫ mul
-  one : ⊤_ C ⟶ X -- type `⊤` using \ + top
-  one_mul : (prod.leftUnitor X).inv ≫ prod.map one (𝟙 X) ≫ mul = 𝟙 X
-  mul_one : (prod.rightUnitor X).inv ≫ prod.map (𝟙 X) one ≫ mul = 𝟙 X
-  inv : X ⟶ X
-  inv_mul_cancel : prod.lift inv (𝟙 X) ≫ mul = terminal.from X ≫ one
--- Note that we chose a minimal list of axioms. There should also be
--- a `mul_inv_cancel` for example, but it can be deduced from the
--- other axioms.
-
--- Category structure on group objects.
-instance : Category (GroupObject C) where
-  Hom G G' := {f : G.X ⟶ G'.X | G.one ≫ f = G'.one ∧
-    prod.map f f ≫ G'.mul = G.mul ≫ f}
-  id G := ⟨𝟙 G.X, by simp⟩
-  comp f g := ⟨f.1 ≫ g.1, ⟨sorry, sorry⟩⟩
-
--- The forgetful functor from group objects in `C` to `C`.
-variable (C) in
-def GroupObjectForget : GroupObject C ⥤ C where
-  obj G := G.X
-  map f := f.1
-
-/-
-Our next goal is to show that group objects in the category `Type u`
-are just groups. (In fact, we will construct an equivalence of
-categories `GroupObject (Type u) ≌ Grp.{u}`.) To simplify the proofs,
-we use some lemmas about products in `Type u`.
--/
-
-section Lemmas
-
-#check prod.map_fst
-#check prod.map_snd
-#check prod.lift_fst
-#check prod.lift_snd
-
-lemma prod.map_fst_apply {A B C D : Type u} (f : A ⟶ B) (g : C ⟶ D)
-    (x : A ⨯ C) :
-    prod.fst (X := B) (prod.map f g x) = f (prod.fst (X := A) x) := by
-  sorry
-
-lemma prod.map_snd_apply {A B C D : Type u} (f : A ⟶ B) (g : C ⟶ D)
-    (x : A ⨯ C) :
-    prod.snd (X := B) (prod.map f g x) = g (prod.snd (X := A) x) := by
-  sorry
-
-lemma prod.lift_fst_apply {A B C : Type u} (f : A ⟶ B) (g : A ⟶ C) (x : A) :
-    prod.fst (X := B) (prod.lift f g x) = f x := by
-  sorry
-
-lemma prod.lift_snd_apply {A B C : Type u} (f : A ⟶ B) (g : A ⟶ C) (x : A) :
-    prod.snd (X := B) (prod.lift f g x) = g x := by
-  sorry
-
-end Lemmas
-
-/- If `G` is a group object in `Type u`, then `G.X` gets a canonical
-`Group` instance. We define this instance bit by bit as usual: first
-we introduce the `Mul`, `Inv` and `One` instances, then we prove
-their properties.
-
-For example, the `Mul` seems easy, because it is just a map
-`G.X × G.X → G.X`, i.e. a morphism `G.X × G.X ⟶ G.X` in the category
-`Type u`, and we have a morphism `G.X ⨯ G.X ⟶ G.X` given by `G.mul`.
-Similary, the unit element of `G.X` is the image of the unique
-element of `⊤_ (Type u)` by `G.one`.
-
-However, there is a technical complication: the categorical product
-`G.X ⨯ G.X` in `Type u` (chosen by the axiom of choice among all binary
-products) is NOT the Cartesian product `G.X × G.X`, it is only isomorphic
-to it, etc.
-
-(In fact, this shows that our definition of group objects is not
-the right one. There is a class called `ChosenFiniteProducts` which
-allows us to choose "nice" representatives in a category such as
-`Type u`, and we should use the finite products given by this class
-to define group objects. I didn't do this because I wanted to torture
-you a bit. End of digression.)
--/
-
--- Here is the isomorphism:
-#check Types.binaryProductIso
-
-/- For the unit, we will use that `⊤_ (Type u)` has a unique
-element, which is called `default`.
-It also has a `Subsingleton` insteance, so to prove that two of its
-elements are equal, you can use this: -/
-#check Subsingleton.elim
-#print Subsingleton
-
-noncomputable instance (G : GroupObject (Type u)) : Mul G.X where
-  mul x y := G.mul ((Types.binaryProductIso G.X G.X).inv ⟨x, y⟩)
-
-noncomputable instance (G : GroupObject (Type u)) : One G.X where
-  one := G.one default
-
-noncomputable instance (G : GroupObject (Type u)) : Inv G.X where
-  inv x := G.inv x
-
-noncomputable instance (G : GroupObject (Type u)) : Group G.X where
-  mul_assoc x y z := by
-    dsimp [HMul.hMul, Mul.mul]
-    sorry
-  one_mul x := by
-    dsimp [HMul.hMul, Mul.mul, OfNat.ofNat, One.one]
-    sorry
-  mul_one x := by
-    sorry
-  inv_mul_cancel x := by
-    dsimp [HMul.hMul, Mul.mul, Inv.inv]
-    sorry
-
-/-
-If `f : G ⟶ G'` is a morphism of group objects in `Type u`, this
-constructs the corresponding morphism of groups from `G.X` to `G'.X`.
--/
-@[simp]
-def MonoidHomOfHom {G G' : GroupObject (Type u)} (f : G ⟶ G') :
-    G.X →* G'.X where
-      toFun := f.1
-      map_one' := by
-        sorry
-      map_mul' x y := by
-        dsimp [HMul.hMul, Mul.mul]
-        sorry
-
--- The functor from `GroupObject (Type u)` to `Grp.{u}` sending
--- `G` to `G.X` with the group structure defined above.
-noncomputable def CanIso : GroupObject (Type u) ⥤ Grp.{u} where
-  obj G := Grp.of G.X
-  map f := Grp.ofHom (MonoidHomOfHom f)
-  map_id X := by
-    sorry
-  map_comp f g := by
-    sorry
-
-/- The functor in the other direction: if `G` is a group, then
-it defines a group object in `Type u`, because we have a morphism
-`G × G → G` defined by the multiplication, etc. However, there is
-the same technical complication as before: the categorical product
-`G ⨯ G` in `Type u` is NOT the Cartesian product `G × G`, it is only
-isomorphic to it, etc.
--/
-#check Types.binaryProductIso
-
--- Every group defines a group object in `Type u`.
-@[simp]
-noncomputable def GroupObjectOfGrp (G : Type u) [Group G] :
-    GroupObject (Type u) where
-  X := G
-  mul p := ((Types.binaryProductIso G G).hom p).1 *
-    ((Types.binaryProductIso G G).hom p).2
-  mul_assoc := by
-    dsimp
-    sorry
-  one _ := 1
-  one_mul := by
-    dsimp
-    sorry
-  mul_one := by
-    dsimp
-    sorry
-  inv x := x⁻¹
-  inv_mul_cancel := by
-    sorry
-
--- Every morphism of groups defines a morphism of group objects.
-@[simp]
-noncomputable def HomOfMonoidHom {G G' : Type u} [Group G] [Group G']
-    (f : G →* G') : GroupObjectOfGrp G ⟶ GroupObjectOfGrp G' where
-      val := f.toFun
-      property := by
-        constructor
-        · sorry
-        · sorry
-
--- Putting all this together into a functor.
-noncomputable def CanIsoInv : Grp.{u} ⥤ GroupObject (Type u) where
-  obj G := GroupObjectOfGrp G.1
-  map f := HomOfMonoidHom f
-  map_id G := by
-    dsimp
-    rw [← SetCoe.ext_iff]
-    sorry
-  map_comp f g := by
-    dsimp
-    rw [← SetCoe.ext_iff]
-    sorry
-
-/-
-To get an equivalence, we now need to define isomorphisms of functors
-`𝟭 (GroupObject (Type u)) ≅ CanIso ⋙ CanIsoInv` and
-`CanIsoInv ⋙ CanIso ≅ 𝟭 Grp.{u}`. These morphisms are basically given
-by the identity, but we do have to check the compatibility with the
-various group/group object structures.
--/
-
-noncomputable def CanUnit : 𝟭 (GroupObject (Type u)) ≅ CanIso ⋙ CanIsoInv := by
-  refine NatIso.ofComponents (fun G ↦ ?_) (fun f ↦ ?_)
-  · dsimp [CanIso, CanIsoInv]
-    refine {hom := ?_, inv := ?_, hom_inv_id := ?_, inv_hom_id := ?_}
-    · refine {val := 𝟙 G.X, property := ⟨?_, ?_⟩}
-      · dsimp
-        sorry
-      · dsimp
-        sorry
-    · refine {val := 𝟙 G.X, property := ⟨?_, ?_⟩}
-      · dsimp
-        sorry
-      · dsimp
-        ext
-        sorry
-    · rw [← SetCoe.ext_iff]
-      rfl
-    · rw [← SetCoe.ext_iff]
-      rfl
-  · dsimp [CanIso, CanIsoInv]
-    rw [← SetCoe.ext_iff]
-    rfl
-
-noncomputable def CanCounit : CanIsoInv ⋙ CanIso ≅ 𝟭 Grp.{u} := by
-  refine NatIso.ofComponents (fun G ↦ ?_) (fun f ↦ ?_)
-  · dsimp [CanIsoInv, CanIso]
-    refine MulEquiv.toGrpIso ?_
-    refine {toFun := fun x ↦ x, invFun := fun x ↦ x, left_inv := fun _ ↦ by rfl,
-            right_inv := fun _ ↦ by rfl,  map_mul' := fun x y ↦ ?_}
-    sorry
-  · ext
-    rfl
-
--- The equivalence.
-noncomputable def CanEquiv : GroupObject (Type u) ≌ Grp.{u} where
-  functor := CanIso
-  inverse := CanIsoInv
-  unitIso := CanUnit
-  counitIso := CanCounit
-  functor_unitIso_comp _ := by rfl
-
--- Compatibility of the equivalence with the forgetful functors.
-noncomputable def CanEquivCompat :
-    CanEquiv.functor ⋙ forget Grp ≅ GroupObjectForget (Type u) :=
-  NatIso.ofComponents (fun _ ↦ Iso.refl _) (fun _ ↦ rfl)
-
-end GroupObject
-
-
-section Initial
-
-variable {C : Type u} [Category.{v} C]
-
-/-
-In the next exercise, we will manipulate arbitrary products
-and equalizers.
-
-Let `x : J → C` be a family of objects of `C`. A product of
-`x` is an object `P` of `C` together with morphisms
-`p j : P ⟶ x j` for every `j : J` such that, for every
-`Q : C` and every family `q j : Q ⟶ x j` of morphisms of `C`,
-there exists a unique `u : Q ⟶ P` such that
-`q j = u ≫ p j` for every `j : J`.
-
-Now we suppose that `C` admits products indexed by
-types in `Type w`.
--/
-
-variable [HasProducts.{w} C]
-
-/-
-Equalizers: Let `f, g : X ⟶ Y` be morphisms of `C`.
-An equalizer of `f` and `g` is a morphism `i : Z ⟶ X`
-such that `i ≫ f = i ≫ g` and such that, for every
-morphism `i' : Z' ⟶ X` satisfying `i' ≫ f = i' ≫ g`, there
-exists a unique morphism `u : Z' ⟶ Z` such that
-`i' = u ≫ i`.
-
-For example, if we are in `Type u`, we can take
-`Z = {x : X | f x = g x}` and `i: Z ⟶ X` given by the inclusion.
-In a category that has zero morphisms, such as `AddCommGrp`
-or `ModuleCat`, an equalizer of `f : X ⟶ Y` and of the
-zero morphism `0 : X ⟶ Y` is also called a kernel of `f`.
-
-In fact we will use a generalization of equaliwers called
-"wide equalizers", which are for a family of morphisms
-`f j : X ⟶ Y` indexed by some type `J`. (It's a morphism
-`i : Z ⟶ X` such that `i ≫ f j = i ≫ g j` for every `j`
-and such that, for every morphism `i' : Z' ⟶ X` satisfying
-`i' ≫ f j = i' ≫ g j`, there exists a unique morphism
-`u : Z' ⟶ Z` such that `i' = u ≫ i`.)
-
-We assume that `C` has wide equalizers.
--/
-
-variable [HasWideEqualizers C]
-
-/-
-Suppose that there exists a family `x : J ⟶ C` such that
-every `X : C` admits at least one morphism from one of the
-`x j`, and suppose that `J` is `w`-small. (Which means
-that `J` is equivalent to a type in `Type w`.)
-
-We will prove that `C` has an initial object.
-
-In the proof, we use the notion of "monomorphism". This is a
-categorical version of injectivity for a morphism: a morphism
-`f : X ⟶ Y` is called a monomorphism (`Mono` in lean) if, for
-every object `Z` and all `g, h : Z ⟶ X`, if `g ≫ f = h ≫ f`, then
-`g = h`.
-
-For example, all equalizers and wide equalizers are monomorphisms
-thanks to their universal property (and mathlib knows it, it's an
-instance so should automatically be available).
-
-The dual notion, which generalizes surjectivity, is that of an
-epimorphism (`Epi` in lean) : a morphism `f : X ⟶ Y` is called an
-epimorphism every object `Z` and all `g, h : Y ⟶ Z`,
-if `f ≫ g = f ≫ h`, then `g = h`.
--/
-
--- Useful lemmas and defs:
-#check Limits.hasInitial_of_unique
-#check Unique.mk'
-#check Inhabited.mk
-#check Subsingleton.intro
-#check limit
-#check wideEqualizer
-#check WalkingParallelFamily
-#check parallelFamily
-#check equalizer
-#check WalkingParallelPair
-#check parallelPair
-#check Limits.Pi.π
-#check Mono
-#check cancel_mono
-#check Epi
-#check epi_of_epi_fac
-#check eq_of_epi_equalizer
-
-lemma InitialOfFamily [HasLimits C] {J : Type*} (x : J → C)
-    (wi : ∀ (X : C), ∃ (j : J), Nonempty (x j ⟶ X)) [Small.{w} J] :
-    HasInitial C := by
-  have : HasLimitsOfShape (Discrete J) C :=
-    hasLimitsOfShape_of_equivalence
-    (Discrete.equivalence (equivShrink _)).symm
-  -- We first establish that products indexed by `J` exist in `C`. As `J`
-  -- is not in `Type w` but only `w`-small, this takes a couple of
-  -- lemmas.
-  set X := ∏ᶜ x -- this is the notation for the product of a family
-  set I := wideEqualizer (fun (u : X ⟶ X) ↦ u)
-  -- The idea is to take as initial object the equalizer of all the
-  -- endomorphisms of `X`, where `X` is the product of the family `x`.
-  -- Here we use `wideEqualizer`, which is similar to `equalizer`
-  -- but for an arbitrary family of morphisms (`equalizer` is just the
-  -- equalizer of two morphisms). Wide equalizers are limits indexed by
-  -- the category `WalkingParallelFamily`.
-  have IX : ∀ (A : C), Inhabited (X ⟶ A) := by
-    intro A
-  -- First we show that every `A : C` admits a morphism from `X`.
-  -- This is because `A` admits a morphism from some `x i`, and we
-  -- have projection morphisms from `X` to all the `x i`.
-    sorry
-  have : ∀ (A : C), Unique (I ⟶ A) := by
-    intro A
-    refine @Unique.mk' _ ?_ ?_
-  -- Then we prove that each `A : C` admits a unique morphism from `Y`.
-    · sorry
-  -- For the existence, we use tha fact that there exists a morphism
-  -- `i : Y ⟶ X`.
-    · refine Subsingleton.intro (fun f g ↦ ?_)
-      sorry
-  -- For the uniqueness, suppose that we have `f, g : Y ⟶ A`.
-  -- We take `j : Z ⟶ Y` the equalizer of `f` and `g`.
-  -- Then `i ≫ k ≫ j ≫ i = i` because `Y` is the (wide) equalizer of
-  -- all the morphisms `X ⟶ X`, so `(i ≫ k) ≫ j = 𝟙 Y` because `i`
-  -- is a monomorphism (see `Mono`), so `j` is an epimorphism (`Epi`),
-  -- which implies that `f = g` because `j` is the equalizer of `f` and `g`.
-  exact hasInitial_of_unique I
-
-
-end Initial
-
-variable {C : Type u} [Category.{v} C]
-
-variable {J : Type w} [Category.{w'} J]
-
-section LimitsColimits
-/-
-Limits and colimits.
-
-Let `K : J ⥤ C` be a functor. We say that an object `X` of `C` is a limit
-of `F` if:
-(1) We have morphisms `f j : X ⟶ F.obj j` for every `j : J`.
-(2) For every morphism `u : j ⟶ k` in `J`, we have `f j ≫ F.map u = f k`.
-(3) Every time we have the data of an object `Y` of `C` and of morphisms
-`g j : Y ⟶ F.obj j` such that `g j ≫ F.map u = g k` for every morphism
-`u : j ⟶ k` in `J`, there exists a unique `α : Y ⟶ X` such that
-`g j = α ≫ f j` for every `j : J`
-
-It will be convenient to package all the information given in (1) and (2)
-into something that we will call a `Cone` of `F`. We can make cones into
-a category in the "obvious" way, and a limit will be a terminal cone.
-
-Before we do that, let's look at a few examples:
-
-* Terminal objects:
-A terminal object of `C` is a limit of the unique functor from the
-empty category to `C`. The data of (1) and (2) then collapses to
-just "an object `X` of `C`", and condition (3) says: for every
-`Y : C`, there exists a unique morphism `Y ⟶ X`.
-
-For example, in `Type u` every one-point type is a terminal object.
--/
-
-#check Limits.isTerminalEquivUnique
-#check Limits.IsTerminal.ofUnique
-
-/-
-* Products (cf. Mathlib.CategoryTheory.Limits.Shapes.Products):
-This is the case where `J` is a discrete category. Giving `F` is
-equivalent to giving the function `F.obj : J → C`. The data of (1)
-and (2) becomes "an object `X` of `C` and a morphism `p j : X ⟶ F.obj j`
-for every `j : J`".
-
-Property (3) says: every time we have an object `Y` and morphisms
-`q j : Y ⟶ F.obj j`, there exists a unique `α : X ⟶ Y` such that
-`q j = α ≫ p j`.
-
-In the category `Type u` (and algebraic categories like
-`Grp`, `AddCommGrp`, `ModuleCat` etc), the usual products are
-categorical products.
-
-* A special case of products is that of binary products. This is
-when `J` has exactly two objects an dis discrete.
-The data of `F` is equivalent
-to that of two objects `A, B : C`. The data of (1) and (2)
-is equivalent to that of `X : C` and of two maps
-`p : X ⟶ A` and `q : X ⟶ B`. Condition (3) says that, if
-we have `Y : C` and two maps `p' : Y ⟶ A` and `q' : Y ⟶ B`,
-then there exists a unique `α : Y ⟶ X` such that `p' = α ≫ p`
-and `q' = α ≫ q`.
-
-In `Type u` (and algebraic categories like
-`Grp`, `AddCommGrp`, `ModuleCat` etc),
-Cartesian products are binary products.
-
-In mathlib, the type with two elements used for binary products
-(and binary coproducts) is called `WalkingPair`, its two
-elements are called `left` and `right`.
--/
-#print Limits.WalkingPair
-
-/-
-So the category `J` will be `Discrete (WalkingPair)` (if we opened
-the `Limits` namespace).
--/
-
-/-
-* Fiber products:
-This is the case where `J` is a preordered type with three elements
-`left, right, none` such that `left < none`, `right < none` and
-`left, right` are not comparable. This category is called
-`WalkingCospan` in mathlib.
--/
-#print Limits.WalkingCospan
-
-/-
-Giving a functor `K : J ⥤ C` is equivalent to giving two morphisms
-`f : A ⟶ C`, `g : B ⟶ C` with the same target. The data of
-(1) and (2) is equivalent to that of `X : C` and two morphisms
-`p : X ⟶ A`, `q : X ⟶ B` such that `p >> f = q >> g`.
-
-Condition (3) says that, if
-we have `Y : C` and two maps `p' : Y ⟶ A` and `q' : Y ⟶ B`
-such that `p' ≫ f = q' ≫ g`,
-then there exists a unique `α : Y ⟶ X` such that `p' = α ≫ p`
-and `q' = α ≫ q`.
-
-In `Type u` (and algebraic categories like
-`Grp`, `AddCommGrp`, `ModuleCat` etc), the usual fiber
-products are categorical fiber
-products: if `f : A ⟶ C` and `g : B ⟶ C`, their usual fiber
-product if `{(x, y) : A × B | f x = g y}`.
-
-
-* Equalizers:
-This is the special case of fiber products where the
-morphisms `f, g` have the same source. So the category
-`J` has two distinct objects `zero` and `one`, and two
-distinct morphisms from `zero` to `one`.
-
-This category is called `WalkingParallelPair` in mathlib,
-and we can construct functors from it using
-`parallelPair`. (Note that this the first example
-where `J` is not a preorder.)
--/
-#print Limits.WalkingParallelPair
-
-#synth Category Limits.WalkingParallelPair
-
-example {A B : C} (f g : A ⟶ B) : Limits.WalkingParallelPair ⥤ C :=
-  Limits.parallelPair f g
-
-/-
-In `Type u` (and algebraic categories like
-`Grp`, `AddCommGrp`, `ModuleCat` etc), the equalizer of
-`f, g : A ⟶ B` is given by `{x : A | f x = g x}`.
-
-* Kernels
-
-If `C` has a notion of zero morphisms, then the kernel of
-`f : A ⟶ B` is the equalizer of `f` and of the zero morphism
-`0 : A ⟶ B`.
-
-For example, in `AddCommGrp`, the kernel of `f : A ⟶ B` is
-`{x : A | f x = 0}`.
--/
-
-/-
-There are other special cases, you can find them in
-`Mathlib.CategoryTheory.Limits.Shapes`.
--/
-
-/-
-Coming back to the general definition of limits, we first
-introduce cones over `F`: a term of type `Cone F` is
-equivalent to the data of points (1) and (2) above.
-The object `X` of (1) is called the *point* of the cone.
--/
-
-#print Limits.Cone
-
-/-
-A `c : Cone F` is:
-* an object `c.pt` and
-* a natural transformation `c.π : c.pt ⟶ F` from the constant `c.pt`
-functor to `F`.
-
-So the data required to make a term of type `Cone F` is morphisms
-`πⱼ : c.pt ⟶ K j` for all `j : J` such that, for every morphism
-`u : j ⟶ k` in `J`, we have`πᵢ ≫ F.map u = πⱼ`.
-
-structure Cone (K : J ⥤ C) where
-  /-- An object of `C` -/
+structure Span where
   pt : C
-  /-- A natural transformation from the constant functor at `X` to `F` -/
-  π : (const J).obj pt ⟶ F
--/
+-- Even though `C` and `Span C` have the same objects, we
+-- don't want to give them the same name, because the
+-- category instance on `C` would clash the bicategory
+-- instance that we will construct. So we introduce `Span C`
+-- as a structure whose unique field is a term of type `C`.
+-- (We could also have used a type synonym, i.e.
+-- `def Span (C : Type*) := C`.)
 
-example (K : J ⥤ C) (c: Limits.Cone K) {j k : J} (u : j ⟶ k) : 0 = 0 := by
-  have := c.pt
-  have := c.π
-  have := c.π.app j
-  have := c.w u
-  rfl
+-- Given `X, Y : C`, the 1-morphisms from `X` to `Y` are
+-- spans from `X` to `Y`, i.e. diagrams
+          --       Z *the roof*
+          --   f /  \ g  with f : Z ⟶ X and g : Z ⟶ Y
+          --    v    v
+-- *the left*  X     Y *the right*
+structure OneMor (X Y : Span C) where
+  roof : C
+  left : roof ⟶ X.pt
+  right : roof ⟶ Y.pt
 
-/-
-A morphism of cones `c ⟶ c'` is a morphism between their points that makes
-all the obvious diagrams commute, i.e. a `f : c.pt ⟶ c'.pt` such that,
-for every `j : J`, we have `f ≫ c'.π.app j = c.π.app j`.
--/
+instance : Quiver (Span C) where
+  Hom := OneMor
 
-example (K : J ⥤ C) (c c' : Limits.Cone K) (f : c ⟶ c') : 0 = 0 := by
-  have := f.hom
-  have := f.w
-  rfl
+-- The identity 1-morphism from `X` to `X` is given by
+-- taking `Z` equal to `X` and `f, g` equal to `𝟙 X`.
+@[simp]
+def OneMorId (X : Span C) : OneMor X X where
+  roof := X.pt
+  left := 𝟙 _
+  right := 𝟙 _
 
-/-
-We cannot talk about *the* limit of a functor, because the limits is
-only unique up to unique isomorphism (it satisfies a universal property);
-also, being a limit is a property of the cone, not just its point.
-So we define a structure `IsLimit` that says that a cone is a limit cone.
--/
-#check Limits.IsLimit
+section OneMorComp
 
-/-
-/-- A cone `t` on `F` is a limit cone if each cone on `F` admits a unique
-cone morphism to `t`. -/
+variable [HasPullbacks C]
 
-structure IsLimit (t : Cone F) where
-  /-- There is a morphism from any cone point to `t.pt` -/
-  lift : ∀ s : Cone F, s.pt ⟶ t.pt
-  /-- The map makes the triangle with the two natural transformations
-  commute -/
-  fac : ∀ (s : Cone F) (j : J), lift s ≫ t.π.app j = s.π.app j := by aesop_cat
-  /-- It is the unique such map to do this -/
-  uniq : ∀ (s : Cone F) (m : s.pt ⟶ t.pt)
-      (_ : ∀ j : J, m ≫ t.π.app j = s.π.app j), m = lift s := by aesop_cat
--/
+-- The composition of 1-morphisms is given by the following
+-- diagram, that I will also draw on the board.
 
-/-
-Then we have theorems saying that a limit cone is unique up to
-(unique) isomorphism.
--/
+--      Z
+--     / \            Here we take `Z` equal to the
+--   Y    Y'          fibre product of `Y` and `Y'` over
+--  / \f g/ \          `X'` (called `pullback f g` in mathlib).
+-- X    X'   X''      The two projections give morphisms from
+--                    `Z` to `Y` and `Y'`, and we compose them
+--                    with the available morphisms to get
+--                    morphisms `Z ⟶ X` and `Z ⟶ X''`.
 
-#check Limits.IsLimit.uniqueUpToIso
+#check pullback
+#check pullback.fst
+#check pullback.snd
 
-/-
-Colimits are "the same" except that you revert the direction of
-every morphism. So we get a categorical definition of initial objects
-(the empty type for types, the trivial group/abelian group/module, etc),
-coproducts (also called "disjoint union" for types, "free products"
-for groups, and "direct sums" for modules), binary coproducts, pushouts,
-coequalizers, cokernels etc.
+@[simp]
+noncomputable def OneMorComp {X Y Z : Span C}
+    (a : OneMor X Y) (b : OneMor Y Z) : OneMor X Z where
+      roof := pullback a.right b.left
+      left := pullback.fst _ _ ≫ a.left
+      right := pullback.snd _ _ ≫ b.right
 
-Unlike limits, colimits generally have different definitions in
-the various algebraic categories.
--/
+-- With this, we get the `CategoryStruct` on `Span C`:
+@[simp]
+noncomputable instance : CategoryStruct (Span C) where
+  id := OneMorId
+  comp a b := OneMorComp a b
 
-end LimitsColimits
+end OneMorComp
 
-/- Let's do some exercises to learn to manipulate (co)limits, and
-let's open the namespace `Limits` to shorten the declarations.
--/
 
-variable {D : Type u'} [Category.{v'} D] (G : D ⥤ C)
+-- The 2-morphisms are commutative diagrams between spans.
+whatsnew in
+@[ext]
+structure TwoMor {X Y : Span C} (a b : OneMor X Y) where
+  hom_roof : a.roof ⟶ b.roof
+  left_comp : hom_roof ≫ b.left = a.left := by aesop_cat
+  right_comp : hom_roof ≫ b.right = a.right := by aesop_cat
 
-section Preserves
-/- Here we prove that a right adjoint functor preserves all limits.
-We also want to show this for big limits, so we use different universes
-for the indexing category of the limits.
--/
-#check J
-#synth Category J
+@[simp, reassoc]
+lemma TwoMor.left_comp' {X Y : Span C} (a b : OneMor X Y)
+    (u : TwoMor a b) : u.hom_roof ≫ b.left = a.left :=
+  u.left_comp
 
-#check Functor.leftAdjoint
-#check Adjunction.ofIsRightAdjoint
-#check Cones.postcompose
-#check Functor.mapCone
-#check whiskerLeft
-#check IsLimit.hom_ext
+@[simp, reassoc]
+lemma TwoMor.right_comp' {X Y : Span C} (a b : OneMor X Y)
+    (u : TwoMor a b) : u.hom_roof ≫ b.right = a.right :=
+  u.right_comp
 
-noncomputable def RightAdjointPreservesLimit [G.IsRightAdjoint]
-    {J : Type w} [Category.{w'} J] (K : J ⥤ D) : PreservesLimit K G where
-  preserves {c} (hc) := by
-    set adj := Adjunction.ofIsRightAdjoint G
-    refine IsLimit.mk (fun s ↦ ?_) (fun s j ↦ ?_) (fun s m eq ↦ ?_)
-    · dsimp
-      sorry
+-- Let's make `OneMor X Y` into a category:
+instance {X Y : Span C} : Category (X ⟶ Y) where
+  Hom a b := TwoMor a b
+  id a := {hom_roof := 𝟙 a.roof}
+  comp {a b c} u v := {hom_roof := u.hom_roof ≫ v.hom_roof}
+-- Note how a lot of the fields are filled by their default
+-- value `by aesop_cat`.
+
+@[simp]
+lemma TwoMor.id {X Y : Span C} {f : X ⟶ Y} :
+    (𝟙 f : TwoMor f f).hom_roof = 𝟙 f.roof := rfl
+
+@[simp]
+lemma TwoMor.comp {X Y : Span C} {f g h : X ⟶ Y} (u : f ⟶ g)
+    (v : g ⟶ h) :
+    (u ≫ v).hom_roof = u.hom_roof ≫ v.hom_roof := rfl
+
+-- The two lemmas above look useless, but you can check
+-- what happens in `TwoMor.isoMk` if you comment them.
+-- Suddenly `simp` cannot solve obvious goals anymore.
+
+
+-- whatsnew in
+-- @[ext (iff := false)]
+-- lemma TwoMor.ext' {X Y : Span C} {f g : X ⟶ Y}
+--     {u v : (f : OneMor X Y) ⟶ g} (eq : u.hom_roof = v.hom_roof) : u = v :=
+--   TwoMor.ext eq
+-- This allows us to use the `ext` tactic on 2-morphisms.
+-- If you remove it, `aesop_cat` loses a lot of its power.
+
+@[simp]
+def TwoMor.homMk {X Y : Span C} {a b : X ⟶ Y}
+    (u : a.roof ⟶ b.roof) (comp₁ : u ≫ b.left = a.left)
+    (comp₂ : u ≫ b.right = a.right) : a ⟶ b where
+      hom_roof := u
+      left_comp := comp₁
+      right_comp := comp₂
+
+variable (α : Type) (p q : α → Prop)
+
+lemma foo : ∀ a : α, p a = q a := sorry
+lemma bar (a : α) (ha : p a = q a := foo α p q a) : True := sorry
+example (b : α) : True := bar α p q b
+
+@[simp]
+def TwoMor.isoMk {X Y : Span C} {a b : X ⟶ Y}
+    (u : a.roof ≅ b.roof) (comp₁ : u.hom ≫ b.left = a.left := by aesop_cat)
+    (comp₂ : u.hom ≫ b.right = a.right := by aesop_cat; simp) : a ≅ b where
+      hom := TwoMor.homMk u.hom comp₁ comp₂
+      inv := TwoMor.homMk u.inv sorry sorry
+      hom_inv_id := sorry
+      inv_hom_id := sorry
+-- Hint: `cancel_epi`.
+
+variable [HasPullbacks C]
+
+-- Now for the bicategory structure on `Span C`:
+noncomputable instance : Bicategory (Span C) where
+  homCategory X Y := inferInstance
+  whiskerLeft {X X' X''} a {b b'} u :=
+    -- draw the diagram! (see below for useful functions)
+    {
+      hom_roof := pullback.lift (pullback.fst _ _)
+        (pullback.snd _ _ ≫ u.hom_roof)
+        (by simp [pullback.condition])
+    }
+  whiskerRight {X X' X''} {a a'} u b :=
+    {
+      hom_roof := pullback.lift (pullback.fst _ _ ≫ u.hom_roof)
+        (pullback.snd _ _) (by simp [pullback.condition])
+    }
+  associator {X X' X'' X'''} a b c := by
+    refine TwoMor.isoMk (pullbackAssoc _ _ _ _) (by aesop_cat) (by aesop_cat)
+  leftUnitor {X X'} a := by
+    refine TwoMor.isoMk ?_ ?_ ?_
+    · exact asIso (pullback.snd (𝟙 X.pt) a.left)
+-- Here we use the fact that mathlib knows that the pullback
+-- of an isomorphism is an isomorphism (and the identity is
+-- an isomorphism).
+-- If a morphism `α` has an `IsIso` instance, then
+-- `asIso α` is `α` upgraded to an isomorphism.
     · sorry
     · sorry
+  rightUnitor {X X'} a := by
+    refine TwoMor.isoMk ?_ ?_ ?_
+    · exact asIso (pullback.fst a.right (𝟙 X'.pt))
+    · sorry
+    · sorry
+  whiskerLeft_id := sorry
+  whiskerLeft_comp := sorry
+  id_whiskerLeft := sorry
+  comp_whiskerLeft := sorry
+  id_whiskerRight := sorry
+  comp_whiskerRight := sorry
+  whiskerRight_id := sorry
+  whiskerRight_comp := sorry
+  whisker_assoc := sorry
+  whisker_exchange := sorry
+  pentagon := sorry
+  triangle := sorry
 
-end Preserves
+-- We need the universal property of the pullback.
+#check pullback.fst
+#check pullback.snd
+#check pullback.condition
+#check pullback.lift
+#check pullback.lift_fst
+#check pullback.lift_snd
+#check pullback.hom_ext
+#check pullback.map
 
-
-section SpecialAdjointFunctorTheorem
-
-/-
-The special adjoint functor theorem says that, if
-`D` has small limits, `G` commutes with small limits,
-`D` is well-powered for `v'` and has a `v'`-small
-cogenerating family, and `C` has `v'`-small hom types,
-then `G` has a left adjoint.
-
-A cogenerating family for `D` is a family `y : I → D`
-such that, for all `Y, Y' : D` and `f,g : Y ⟶ Y'`,
-if `f ≫ h = g ≫ h` for every `i : I` and every
-`h : Y ⟶ y i`, then `f = g`.
-We say that it is `v'`-small if `I` is 'v'`-small.
--/
-
-/-
-To explain the "well-powered" condition, we need a few definitions.
-
-Let `X : C`. We have the category `MonoOver X` of monomorphisms `Y ⟶ X`.
-Note that `i : Y ⟶ X` and `i' : Y' ⟶ X` are isomorphic in `MonoOver X`
-if and only if there exists an isomorphism `u : Y ⟶ Y'`
-such that `i = u ≫ i'`.
-
-The category of subobjects of `X` is a skeleton of `MonoOver X`, i.e.
-it is a subcategory that contains exactly one object in each isomorphism
-class.
--/
-
-#print Subobject
-
-/- A category `C` is well-powered relative to a
-universe `w` if it is `w`-locally small (i.e. its hom types are
-`w`-small) and `Subobject X` is `w`-small for every `X`.
--/
-
-/- If `C` has small limits and `X : C` is such that `Subobject X` is
-`v`-small (where `v` is the universe level of the hom types of `C`),
-then we can form a "minimal subobject" of `X` by taking the limit of
-all subobjects of `X`. We will actually take the limit over `MonOver X`
-(which is equivalent to `Subobject X`), as this is easier.
--/
-
-local instance [HasLimits C] (X : C) [Small.{v} (Subobject X)] :
-    EssentiallySmall.{v} (MonoOver X) :=
-  (essentiallySmall_monoOver_iff_small_subobject X).mpr inferInstance
--- If `Subobject X` is `v`-small, then `MonoOver X` is
--- essentially small, i.e. equivalent to a `v`-small category.
--- (This holds because `Subobject X` and `MonoOver X` are equivalent
--- categories.)
-
-local instance [HasLimits C] (X : C) [Small.{v} (Subobject X)] :
-    HasLimitsOfShape (MonoOver X) C :=
-  hasLimitsOfShape_of_essentiallySmall (MonoOver X) C
--- If `Subobject X` is `v`-small and `C` has `v`-small limits, then
--- it has limits indexed by `MonoOver X`.
-
-noncomputable def MinimalSubobject [HasLimits C] (X : C)
-    [Small.{v} (Subobject X)] : C :=
-  limit (MonoOver.forget X ⋙ Over.forget X)
--- The "minimal subobject" of `X` is the limit ("intersection") of
--- all subobjects of `X`.
-
-/--
-The canonical monomorphism `MinimalSubobject X ⟶ X`.
--/
-noncomputable def MinimalSubobjectTo [HasLimits C] (X : C)
-    [Small.{v} (Subobject X)] : MinimalSubobject X ⟶ X :=
-  limit.π (MonoOver.forget X ⋙ Over.forget X) (MonoOver.mk' (𝟙 X))
-
--- The morphism `MinimalSubobject X ⟶ X` is a monomorphism.
-#print Mono
-#print cancel_mono
-#print limit.hom_ext
-
-local instance [HasLimits C] (X : C)
-    [Small.{v} (Subobject X)] : Mono (MinimalSubobjectTo X) where
-  right_cancellation {Y} f g eq := by
-    dsimp [MinimalSubobject]
-    sorry
-
-/-- The minimality property: every monomorphism into `MinimalSubobject X`
-is an isomorphism. Indeed, if `u : Y ⟶ MinimalSubobject X` is a
-monormorphism, then we get a subobject of `X` by taking the composition
-`Y ⟶ MinimalSubobject X ⟶ X`. So we have a "projection" morphism
-`MinimalSubobject X ⟶ Y`, which will be the inverse of `u`.
--/
-lemma MinimalSubobjectIsMinimal [HasLimits C] (X : C)
-    [Small.{v} (Subobject X)] {Y : C} (u : Y ⟶ MinimalSubobject X)
-    [Mono u] : IsIso u := by
-  set j := MonoOver.mk' (u ≫ MinimalSubobjectTo X)
-  set v : MinimalSubobject X ⟶ Y :=
-    limit.π (MonoOver.forget X ⋙ Over.forget X) j
-  have eq : u ≫ v = 𝟙 Y := by
-    sorry
-  have eq' : v ≫ u = 𝟙 (MinimalSubobject X) := by
-    sorry
-  exact {out := ⟨v, eq, eq'⟩}
-
-/--
-A cogenerating family is a family `x : I → C` of objects of `C` such that,
-for all `X,Y : C` and `f,g : X ⟶ Y`, if `f ≫ h = g ≫ h` for every `i : I`
-and every `h : Y ⟶ x i`, then `f = g`.
--/
-def IsCogenerating {I : Type*} (x : I → C) := ∀ {X Y : C} (f g : X ⟶ Y),
-  f = g ↔ ∀ (i : I) (h : Y ⟶ x i), f ≫ h = g ≫ h
-
-variable {I : Type*} (x : I → C)
-
-local instance [Small.{v} I] [HasLimits C] :
-    HasLimitsOfShape (Discrete I) C :=
-  letI := Discrete.essentiallySmallOfSmall (α := I)
-  hasLimitsOfShape_of_essentiallySmall (Discrete I) C
--- If `I` is `v`-small and `C` has limits indexed by
--- categories in `Type v`, then `C` has limits indexed
--- by `I`.
-
--- If `x : I → C` and `X : C`, this is the "obvious" morphism
--- from `X` to the product `P` of the `(x i)^(X ⟶ x i)` (where this
--- last notation denotes the product of the constant family
--- `x i` indexed by `X ⟶ x i`).
--- If we were in `Type`, it would send each `x : X` to the
--- family whose `i`th coordinate is `(f x)_{f : X ⟶ x i}`.
--- Here we construct it using the universal property of products:
--- giving a morphism `X ⟶ P` is equivalent (via `Pi.lift`) to
--- giving a morphism `X ⟶ (x i)^(X ⟶ x i)` for every `i`.
--- Giving a morphism `X ⟶ (x i)^(X ⟶ x i)` is equivalent
--- (again by `Pi.lift`) to giving a morphism `X ⟶ x i` for
--- every `f : X ⟶ x i`, and there is an obvious choice : `f` itself.
-
-#check Pi.lift
-
-noncomputable abbrev CogeneratingMono [Small.{v} I] [HasLimits C] (X : C) :
-    X ⟶ ∏ᶜ (fun (i : I) ↦ (∏ᶜ fun (_ : X ⟶ x i) ↦ x i)) :=
-  Pi.lift (fun _ ↦ (Pi.lift (fun u ↦ u)))
-
--- If `x : I → C` is cogenerating, then the morphism of the previous
--- definition is a monomorphism.
-lemma CogeneratingMonoIsMono [Small.{v} I] (h : IsCogenerating x)
-    [HasLimits C] (X : C) : Mono (CogeneratingMono x X) where
-  right_cancellation {Y} f g eq := by
-    sorry
-
-/--
-We prove that if `C` is well-powered relative to `v` (the universe
-level of its hom types) and has all `v`-small limits and a small
-cogenerating family, then it admits an initial object.
-(We will later apply this to comma categories `StructuredArrow X G`).
-
-The idea is to take the minimal subobject (`MinimalSubobject`) of
-the product of the family `x`.
-Let `A : C`.
-If we have two morphisms `f, g : e ⟶ A`, then
-their equalizer is a subobject of `e`, hence isomorphic to
-`e` by a previous lemma, hence `f = g`.
-Now we construct a morphism `e ⟶ A`. First we consider the "diagonal map"
-`u : ∏ᶜ x ⟶ ∏ᶜ (fun (i : I) ↦ (∏ᶜ fun (_ : A ⟶ x i) ↦ x i))` (the codomain
-of `CogeneratingMono x A`, and we take `B` equal to the pullback of
-`u` and of `CogeneratingMono x A`. As the pullback of a monomorphism
-is a monomorphism, the second projection `B ⟶ ∏ᶜ x` is a monomorphism,
-so we get a morphism `e ⟶ B` by the universal property of the
-minimal subobject. We compose this by the first projection
-`B ⟶ A` to get the desired morphism.
--/
-lemma HasInitialOfWellPowered [WellPowered.{v} C] [HasLimits C] {I : Type*}
-    [Small.{v} I] (x : I → C) (h : IsCogenerating x) :
-    HasInitial C := by
-  have := Discrete.essentiallySmallOfSmall (α := I)
-  have := hasLimitsOfShape_of_essentiallySmall (Discrete I) C
-  -- Again some incantations to make sure we have limits indexed by `I`.
-  set X := ∏ᶜ x
-  set e := MinimalSubobject X
-  have : ∀ (A : C), Subsingleton (e ⟶ A) := by
-    intro _
-    refine Subsingleton.intro (fun f g ↦ ?_)
-    sorry
-  have : ∀ (A : C), Inhabited (e ⟶ A) := by
-    intro A
-    refine Inhabited.mk ?_
-    set u : ∏ᶜ x ⟶ ∏ᶜ (fun (i : I) ↦ (∏ᶜ fun (_ : A ⟶ x i) ↦ x i)) :=
-      Pi.map (fun _ ↦ (Pi.lift (fun _ ↦ 𝟙 _)))
-    set B := pullback (CogeneratingMono x A) u
-    sorry
-  have : ∀ (A : C), Unique (e ⟶ A) := fun A ↦ Unique.mk' _
-  exact hasInitial_of_unique e
-
--- If `y : I → D` is cogenerating and if `X : C`, then the family of
--- all morphisms `X ⟶ G.obj (y i)` is cogenerating in `StructuredArrow X
-#check StructuredArrow.hom_eq_iff
-#check StructuredArrow.comp_right
-#check StructuredArrow.homMk
-
-lemma IsCogeneratingOfIsCogenerating (y : I → D) (h : IsCogenerating y)
-    (X : C) :
-    IsCogenerating (fun (a : Σ (i : I), X ⟶ G.obj (y i)) ↦
-    StructuredArrow.mk a.2) := by
-  intro a b u v
-  sorry
-
-#check StructuredArrow.hasLimitsOfSize
+-- Associativity of pullbacks.
+#check pullbackAssoc
 
 /-
-Proof of the special adjoint theorem: under our hypotheses,
-the categories `StructuredArrow X G` have small limits,
-are well-powered and have small cogenerating families, hence
-they have initial objects.
+# Functors
+
+A pseudofunctor `F` between bicategories `B` and `B'` is
+a map `F.obj` between objects, a map `F.map` between
+1-morphisms (respecting source and target) and a map
+`F.map₂` between 2-morphisms (respecting source and target),
+such that `F.map₂` is compatible with identities and composition,
+and `F.map` is compatible with identities and composition *up
+to isomorphism* (+ compatibilities with whiskering, associators
+and left/right unitors).
 -/
-theorem SpecialAdjointFunctor [HasLimits D] [WellPowered.{v'} D]
-    [PreservesLimitsOfSize.{v', v'} G] [LocallySmall.{v'} C]
-    (cogen : ∃ (I : Type*) (y : I → D) (_ : Small.{v'} I), IsCogenerating y) :
-    G.IsRightAdjoint := by
-  rw [IsRightAdjointIffInitial]
-  intro X
-  obtain ⟨I, y, hs, h⟩ := cogen
-  refine @HasInitialOfWellPowered _ _ ?_ ?_ _ ?_ _
-    (IsCogeneratingOfIsCogenerating G y h X)
-  · sorry -- try to use `StructuredArrow.wellPowered_structuredArrow`
-  · sorry -- here the helpful one is `StructuredArrow.hasLimitsOfSize`
-  · sorry -- use `small_sigma`
-
-end SpecialAdjointFunctorTheorem
-
-section GeneralAdjointFunctorTheorem
+#print Pseudofunctor
 
 /-
-The general adjoint functor theorem says that, if `D` has all small
-limits, `G` commutes with these limits, and `G` satisfies the
-solutions set condition, then `G` has a left adjoint.
-
-Here a small limit means a limit indexed by a category
-`J` such that the object type and hom types of `J`
-are `v'`-small, where `v'` is the universe level of the
-hom types of `C`, and "`v'`-small" means "in bijection with
-a type in `Type v'`".
-
-(Handling the size conditions is somewhat of a pain, since
-in informal mathematics both categories in the adjoint
-functor theorem live in the same universe, but here they
-don't. But we manage.)
+structure Pseudofunctor (B : Type u₁) [Bicategory.{w₁, v₁} B] (C : Type u₂)
+    [Bicategory.{w₂, v₂} C] extends PrelaxFunctor B C where
+  obj : B → C
+  map {X Y : B} : (X ⟶ Y) → (obj X ⟶ obj Y)
+  map₂ {a b : B} {f g : a ⟶ b} : (f ⟶ g) → (map f ⟶ map g)
+  map₂_id {a b : B} (f : a ⟶ b) : map₂ (𝟙 f) = 𝟙 (map f)
+  map₂_comp {a b : B} {f g h : a ⟶ b} (η : f ⟶ g) (θ : g ⟶ h) :
+    map₂ (η ≫ θ) = (map₂ η) ≫ (map₂ θ)
+-- The first five fields are the `PrelaxFunctor` structure.
+  mapId (a : B) : map (𝟙 a) ≅ 𝟙 (obj a)
+  mapComp {a b c : B} (f : a ⟶ b) (g : b ⟶ c) :
+      map (f ≫ g) ≅ map f ≫ map g
+  map₂_whisker_left :
+    ∀ {a b c : B} (f : a ⟶ b) {g h : b ⟶ c} (η : g ⟶ h),
+      map₂ (f ◁ η) = (mapComp f g).hom ≫ map f ◁ map₂ η ≫
+      (mapComp f h).inv := by
+    aesop_cat
+  map₂_whisker_right :
+    ∀ {a b c : B} {f g : a ⟶ b} (η : f ⟶ g) (h : b ⟶ c),
+      map₂ (η ▷ h) = (mapComp f h).hom ≫ map₂ η ▷ map h ≫
+      (mapComp g h).inv := by
+    aesop_cat
+  map₂_associator :
+    ∀ {a b c d : B} (f : a ⟶ b) (g : b ⟶ c) (h : c ⟶ d),
+      map₂ (α_ f g h).hom = (mapComp (f ≫ g) h).hom ≫
+      (mapComp f g).hom ▷ map h ≫
+      (α_ (map f) (map g) (map h)).hom ≫ map f ◁ (mapComp g h).inv ≫
+      (mapComp f (g ≫ h)).inv := by
+    aesop_cat
+  map₂_left_unitor :
+    ∀ {a b : B} (f : a ⟶ b),
+      map₂ (λ_ f).hom = (mapComp (𝟙 a) f).hom ≫
+      (mapId a).hom ▷ map f ≫ (λ_ (map f)).hom := by
+    aesop_cat
+  map₂_right_unitor :
+    ∀ {a b : B} (f : a ⟶ b),
+      map₂ (ρ_ f).hom = (mapComp f (𝟙 b)).hom ≫
+      map f ◁ (mapId b).hom ≫ (ρ_ (map f)).hom := by
+    aesop_cat
 -/
-#print Small
 
 /-
-The solution set condition is the following condition on
-`G`: for every `X : C`, there exists a `v'`-small type
-`I` and a function `y : I → StructuredArrow X G`
-(remember that `y i` is a morphism
-`(y i).hom : X ⟶ G.obj (y i).right`) such
-that, for every `f : X ⟶ G.obj Y` in `StructuredArrow X G`,
-there exists `i : I`, `g : (y i).right ⟶ Y` with
-`f = (y i).hom ≫ G.map g`.
+As an example, we can define a pseudofunctor from `C` to
+`Span C`. Note that a 1-category can be seen as a
+strict bicategory where the only 2-morphisms are identity
+morphisms. To avoid instance clashes, this is called
+`LocallyDiscrete C`.
 -/
 
-def SolutionSetCondition := ∀ (X : C), ∃ (I : Type u) (_ : Small.{v'} I)
-  (y : I → D) (f : (i : I) → (X ⟶ G.obj (y i))), ∀ (Y : D) (h : X ⟶ G.obj Y),
-  ∃ (i : I) (g : y i ⟶ Y), h = f i ≫ G.map g
+#synth Bicategory (LocallyDiscrete C)
+
+#print LocallyDiscrete
+-- This is again a structure with a unique field `as`.
+-- So if `X : LocallyDiscrete C`, the corresponding object of
+-- `C` is called `X.as`.
+-- Note that if `f : X ⟶ Y` is a 1-morphisms in `LocallyDiscrete C`,
+-- the corresponding morphisms of `C` is called `f.as`.
 
 /-
-The idea of the proof is that, under the conditions
-of the theorem, every category `StructuredArrow X G`
-will have an initial object, by a lemma called `InitialOfFamily`
-that we proved before in this file.
+The pseudofunctor from `C` to `Span C` will be the identity on
+objects. It will send `f : X ⟶ Y` to the span
+   X
+ 𝟙/ \f
+X    Y
+As the only 2-morphisms in `C` are identity morphisms, it will
+send them to identity morphisms. In fact we will need to use
+`eqToHom`, and the following function (saying that if there
+is a 2-morphism between two 1-morphisms `f` and `g` in a locally
+discrete bicategory, then `f` and `g` are equal):
 -/
+#check LocallyDiscrete.eq_of_hom
 
-
-/--
-The general adjoint functor theorem: if `G` satisfies the solution set
-condition and preserves small limits, and if `C` and `D` have all small
-limits, then `G` has a left adjoint.
--/
-theorem GeneralAdjointFunctor [HasLimits D]
-    [PreservesLimitsOfSize.{v', v'} G]
-    (h : SolutionSetCondition G) : G.IsRightAdjoint := by
-  rw [IsRightAdjointIffInitial]
-  intro X
-  sorry
-  -- We use `InitialOfFamily` (proved above) to show that
-  -- `StructuredArrow X G` has an initial object.
-
-end GeneralAdjointFunctorTheorem
+noncomputable def ToSpan :
+    Pseudofunctor (LocallyDiscrete C) (Span C) where
+  obj X := {pt := X.as}
+  map {X Y} f := {roof := X.as, left := 𝟙 X.as, right := f.as}
+  map₂ {X Y f g} u := by
+    have eq := LocallyDiscrete.eq_of_hom u
+    refine eqToHom ?_
+    simp [eq]
+  map₂_id := by simp
+  map₂_comp := by simp
+  mapId X := by
+    refine TwoMor.isoMk (Iso.refl _) ?_ ?_ <;> simp <;> rfl
+  mapComp {X Y Z} f g := by
+    refine TwoMor.isoMk ?_ ?_ ?_
+    · exact (asIso (pullback.fst f.as (𝟙 _))).symm
+    · simp only [LocallyDiscrete.comp_as, Iso.symm_hom, asIso_inv,
+        IsIso.inv_comp_eq, comp_id]
+      change pullback.fst _ _ ≫ _ = _
+      simp
+    · simp only [LocallyDiscrete.comp_as, Iso.symm_hom, asIso_inv,
+        IsIso.inv_comp_eq]
+      change pullback.snd _ _ ≫ _ = _
+      dsimp
+      rw [← assoc, pullback.condition]
+      simp
+  map₂_whisker_left := sorry
+  map₂_whisker_right := sorry
+  map₂_associator := sorry
+  map₂_left_unitor := sorry
+  map₂_right_unitor := sorry

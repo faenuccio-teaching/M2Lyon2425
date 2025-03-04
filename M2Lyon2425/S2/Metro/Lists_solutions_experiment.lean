@@ -146,6 +146,7 @@ lemma ne_nil_Trip {L : List Stations} (hL : IsTrip L) : L ≠ [] := by
     exact lt_of_lt_of_le two_pos H
 
 
+
 lemma cons_isTrip {s : Stations} {L : List Stations} (hL : IsTrip L)
     (hs : IsTrip [s, L.head (ne_nil_Trip hL)]) : IsTrip (s :: L) := by
   rcases hs with _ | ⟨_, H⟩
@@ -214,9 +215,24 @@ lemma cons_isTrip {s : Stations} {L : List Stations} (hL : IsTrip L)
   --       apply isTrip_infix_pair tre hL
   --     · apply isTrip_infix' h_ne hL uno
 
-
-
-
+lemma isTrip_infix' {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsTrip L)
+    (H : l <:+: L) : IsTrip l := by
+  obtain ⟨x, xs, hx⟩ := exists_cons_of_ne_nil hl
+  by_cases h_xs : xs = []
+  · rw [hx, h_xs]
+    exact IsTrip.no_move x rfl
+  have recur := isTrip_infix' (h_xs) (hL) (IsInfix.trans ?_ H) <;>
+  rw [hx]
+  · apply cons_isTrip recur
+    apply isTrip_infix_pair ?_ hL
+    apply IsInfix.trans ?_ H
+    rw [hx]
+    apply IsPrefix.isInfix
+    simp only [cons_prefix_cons, true_and]
+    use xs.tail
+    simp only [singleton_append, head_cons_tail]
+  · exact (suffix_cons _ _).isInfix
+  termination_by l.length
 
 lemma isTrip_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsTrip L)
     (H : l <:+: L) : IsTrip l := by
@@ -226,7 +242,7 @@ lemma isTrip_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL :
     by_cases h_ne : xs = []
     · rw [h_ne]
       apply IsTrip.no_move x rfl
-    · have uno : xs <:+: L := by
+    · have : xs <:+: L := by
         apply IsInfix.trans _ H
         refine ⟨[x], [], by simp⟩
       apply cons_isTrip
@@ -234,7 +250,7 @@ lemma isTrip_infix {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL :
           apply IsInfix.trans _ H
           refine ⟨[], xs.tail, by simp⟩
         apply isTrip_infix_pair tre hL
-      · apply isTrip_infix h_ne hL uno
+      · apply isTrip_infix h_ne hL this
 
 lemma isTrip_tail {L : List Stations} (hL : IsTrip L) (h_len : 1 < L.length) : IsTrip (L.tail) := by
   apply isTrip_infix _ hL <| IsSuffix.isInfix <| tail_suffix L

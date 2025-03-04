@@ -420,6 +420,29 @@ lemma Everything_IsConnected (s t : Stations) : IsConnected s t := by
   apply Connected.trans h1
   exact Connected.trans IsConnected_Terminus (Connected.symm h2)
 
+-- Another *recursive* proof of `isTrip_infix`
+
+lemma isTrip_infix' {L : List Stations} {l : List Stations} (hl : l ≠ []) (hL : IsTrip L)
+    (H : l <:+: L) : IsTrip l := by
+  obtain ⟨x, xs, hx⟩ := exists_cons_of_ne_nil hl
+  by_cases h_xs : xs = []
+  · rw [hx, h_xs]
+    exact IsTrip.no_move x rfl
+  have recur := isTrip_infix' (h_xs) (hL) (IsInfix.trans ?_ H) <;>
+  rw [hx]
+  · apply cons_isTrip recur
+    apply isTrip_infix_pair ?_ hL
+    apply IsInfix.trans ?_ H
+    rw [hx]
+    apply IsPrefix.isInfix
+    simp only [cons_prefix_cons, true_and]
+    use xs.tail
+    simp only [singleton_append, head_cons_tail]
+  · exact (suffix_cons _ _).isInfix
+  termination_by l.length
+  -- termination_by L.length - l.length
+  -- decreasing_by sorry
+
 /- Let's provide a `Fintype` instance on `Distances` to make things computable-/
 
 def Directions.listAll : List Directions := [A_SN, B_SN, C_SN, D_EW, A_SN.reverse, B_SN.reverse,
