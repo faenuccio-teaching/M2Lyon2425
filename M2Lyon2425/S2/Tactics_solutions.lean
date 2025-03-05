@@ -178,7 +178,7 @@ variable {σ : Type*}
 def halt : myState σ σ := ⟨fun s => (s, s)⟩
 def update (f: σ → σ) : myState σ Unit := ⟨fun s => ((), f s)⟩
 
-def run [Inhabited σ] (α : Type*) (x: myState σ α) (s: σ := default) : α
+def run' [Inhabited σ] (α : Type*) (x: myState σ α) (s: σ := default) : α
   := (x.run s).1
 
 instance : Monad (myState σ) where
@@ -187,34 +187,68 @@ instance : Monad (myState σ) where
     let (a, s') := x.run s
     (f a).run s'⟩
 
-instance {α : Type*} [rep : Repr α] [Inhabited σ] : Repr (myState σ α) :=
-  ⟨fun mx n => rep.reprPrec (mx.run default).fst n⟩
 /-!
 * We have a background state that is a `HashMap Nat Nat`, to store values already computed.
 * When computing a term of type `FibM α` we can `get` and use the state and also `set` or `update` it.
 * Future computations automatically use the updated state.
 * Using this we can efficiently compose.
 -/
-abbrev FibM := myState (Std.HashMap Nat Nat)
+-- abbrev FibM := myState (Std.HashMap Nat Nat)
 abbrev faeFib := myState (List ℕ)
 
 
-def fibM (n: Nat) : FibM Nat := do
-  let s ← halt
-  match s.get? n with
-  | some y => return y
-  | none =>
-    match n with
-    | 0 => return 1
-    | 1 =>  return 1
-    | k + 2 => do
-      let f₁ ← fibM k
-      let f₂ ← fibM (k + 1)
-      let sum := f₁ + f₂
-      update fun m => Std.HashMap.insert m n sum
-      return sum
+-- def fibM (n: Nat) : FibM Nat := do
+--   let s ← halt
+--   match s.get? n with
+--   | some y => return y
+--   | none =>
+--     match n with
+--     | 0 => return 1
+--     | 1 =>  return 1
+--     | k + 2 => do
+--       let f₁ ← fibM k
+--       let f₂ ← fibM (k + 1)
+--       let sum := f₁ + f₂
+--       update fun m => Std.HashMap.insert m n sum
+--       return sum
 
 -- #check (31 : (faeFib ℕ))
+
+#eval [1,2,3,4].length
+#eval [1].get? 1
+
+def pyth (n : ℕ) : faeFib ℕ := do
+  ⟨fun (L : List ℕ) ↦ match L.get? n with
+    | some y => ⟨y, L⟩ -- il caso in cui `n < L.length`
+    | none => match n with -- il caso in cui `L.length ≤ n`
+      | 0 => ⟨1, [1]⟩ -- il caso in cui `L` era vuota
+      | 1 => ⟨1, [1, 1]⟩ -- il caso in cui `L` aveva un solo elemento
+      | k + 2 =>
+        let sum : ℕ := ((pyth k).1 L).1 + ((pyth (k+1)).1 L).1
+        ⟨sum, L ++ [sum]⟩ -- il caso in cui `L` ha almeno due elementi
+    ⟩
+
+def faefibb (n : ℕ) : ℕ := ((pyth n).1 []).1
+
+#synth Repr ℕ
+
+instance : Repr (faeFib ℕ) := by
+  constructor
+  intro L n
+  exact instReprNat.reprPrec (L.1 []).1 n
+
+set_option trace.profiler true in
+#eval pyth 32
+
+set_option trace.profiler true in
+#eval fib 32
+  -- exact (instReprNat.reprPrec (L.1 []).1)
+  -- ⟨fun mx n => rep.reprPrec (run' α mx) n⟩
+
+-- #eval faefibb 35
+
+-- set_option trace.profiler true in
+-- #eval fib 35
 
 def faefibM (n : ℕ) : faeFib ℕ := do
   let s ← halt
@@ -225,14 +259,19 @@ def faefibM (n : ℕ) : faeFib ℕ := do
     | 0 => return 1
     | 1 =>  return 1
     | k + 2 => do
-      let f₁ ← faefibM (k - 1)
-      let f₂ ← faefibM (k)
+      let f₁ ← faefibM (k)
+      let f₂ ← faefibM (k+1)
       let add := f₁ + f₂
-      update fun m => m ++ [add]
+      update fun m ↦ m ++ [add]
       return add
 
-set_option trace.profiler true in
-#eval fibM 11001
+#check (faefibM 0)
+
+
+instance {α : Type*} [rep : Repr α] [Inhabited σ] : Repr (myState σ α) :=
+  ⟨fun mx n => rep.reprPrec (run' α mx) n⟩
+
+#eval faefibM 7
 
 
 end Monads
