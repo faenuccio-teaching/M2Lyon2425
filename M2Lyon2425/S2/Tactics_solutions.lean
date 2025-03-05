@@ -3,11 +3,13 @@ import Mathlib.Tactic
 import Mathlib.Topology.Basic
 
 set_option linter.unusedTactic false
+set_option linter.unusedVariables false
 
 open scoped PiNotation
 
 open Lean Meta Elab Tactic
 
+-- #1 Macros
 section macros
 
 example (α β : Type) (a b : α) (f : α → β) : a = b → f a = f b := by
@@ -85,21 +87,167 @@ lemma abcd_bacb₁ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (
   split_and [h]
   repeat' sorry
 
--- *Somewhat good* but **not really good...**: let's pass to true tactics.
+-- *Somewhat good* but **not really good**... → `⌘`
 
 
 end macros
 
+section Expressions
+-- # Expressions
+
+-- Create expression 1 + 2 with Expr.app
+-- Create expression fun x y => x + y
+-- Create expression fun (p : Prop) => (λ hP : p => hP).
+-- [Universe levels] Create expression Type 6
+
+-- `⌘`
+
+/-Ex1
+[Metavariables] Create a metavariable with type Nat, and assign to it value 3.
+Notice that changing the type of the metavariable from Nat to, for example, String, doesn't raise
+any errors - that's why, as was mentioned, we must make sure "(a) that val must have the target type
+ of mvarId and (b) that val must only contain fvars from the local context of mvarId".
+-/
+
+-- # Metavariables
+
+def one : MetaM Unit := do
+  let mv ← mkFreshExprMVar (Expr.const `Nat []) (userName := `hy)
+  -- mv.mvarId!.assign (mkNatLit 3) -- try before and after commenting
+  IO.println s!"The value of the new metavariable is {← instantiateMVars mv}"
+
+#eval show MetaM _ from do
+  one
 
 
+  /-Ex3
+  [Metavariables] Consider the theorem red, and tactic explore below. a) What would be the type
+  and userName of metavariable mvarId? b) What would be the types and userNames of all local
+  declarations in this metavariable's local context? Print them all out.-/
+
+  -- set_option pp.natLit false
+
+  elab "explore" : tactic => do
+    let mvarId : MVarId ← Lean.Elab.Tactic.getMainGoal
+    let metavarDecl : MetavarDecl ← mvarId.getDecl
+
+    logInfo "Our metavariable"
+    logInfo mvarId
+    -- [anonymous] : 2 = 2
+    -- logInfo s!"\n{metavarDecl.userName} : {metavarDecl.type}"
+
+    logInfo "\n All of its local declarations"
+    let localContext : LocalContext := metavarDecl.lctx
+    for (localDecl : LocalDecl) in localContext do
+      if localDecl.isImplementationDetail then
+        -- (implementation detail) red : 1 = 1 → 2 = 2 → 2 = 2
+        logInfo m!"\n(implementation detail) {localDecl.userName} : {localDecl.type}"
+      else
+        -- hA : 1 = 1
+        -- hB : 2 = 2
+        logInfo m!"\n{localDecl.userName} : {localDecl.type}"
 
 
+  theorem red (hA : 1 = 1) (hB : 2 = 2) : 2 = 2 := by
+  explore
+  sorry
 
 
+end Expressions
+
+section Monads
+-- ## Monads
+
+/- ### An example: f/Fibonacci numbers
+The following definition is infamously slow as values are repeatedly computed -/
+
+def fib : Nat → Nat
+| 0 => 1
+| 1 => 1
+| k + 2 => fib k + fib (k + 1)
+
+set_option trace.profiler true in
+#eval fib 32
+
+/- #### The `FibM` State Monad -/
+structure myState (σ α : Type*) where
+  run : σ → α × σ
+
+variable {σ : Type*}
+
+def halt : myState σ σ := ⟨fun s => (s, s)⟩
+def update (f: σ → σ) : myState σ Unit := ⟨fun s => ((), f s)⟩
+
+def run [Inhabited σ] (α : Type*) (x: myState σ α) (s: σ := default) : α
+  := (x.run s).1
+
+instance : Monad (myState σ) where
+  pure x := ⟨fun s => (x, s)⟩
+  bind x f := ⟨fun s =>
+    let (a, s') := x.run s
+    (f a).run s'⟩
+
+instance {α : Type*} [rep : Repr α] [Inhabited σ] : Repr (myState σ α) :=
+  ⟨fun mx n => rep.reprPrec (mx.run default).fst n⟩
+/-!
+* We have a background state that is a `HashMap Nat Nat`, to store values already computed.
+* When computing a term of type `FibM α` we can `get` and use the state and also `set` or `update` it.
+* Future computations automatically use the updated state.
+* Using this we can efficiently compose.
+-/
+abbrev FibM := myState (Std.HashMap Nat Nat)
+abbrev faeFib := myState (List ℕ)
 
 
+def fibM (n: Nat) : FibM Nat := do
+  let s ← halt
+  match s.get? n with
+  | some y => return y
+  | none =>
+    match n with
+    | 0 => return 1
+    | 1 =>  return 1
+    | k + 2 => do
+      let f₁ ← fibM k
+      let f₂ ← fibM (k + 1)
+      let sum := f₁ + f₂
+      update fun m => Std.HashMap.insert m n sum
+      return sum
 
+def faefibM (n: Nat) : faeFib Nat := do
+  let s ← halt
+  match s.get? n with
+  | some y => return y
+  | none =>
+    match n with
+    | 0 => return 1
+    | 1 =>  return 1
+    | k + 2 => do
+      let f₁ ← faefibM k
+      let f₂ ← faefibM (k + 1)
+      let add := f₁ + f₂
+      update fun m => (add + m.sum) :: m
+      return add
+
+set_option trace.profiler true in
+#eval fibM 9
+
+
+end Monads
 section elabs
+-- # Elaborated tactics
+
+
+elab "solve" : tactic => do
+    let mvarId : MVarId ← Lean.Elab.Tactic.getMainGoal
+    let metavarDecl : MetavarDecl ← mvarId.getDecl
+    let locCtx : LocalContext := metavarDecl.lctx
+    for ld in locCtx do
+      if ← isDefEq ld.type metavarDecl.type then
+        mvarId.assign ld.toExpr
+
+theorem red' (hA : 1 = 1) (hB : 2 = 2) : 2 = 2 := by
+    solve
 
 partial def Count : TacticM Unit :=
   (do
@@ -177,8 +325,6 @@ example (n : ℕ) : n + 1 = 1 + n := by
 
 
 
-
-
 /- ## Back to `∧`
 The following tactic destructs *completely* all `p ∧ q` *hypotheses* found in the local context:
 more complicated than the macro-defined `split_and` because that one *only acted on the goal*,
@@ -249,60 +395,47 @@ lemma abcd_bacb₃ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (
 lemma abcd_ac₃ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : (a ∧ c) := by
   close_and
 
+-- More modifications of the goal
 
 def findNat' : TacticM (List Expr) :=
--- def findNat' : TacticM (Unit) :=
   withMainContext
     do
     -- let lctx ← getLocalHyps
-    let lctx ← getLCtx
-    let mut nats := #[]
+    let lctx ← getLCtx -- The local context is basically the list of all metavariables
+    let mut nats := #[] -- the `mut` ensure that we're defining a **mutable** variable
     for h in lctx do
       if h.type == .const ``Nat []
         then nats := nats.push h.userName
     do logInfo m!"The list of naturals found in the context is {nats}"
     return List.map (.const · []) nats.toList
-    -- return List.map (fun a ↦ Expr.const a []) nats.toList
 
 def findNat : TacticM Unit :=
   withMainContext
     do
     let lcnats ← findNat'
-    let mut nats : Array Expr := #[]
-    for h in lcnats do
-      nats := nats.push (Lean.mkAppN (.const `HAdd.add []) #[h, mkNatLit 1])
-    do logInfo m!"{nats}"
+
+def findNat'' : TacticM Unit :=
+  withMainContext
+    do
+    let lcnats ← findNat'
 
 elab "findNat" : tactic => findNat
 
--- def SuccNat : TacticM Unit :=
---   withMainContext do
---   let lcnats ← findNat'
---   for a in lcnats do
---   /- `liftMetaTactic` gets the `mvarid` of the main goal, run the given `tactic`,
---   then set the new goals to be the resulting goal list.-/
---   liftMetaTactic fun mv => do
---   /- `mv.assertHypotheses` Convert the given goal `Ctx |- target` into `Ctx, (hs[0].userName : hs[0].type) ... |-target`.
---     It assumes `hs[i].val` has type `hs[i].type`. -/
---       let mv ← mv.define "`a".toName (.const ``Nat []) (mkNatLit 37)--(Lean.mkAppN (.const ``Nat.mul []) #[mkNatLit 2, a])
---   /-Introduce one object from the goal `mvarid`, preserving the name used in the binder.
---     Returns a pair made of the newly introduced variable and the new goal.
---     This will fail if there is nothing to introduce, *ie* when the goal
---     does not start with a `∀`, `λ` or `let`.-/
---       let (_, mv) ← mv.intro1P
---       return [mv]
+example (n m k : ℕ) (H : n = 3 + 1) : True := by
+  let e : ℕ := 3 --removing the `: ℕ` creates problems, actually a stronger monad is needed.
+  findNat
+  sorry
 
-def SuccNat_verbose : TacticM Unit :=
+def SuccNat' : TacticM Unit :=
   withMainContext do
-  let lcnats ← getLCtx
-  for h in lcnats do
+  let lcnats ← findNat'
+  for a in lcnats do
   /- `liftMetaTactic` gets the `mvarid` of the main goal, run the given `tactic`,
   then set the new goals to be the resulting goal list.-/
-  if h.type == .const ``Nat [] then
-    liftMetaTactic fun mv => do
+  liftMetaTactic fun mv => do
   /- `mv.assertHypotheses` Convert the given goal `Ctx |- target` into `Ctx, (hs[0].userName : hs[0].type) ... |-target`.
     It assumes `hs[i].val` has type `hs[i].type`. -/
-      let mv ← mv.define s!"double_{h.userName.toString}".toName (.const ``Nat []) (Lean.mkAppN (.const ``Nat.mul []) #[mkNatLit 2, h.toExpr])
+      let mv ← mv.define "`a".toName (.const ``Nat []) (mkNatLit 37)--(Lean.mkAppN (.const ``Nat.mul []) #[mkNatLit 2, a])
   /-Introduce one object from the goal `mvarid`, preserving the name used in the binder.
     Returns a pair made of the newly introduced variable and the new goal.
     This will fail if there is nothing to introduce, *ie* when the goal
@@ -312,15 +445,22 @@ def SuccNat_verbose : TacticM Unit :=
 
 def SuccNat : TacticM Unit :=
   withMainContext do
-  let lctx ← getLCtx
-  for h in lctx do
+  let lcnats ← getLCtx
+  for h in lcnats do
+  /- `liftMetaTactic` gets the `mvarid` of the main goal, run the given `tactic`,
+  then set the new goals to be the resulting goal list.-/
   if h.type == .const ``Nat [] then
     liftMetaTactic fun mv => do
+  /- `mv.assertHypotheses` Convert the given goal `Ctx |- target` into `Ctx, (hs[0].userName : hs[0].type) ... |-target`.
+    It assumes `hs[i].val` has type `hs[i].type`. -/
       let mv ← mv.define s!"double_{h.userName.toString}".toName (.const ``Nat [])
-        (Lean.mkAppN (.const ``Nat.mul []) #[mkNatLit 2, h.toExpr])
+          (Lean.mkAppN (.const ``Nat.mul []) #[mkNatLit 2, h.toExpr])
+  /-Introduce one object from the goal `mvarid`, preserving the name used in the binder.
+    Returns a pair made of the newly introduced variable and the new goal.
+    This will fail if there is nothing to introduce, *ie* when the goal
+    does not start with a `∀`, `λ` or `let`.-/
       let (_, mv) ← mv.intro1P
       return [mv]
-
 
 elab "succNat" : tactic => SuccNat
 
@@ -328,4 +468,24 @@ example (n m k : ℕ) (H : n = 3 + 1) : True := by
   succNat
   sorry
 
+-- The `Nat.mul 2 n` is still somewhat annoying, and this comes from our usage of expressions
+-- rather than more direct syntax.
+
+def SuccNatStx : TacticM Unit := withMainContext do
+  let lctx ← getLCtx
+  for h in lctx do
+    if h.type == .const ``Nat [] then
+      let th ← h.toExpr.toSyntax -- look at `h` as syntax
+      let tm ← `(term| 2 * $th) --and multipliy it by `2`
+      let tme ← elabTerm tm h.type -- the "elaborated" term, that is the syntax transformed in a term of `h.type`
+      liftMetaTactic fun mv => do
+        let mv ← mv.define s!"double_{h.userName.toString}".toName h.type tme
+        let (_, mv) ← mv.intro1P
+        return [mv]
+
+elab "succNatStx" : tactic => SuccNatStx
+
+example (n m k : ℕ) (H : n = 3 + 1) : True := by
+  succNatStx
+  sorry
 end elabs
