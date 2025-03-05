@@ -214,7 +214,9 @@ def fibM (n: Nat) : FibM Nat := do
       update fun m => Std.HashMap.insert m n sum
       return sum
 
-def faefibM (n: Nat) : faeFib Nat := do
+-- #check (31 : (faeFib ℕ))
+
+def faefibM (n : ℕ) : faeFib ℕ := do
   let s ← halt
   match s.get? n with
   | some y => return y
@@ -223,14 +225,14 @@ def faefibM (n: Nat) : faeFib Nat := do
     | 0 => return 1
     | 1 =>  return 1
     | k + 2 => do
-      let f₁ ← faefibM k
-      let f₂ ← faefibM (k + 1)
+      let f₁ ← faefibM (k - 1)
+      let f₂ ← faefibM (k)
       let add := f₁ + f₂
-      update fun m => (add + m.sum) :: m
+      update fun m => m ++ [add]
       return add
 
 set_option trace.profiler true in
-#eval fibM 9
+#eval fibM 11001
 
 
 end Monads
