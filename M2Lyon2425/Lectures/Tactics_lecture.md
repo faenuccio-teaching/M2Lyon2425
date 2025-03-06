@@ -147,46 +147,170 @@ interpretations" thereof. Concerning `TacticM  α`, you might think of its terms
 1. perform some tactic; and then
 1. return a term in `α`.
 
+Terms in `TacticM Unit` simply perform the tactic, since `Unit` only contains `_`.
 
-#### Warm-up
+### Warm-up
 Let's begin by implementing two tactics, one (`Count`) that simply counts the number of variables in the
 context and one (`ExtrFn`) that extract all variables that are functions.
 
 ```lean
-partial def Count : TacticM Unit :=
+  def Count : TacticM Unit :=
   (do
     let lctx ← getLCtx
     let n := lctx.decls.toList.length
-    do logInfo m!"{n - 1}")
+    do logInfo m!"There are {n - 1} variables in scope")
 ```
+* The `-1` gets rid of the goal metavariable.
 
-Terms in `TacticM Unit` simply perform the tactic, since `Unit` only contains `_`.
+* `getLCtx` returns the local context, and `lctx` is the array containing it.
+
+
 ```lean
-partial def ExtrFn : TacticM Unit :=
-  (do
+def ExtrFn : TacticM Unit :=
+  do
     let mut xs := #[]
     let lctx ← getLCtx
     for lh in lctx do
       if !lh.index == 0 && lh.type.isForall 
         then xs := xs.push lh.userName
-    do logInfo m!"{xs}"
-    return)
+    do logInfo m!"The list of functions in the context is {xs}"
+    return                -- this is optional, it is a _ : Unit
 ```
 * `let mut` introduces a _mutable_ variable (Lean is a functional programming language!) so that 
 the final `let xs :=...` works.
 
-* `getLCtx` returns the local context, and `lctx` is the array containing it; for each `lh` in `lctx`,
-we can get its type through `lh.type`. Then we check if `lh` is a function: this is precisely when its type
+* `#[...]` is Lean syntax for *arrays* (as opposed to lists).
+
+* for each `lh` in `lctx`, we get its type through `lh.type`. Then we check if `lh` is a function: this is precisely when its type
 `lh.type` is a `∀` (a "forall", also called a Π-type).
 
-`logInfo` is the tactic writing some message in the info-views: in VSCode
+* `logInfo` is the tactic writing some message in the info-views: in VSCode
 this also shows up in the main window (in another colour).
+
+
+Finally,
 
 ```lean
 elab "count_variables" : tactic => Count
 elab "show_fn_var" : tactic => ExtrFn
 ```
+* ` elab` is the command enforcing some definition as a tactic
 
-` elab` is the command enforcing some definition as a tactic
--/
+`⌘`
+
+### Acting on the goal and on the assumptions
+
+Since the goal is a metavariable, to change its state we need to *assign* it: we musht attach an expression to it, that will be its value, checking its type is the main target.
+
+```lean
+elab "solve" : tactic => do
+    let mvarId : MVarId ← Lean.Elab.Tactic.getMainGoal
+    let metavarDecl : MetavarDecl ← mvarId.getDecl
+    let locCtx : LocalContext := metavarDecl.lctx
+    for ld in locCtx do
+      if ← isDefEq ld.type metavarDecl.type then
+        mvarId.assign ld.toExpr
+```
+* Once we have the goal (both `mvarId` and `metavarDecl`: one as an identifier, the other as declaration) we loop the context `locCtx` to see if check if anything we meet has the same type as the goal. In that case, we assign the metavariable to this thing.
+
+`⌘`
+
+#### DeepMind Induction
+While solving the IMO 2024, Google DeepMind came up with a proof, performing [induction on `12`](https://storage.googleapis.com/deepmind-media/DeepMind.com/Blog/imo-2024-solutions/P2/index.html) (on `10+2`, actually...)
+after which, of course, the state was exactly the same (but somewhat easier for GDM to solve). We want to detect this behaviour.
+
+    elab "WhatsThis " n:term : tactic =>
+      do
+        let metavarVars ← getLCtx
+        for lh in metavarVars do
+          if `n == lh.userName then
+            return
+          else
+            do logInfo m!"Do you really mean {n}?"
+        return
+
+*  The `if` clause checks whether the term `n` appears in the goal. And then
+
+    ```lean
+    macro "DeepMind_induction " ids:term : tactic =>
+      `(tactic | (WhatsThis $ids
+                  induction $ids))
+    ```
+
+`⌘`
+
+
+#### Back to `∧`
+We want a tactic that *completely* destructs all `p ∧ q` *hypotheses* found in the local context:
+more complicated than the macro-defined `split_and` because that one *only acted on the goal*,
+here we navigate all assumptions.
+
+  ```lean
+  partial def DestrAnd : TacticM Unit :=
+    withMainContext
+      do
+        for lh in ← getLCtx do
+        let eq := Expr.isAppOf lh.type ``And
+        if eq then 
+          liftMetaTactic
+            fun goal ↦ do
+            let subgoals ← MVarId.cases goal lh.fvarId
+            let subgoalsList := subgoals.toList
+            pure (List.map (fun sg ↦
+                InductionSubgoal.mvarId
+                (CasesSubgoal.toInductionSubgoal sg)) subgoalsList)
+          DestrAnd
+          return
+  elab "destruct_and" : tactic => DestrAnd
+  ```
+
+* `eq` checks whether `lh` coincides with `?m_1 ∧ ?m_2` for some metavariables `?m_1` and `?m_2`.
+* the `liftMetaTactic` is an impressively powerful command that subsumes all actions on the **list** of goals. 
+* the `let subgoals` call create a new goal or each `eq` match; and the next call performs `cases` on it.
+* Finally a recursive call to `DestrAnd` to detect nested `⋀`: in particular, `DestrAnd` might not terminate and we're forced to declare it `partial`.
+
+`⌘`
+
+#### Modifying terms
+
+We now present a tactic that, for each natural `n : ℕ` in the context, creates a new variable whose value is `2 * n`. This is decomposed in three (and a half...) steps:
+
+1. A tactic `findNat` that identifies the `ℕ`'s in the context.
+
+    ```lean
+    def findNat : TacticM (List LocalDecl) := withMainContext do ...
+    ```
+
+    * This performs a tactic (so, it has some "meta"-effect) and produces a list of local declarations (our sought-for `ℕ`'s).
+
+    * `withMainContext` is a safeguard option: it tells the tactic to constantly *update* the context, to prevent it to trying to perform actions on a state that has itself modified.
+
+1. A tactic `listNat` that lists them (simply informative).
+
+    ```lean
+    def listNat : TacticM Unit := withMainContext do ...
+    elab "listNat" : tactic => listNat
+    ```
+
+    * This only performs a tactic.
+    * Since it is elaborated, it can be applied in tactic state, unlike `findNat`.
+
+1. A tactic `doubleNat` that, for each `h` found by `findNat` produces a new term and assigns to it the value `2 * h.val`. 
+
+    * It relies on `mv.assertHypotheses`, that takes a list `hs` of hypotheses and converts a given goal `Γ ⊢ T` into 
+    
+    
+    ```lean
+    Γ, (hs[0].userName : hs[0].type) ... (hs[n].userName : hs[n].type) ⊢ T
+    ```
+
+    * It also uses `_root_.Lean.MVarId.intro1P` that "moves things on the top of the heap" in Rocq terms: from the Lean doc,
+
+    ```
+    Introduce one object from the goal, preserving the name used in the binder. Returns a pair made of the newly introduced variable and the new goal. This will fail if there is nothing to introduce, i. e. when the goal does not start with a ∀, λ or let.
+    ```
+
+*3½.*  As a bonus, a version of `doubleNat` on stereoids that *really* produces `2 * n` instead of `Nat.mul 2 n`, by working at *syntactic* level, rather than `Expr`-level.
+
+`⌘`
 +++
