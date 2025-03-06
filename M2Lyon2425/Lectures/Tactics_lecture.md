@@ -88,7 +88,7 @@ The syntax `let ←` is an improvement of `bind`:
 +++
 
 ## Going Meta
-+++ Expressions (and Syntax)
++++ Expressions and variables
 Expressions are the most basic objects Lean deals with, and they can virtually be anything. They are defined as the following inductive type:
 
 ```lean
@@ -99,27 +99,40 @@ inductive Expr where
   | sort    : Level → Expr                            -- Sort
   | const   : Name → List Level → Expr                -- constants
   | app     : Expr → Expr → Expr                      -- application
-  | lam     : Name → Expr → Expr → BinderInfo → Expr  -- lambda abstraction
-  | forallE : Name → Expr → Expr → BinderInfo → Expr  -- (dependent) arrow
+  | lam     : Name → Expr → Expr → BinderInfo → Expr  -- lambda
+  | forallE : Name → Expr → Expr → BinderInfo → Expr  -- depnd't arrows
   | letE    : Name → Expr → Expr → Expr → Bool → Expr -- let expressions
   -- less essential constructors:
   | lit     : Literal → Expr                          -- literals
   | mdata   : MData → Expr → Expr                     -- metadata
   | proj    : Name → Nat → Expr → Expr                -- projection
 ```
-All constructors above constructs things whose meaning shuold be pretty clear, except potentially for free and meta variables (`lit`, `mdata` and `proj` can be forgotten for now).
+All constructors above construct things whose meaning should be pretty clear, except potentially for free and meta variables (`lit`, `mdata` and `proj` can be forgotten for now): we'll inspect those later.
 
 `⌘`
 
 +++ Variables
 
-Free- and Metavariables play a special role. To quote Lean's documentation,
+
+Free- and Metavariables play a special role. 
+
+### Free variables 
+Free variables are the "usual ones", like the variable `x` in `x + 2`. They do not even to actually be typed, they've simply got an identifier `FVarId`.
+
+
+`⌘`
+
+
+### Metavariables 
+
+
+To quote Lean's documentation,
 ```
 Metavariables are used to represent "holes" in expressions, and goals in the tactic framework. Metavariable declarations are stored in the MetavarContext. Metavariables are used during elaboration, and are not allowed in the kernel, or in the code generator.
 ```
-Each metavariable has a unique name, say `m`, usually rendered them `?m`, and a target type `T` which is *explicit*. They come with a local context containing hypotheses (the `Γ` such that `Γ ⊢ ?m : T` is well-typed).
+Each metavariable has a unique name, usually rendered as `?m` or `?m_197`, and a target type `T` which is *explicit*. It comes with a local context containing hypotheses (the `Γ` such that `Γ ⊢ ?m : T` is well-typed).
 
-Both "holes" to be filled by type-inference and, most importantly, **goals** are represented by metavariables. To close a goal, we must provide an expression `e` of the target type: internally, closing a goal corresponds to assigning the value `e` to the metavariable; we write `?m := e` for this assignment.
+Both "holes" to be filled by type-inference and, most importantly, **goals** are represented by metavariables. To close a goal, we must provide an expression `e` of the target type `T`: internally, closing a goal corresponds to assigning the value `e` to the metavariable; we write `?m := e` for this assignment.
 
 To "play" with metavariables we need our code to be *elaborated* somewhere, so what typically happens is that we `def`ine some code (possibly acting on metavariables, that do not exist at the moment of our writing) and then we declare some `elab`oration procedure where we see this code in action.
 
@@ -130,7 +143,7 @@ To "play" with metavariables we need our code to be *elaborated* somewhere, so w
 
 +++ Creating new tactics
 This all relies on a monad `TacticM`: as it turns out, there are *zillions* of monads all over `Lean` and `Mathlib`, and *thousands* of "moral
-interpretations" thereof. Concerning `TacticM  α`, you _might_ think of its terms as actions that
+interpretations" thereof. Concerning `TacticM  α`, you might think of its terms as actions that
 1. perform some tactic; and then
 1. return a term in `α`.
 
@@ -147,7 +160,7 @@ partial def Count : TacticM Unit :=
     do logInfo m!"{n - 1}")
 ```
 
-`TacticM` is a *monad*: terms in `TacticM Unit` simply perform the tactic, since there is no term in `Unit` beyond `_`.
+Terms in `TacticM Unit` simply perform the tactic, since `Unit` only contains `_`.
 ```lean
 partial def ExtrFn : TacticM Unit :=
   (do
@@ -159,10 +172,10 @@ partial def ExtrFn : TacticM Unit :=
     do logInfo m!"{xs}"
     return)
 ```
-`let mut` introduces a _mutable_ variable (Lean is a functional programming language!) so that 
+* `let mut` introduces a _mutable_ variable (Lean is a functional programming language!) so that 
 the final `let xs :=...` works.
 
-`getLCtx` returns the local context, and `lctx` is the array containing it; for each `lh` in `lctx`,
+* `getLCtx` returns the local context, and `lctx` is the array containing it; for each `lh` in `lctx`,
 we can get its type through `lh.type`. Then we check if `lh` is a function: this is precisely when its type
 `lh.type` is a `∀` (a "forall", also called a Π-type).
 

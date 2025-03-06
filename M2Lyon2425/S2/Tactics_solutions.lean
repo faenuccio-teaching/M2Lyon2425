@@ -9,8 +9,10 @@ open scoped PiNotation
 
 open Lean Meta Elab Tactic
 
--- #1 Macros
+-- # Macros
 section macros
+
+-- **§** A first example
 
 example (α β : Type) (a b : α) (f : α → β) : a = b → f a = f b := by
   intro h
@@ -50,7 +52,7 @@ example (α : Type) (a : α) : ∀ (L : List α), a :: L = (a :: L.drop L.length
   cases_rfl
   sorry
 
--- # Another example
+-- **§** Another example
 
 lemma abcd_bdc (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ d ∧ c := by
   apply And.intro
@@ -92,73 +94,11 @@ lemma abcd_bacb₁ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (
 
 end macros
 
-section Expressions
--- # Expressions
-
--- Create expression 1 + 2 with Expr.app
--- Create expression fun x y => x + y
--- Create expression fun (p : Prop) => (λ hP : p => hP).
--- [Universe levels] Create expression Type 6
-
--- `⌘`
-
-/-Ex1
-[Metavariables] Create a metavariable with type Nat, and assign to it value 3.
-Notice that changing the type of the metavariable from Nat to, for example, String, doesn't raise
-any errors - that's why, as was mentioned, we must make sure "(a) that val must have the target type
- of mvarId and (b) that val must only contain fvars from the local context of mvarId".
--/
-
--- # Metavariables
-
-def one : MetaM Unit := do
-  let mv ← mkFreshExprMVar (Expr.const `Nat []) (userName := `hy)
-  -- mv.mvarId!.assign (mkNatLit 3) -- try before and after commenting
-  IO.println s!"The value of the new metavariable is {← instantiateMVars mv}"
-
-#eval show MetaM _ from do
-  one
-
-
-  /-Ex3
-  [Metavariables] Consider the theorem red, and tactic explore below. a) What would be the type
-  and userName of metavariable mvarId? b) What would be the types and userNames of all local
-  declarations in this metavariable's local context? Print them all out.-/
-
-  -- set_option pp.natLit false
-
-  elab "explore" : tactic => do
-    let mvarId : MVarId ← Lean.Elab.Tactic.getMainGoal
-    let metavarDecl : MetavarDecl ← mvarId.getDecl
-
-    logInfo "Our metavariable"
-    logInfo mvarId
-    -- [anonymous] : 2 = 2
-    -- logInfo s!"\n{metavarDecl.userName} : {metavarDecl.type}"
-
-    logInfo "\n All of its local declarations"
-    let localContext : LocalContext := metavarDecl.lctx
-    for (localDecl : LocalDecl) in localContext do
-      if localDecl.isImplementationDetail then
-        -- (implementation detail) red : 1 = 1 → 2 = 2 → 2 = 2
-        logInfo m!"\n(implementation detail) {localDecl.userName} : {localDecl.type}"
-      else
-        -- hA : 1 = 1
-        -- hB : 2 = 2
-        logInfo m!"\n{localDecl.userName} : {localDecl.type}"
-
-
-  theorem red (hA : 1 = 1) (hB : 2 = 2) : 2 = 2 := by
-  explore
-  sorry
-
-
-end Expressions
 
 section Monads
--- ## Monads
+-- # Monads
 
-/- ### An example: f/Fibonacci numbers
+/- ## An example: f/Fibonacci numbers
 The following definition is infamously slow as values are repeatedly computed -/
 
 def fib : Nat → Nat
@@ -170,111 +110,157 @@ set_option trace.profiler true in
 #eval fib 32
 
 /- #### The `FibM` State Monad -/
-structure myState (σ α : Type*) where
-  run : σ → α × σ
-
-variable {σ : Type*}
-
-def halt : myState σ σ := ⟨fun s => (s, s)⟩
-def update (f: σ → σ) : myState σ Unit := ⟨fun s => ((), f s)⟩
-
-def run' [Inhabited σ] (α : Type*) (x: myState σ α) (s: σ := default) : α
-  := (x.run s).1
-
-instance : Monad (myState σ) where
-  pure x := ⟨fun s => (x, s)⟩
-  bind x f := ⟨fun s =>
-    let (a, s') := x.run s
-    (f a).run s'⟩
-
-/-!
-* We have a background state that is a `HashMap Nat Nat`, to store values already computed.
-* When computing a term of type `FibM α` we can `get` and use the state and also `set` or `update` it.
-* Future computations automatically use the updated state.
-* Using this we can efficiently compose.
--/
--- abbrev FibM := myState (Std.HashMap Nat Nat)
-abbrev faeFib := myState (List ℕ)
-
-
--- def fibM (n: Nat) : FibM Nat := do
---   let s ← halt
---   match s.get? n with
---   | some y => return y
---   | none =>
---     match n with
---     | 0 => return 1
---     | 1 =>  return 1
---     | k + 2 => do
---       let f₁ ← fibM k
---       let f₂ ← fibM (k + 1)
---       let sum := f₁ + f₂
---       update fun m => Std.HashMap.insert m n sum
---       return sum
-
--- #check (31 : (faeFib ℕ))
-
-#eval [1,2,3,4].length
-#eval [1].get? 1
-
-def pyth (n : ℕ) : faeFib ℕ := do
-  ⟨fun (L : List ℕ) ↦ match L.get? n with
-    | some y => ⟨y, L⟩ -- il caso in cui `n < L.length`
-    | none => match n with -- il caso in cui `L.length ≤ n`
-      | 0 => ⟨1, [1]⟩ -- il caso in cui `L` era vuota
-      | 1 => ⟨1, [1, 1]⟩ -- il caso in cui `L` aveva un solo elemento
-      | k + 2 =>
-        let sum : ℕ := ((pyth k).1 L).1 + ((pyth (k+1)).1 L).1
-        ⟨sum, L ++ [sum]⟩ -- il caso in cui `L` ha almeno due elementi
-    ⟩
-
-def faefibb (n : ℕ) : ℕ := ((pyth n).1 []).1
-
-#synth Repr ℕ
-
-instance : Repr (faeFib ℕ) := by
-  constructor
-  intro L n
-  exact instReprNat.reprPrec (L.1 []).1 n
-
-set_option trace.profiler true in
-#eval pyth 32
-
-set_option trace.profiler true in
-#eval fib 32
-  -- exact (instReprNat.reprPrec (L.1 []).1)
-  -- ⟨fun mx n => rep.reprPrec (run' α mx) n⟩
-
--- #eval faefibb 35
-
--- set_option trace.profiler true in
--- #eval fib 35
-
-def faefibM (n : ℕ) : faeFib ℕ := do
-  let s ← halt
-  match s.get? n with
-  | some y => return y
-  | none =>
-    match n with
-    | 0 => return 1
-    | 1 =>  return 1
-    | k + 2 => do
-      let f₁ ← faefibM (k)
-      let f₂ ← faefibM (k+1)
-      let add := f₁ + f₂
-      update fun m ↦ m ++ [add]
-      return add
-
-#check (faefibM 0)
-
-
-instance {α : Type*} [rep : Repr α] [Inhabited σ] : Repr (myState σ α) :=
-  ⟨fun mx n => rep.reprPrec (run' α mx) n⟩
-
-#eval faefibM 7
 
 
 end Monads
+
+section Meta
+section Expressions
+-- ## Expressions
+
+-- **§** We want to create the expression `1 + 2`
+
+#check Expr.const
+
+def oneplustwo : Expr :=
+  Expr.app (.const ``Nat.succ []) (mkNatLit 2)
+
+#eval oneplustwo
+
+elab "one+two" : term => return oneplustwo
+
+#check one+two
+#reduce one+two
+
+def oneplustwo' : Expr :=
+  Lean.mkAppN (.const `Nat.add []) #[mkNatLit 1, mkNatLit 2]
+-- #eval foo
+
+elab "one+two'" : term => return oneplustwo'
+
+#check one+two' -- of course we would like `1 + 2` but it is already something.
+#eval one+two'
+
+-- **§** We want to create the expression `fun x y => x + y`
+def nat : Expr := Expr.const ``Nat []
+
+#check Expr.lam
+
+def funAdd : Expr :=
+  .lam `x nat -- try replacing `nat` with `ℕ` or `Nat`
+    (.lam `y nat
+      (Lean.mkAppN (.const `Nat.add []) #[.bvar 1, .bvar 0])
+      BinderInfo.default)
+  BinderInfo.default
+
+elab "fun_add" : term => return funAdd
+
+#check funAdd
+#check fun_add
+
+-- **§** We want to create the expression `∀ x : Prop, x ∧ x`.
+#check Expr.forallE
+
+def forAllAnd : Expr :=
+  .forallE `x (.sort 0)
+    (Lean.mkAppN (.const `And []) #[.bvar 0, .bvar 0])
+  BinderInfo.default
+
+elab "for_all_and" : term => return forAllAnd
+
+#check for_all_and
+-- #eval for_all_and
+
+-- **§** We want to create the expression `Type 6`
+def T6 : Expr :=
+  .sort 7
+
+elab "type6" : term => return T6
+
+#check T6
+#reduce T6
+#check type6
+#reduce type6
+
+
+-- `⌘`
+
+
+-- ## Free variables
+-- **§** We want to create the expression `∀ n : ℕ, d + n` where `d` is a free variable.
+def dAddn : Expr :=
+  let dfvar := Expr.fvar (FVarId.mk `d)
+  Expr.forallE `n nat
+    (Lean.mkAppN (.const `Nat.add []) #[dfvar, .bvar 0]) BinderInfo.default
+
+def dAddP : Expr :=
+  let dfvar := Expr.fvar (FVarId.mk `d)
+  Expr.forallE `P (.sort 0)
+    (Lean.mkAppN (.const `Nat.add []) #[dfvar, .bvar 0]) BinderInfo.default
+
+elab "d+n" : term => return dAddn
+elab "d+P" : term => return dAddP
+
+#check dAddn
+#reduce d+n
+
+#check dAddP
+#reduce d+P
+
+
+-- `⌘`
+
+
+-- ## Metavariables
+
+/- **§** We want to create a metavariable with type `ℕ`, and assign to it value `3`. -/
+
+
+def var3 : MetaM Unit := do
+  let mv ← mkFreshExprMVar nat
+  -- mv.mvarId!.assign (mkNatLit 3) -- try before and after commenting
+  IO.println s!"The value of the new metavariable is {← instantiateMVars mv}"
+
+#eval show MetaM Unit from do var3
+
+
+/- **§** The `explore` "tactic" simply looks at
+  1. The main metavariable
+  2. The full list of local declarations in the context
+  3. And prints them in the InfoView. -/
+
+elab "explore" : tactic => do
+  let mvarId : MVarId ← Lean.Elab.Tactic.getMainGoal
+    -- This is the *target*, so the type of the main goal `T` together with the context `Γ`;
+  let metavarDecl : MetavarDecl ← mvarId.getDecl
+    -- This is the identifier `?m` of the main goal, whose goal is `?m.type`.
+  logInfo m!"The main metavariable is \n {mvarId} and our goal is
+  \n{metavarDecl.userName} : {metavarDecl.type} "
+  let localContext : LocalContext := metavarDecl.lctx
+  -- This is simply `Γ`
+  let mut implDet := []
+  let mut locDecl := []
+  -- Teo *mutable* empty lists, to be populated later
+  for (localDecl : LocalDecl) in localContext do
+    if localDecl.isImplementationDetail then
+      implDet := implDet ++ [m!"(implementation detail) \n{localDecl.userName} : {localDecl.type}"]
+    else
+      locDecl := locDecl ++ [m!"{localDecl.userName} : {localDecl.type}"]
+        -- logInfo m!"\n{localDecl.userName} : {localDecl.type}"
+  logInfo m!"The full list of (local) declarations in the context is \n {implDet} \n and \n {locDecl}"
+
+
+theorem TwoIsTwo (hA : 1 = 1) (hB : 2 = 2) : 2 = 2 := by
+  explore
+  sorry
+
+
+-- `⌘`
+
+
+end Expressions
+
+
 section elabs
 -- # Elaborated tactics
 
@@ -530,3 +516,5 @@ example (n m k : ℕ) (H : n = 3 + 1) : True := by
   succNatStx
   sorry
 end elabs
+
+end Meta
