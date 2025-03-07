@@ -98,18 +98,67 @@ end macros
 section Monads
 -- # Monads
 
-/- ## An example: f/Fibonacci numbers
-The following definition is infamously slow as values are repeatedly computed -/
+-- ## An example: f/Fibonacci numbers
 
-def fib : Nat → Nat
-| 0 => 1
-| 1 => 1
-| k + 2 => fib k + fib (k + 1)
+abbrev State (σ α : Type*) := σ → σ × α
+
+instance (σ : Type*) : Monad (State σ) where
+  pure a := fun s => (s, a)
+  bind x f := fun s ↦
+    let (s', a) := x s
+    f a s'
+
+-- The following definition is infamously slow as values are repeatedly computed
+def Fib (n : ℕ) : ℕ :=
+  match n with
+ | 0 => 1
+ | 1 => 1
+ | k + 2 => (Fib k) + Fib (k+1)
+
+-- set_option trace.profiler true in
+-- #eval Fib 32 --roughly 5 seconds
+-- set_option trace.profiler true in
+-- #eval Fib 33 -- roughly 11 seconds
+
+-- In *python*
+-- >>> def fib(n, computed = {0: 0, 1: 1}):
+-- ...     if n not in computed:
+-- ...         computed[n] = fib(n-1, computed) + fib(n-2, computed)
+-- ...     return computed[n]
+
+
+def FibM_bad (n : ℕ) : State (List ℕ) ℕ := do
+  fun L ↦ match L.get? n with
+    | some y => ⟨L, y⟩ -- case when `n < L.length`
+    | none => match n with -- case when `L.length ≤ n`
+      | 0 => ⟨[1], 1⟩ -- subcase when `L` is empty
+      | 1 => ⟨[1, 1], 1⟩ -- subcase when `L` is a singleton
+      | k + 2 =>
+        let sum : ℕ := ((FibM_bad k) L).2 + ((FibM_bad (k+1)) L).2
+        ⟨L ++ [sum], sum⟩  -- subcase when `L` has at least two elements
+
+
+-- Recall: `State' (List ℕ) ℕ := List ℕ → List ℕ × ℕ`
+def FibM (n : ℕ) : State (List ℕ) ℕ := do
+  fun L ↦ match L[n]? with
+    | some y => ⟨L, y⟩          -- case when `n < L.length`
+    | none => match n with     -- case when `L.length ≤ n`
+      | 0 => ⟨[1], 1⟩           -- subcase when `L` is empty
+      | 1 => ⟨[1, 1], 1⟩        -- subcase when `L` is a singleton
+      | k + 2 =>                -- subcase when `L` has at least two elements
+        let (L₁, s₁) := (FibM k) L
+        let (L₂, s₂) := (FibM (k + 1)) L₁     -- this steps relies on the previous
+        let sum : ℕ := s₁ + s₂
+        -- let sum : ℕ := ((FibM_bad k) L).2 + ((FibM_bad (k+1)) L).2
+        ⟨L₂ ++ [sum], sum⟩      -- the `List`-part of the output has been updated
+
+instance : Repr (State (List ℕ) ℕ) := ⟨fun f n ↦ instReprNat.reprPrec (f []).2 n⟩
 
 set_option trace.profiler true in
-#eval fib 32
+#eval FibM 32 -- 0.05 seconds
+set_option trace.profiler true in
+#eval FibM 20000 -- 0.05 seconds
 
-/- #### The `FibM` State Monad -/
 
 
 end Monads
@@ -448,13 +497,12 @@ example (n m k : ℕ) (H : n = 3 + 1) : True := by
   listNat
   sorry
 
-def DoubleNat : TacticM Unit :=
-  withMainContext do
+def DoubleNat : TacticM Unit := withMainContext do
   let lcnats ← findNat
   for h in lcnats do
   liftMetaTactic fun mv => do
     let mv ← mv.define s!"double_{h.userName.toString}".toName nat
-        (Lean.mkAppN nat #[mkNatLit 2, h.toExpr])
+        (Lean.mkAppN (.const `Nat.mul []) #[mkNatLit 2, h.toExpr])
   /-Introduce one object from the goal `mvarid`, preserving the name used in the binder.
     Returns a pair made of the newly introduced variable and the new goal.
     This will fail if there is nothing to introduce, *ie* when the goal

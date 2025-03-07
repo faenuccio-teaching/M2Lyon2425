@@ -54,38 +54,45 @@ extra-property:
 
 (a compatibility is required between `pure` and `bind`, but we neglect it).
 
+The interest of `bind` is that it allows composition: if `f : a → m β` and `g : β → m γ` then we would like `g ∘ f : a → m γ`, but it does not type-check. On the other hand,
+
+```lean
+fun (a : α) ↦ bind (bind (pure a) f) g
+```
+
+is well-formed and it is the "correct" composition. The infix version of `bind` is `>>=` so the above reads
+
+```lean
+fun (a : α) ↦ pure a >>= f >>= g : α → m γ
+```
+
 * One example of a monad is `Option α`: it is the type of terms either of the form `some a` for `a : α`, or equal to the extra-term `none : Option α`. Here, 
 
       pure (a : α) = some a
-      bind (some a) = some f a
+      bind (some a) f = some f a
       bind none f = none
 
   `Option` is useful to encode errors: `List.get : ℕ → List α → Option (List α)`, so that `L.get n = none` whenever `n > L.length`.
 
 
-* Another useful example is `State σ α` where `σ : Type` is some "state-carrying" type (typically `σ = ℕ`): it is simply
+* Another useful example is `State σ α` where `σ : Type*` is some "state-carrying" type: it is simply
 
-      def State (σ : Type) (α : Type) : Type := σ → (σ × α)
+      abbrev State (σ α : Type*) : Type* := σ → (σ × α)
 
-so a term sends a state to a *pair* of a (possibly updated) state, and an `a : α`. The monad here is `m := State σ` (for fixed `σ`), and its monad instance comes from
+  so a term sends a state to a *pair* of a (possibly updated) state, and an `a : α`. The monad here is `m := State σ` (for fixed `σ`), and its monad instance comes from
 
-    pure (a : α) := fun s ↦ (s, a) (: σ ↦ σ × α)
-    bind n f :=               -- here n : State σ a; and f : α → State σ β
-      fun s ↦
-        let (s', a) := n s            -- recall that n s : σ × α
-        (f a) s'
-        
-  since `f a : State σ β = σ → σ × β`, the final `f a s'` has type `σ × β`, and therefore `bind n f : σ → σ × β`
+      pure (a : α) := fun s ↦ (s, a) (: σ ↦ σ × α)
+      bind n f :=             -- here n : State σ a; and f : α → State σ β
+        fun s ↦
+          let (s', a) := n s            -- recall that n s : σ × α
+          (f a) s'
+          
+    since `f a : State σ β = σ → σ × β`, the final `f a s'` has type `σ × β`, and therefore `bind n f : σ → σ × β`
 
-This monad is useful to store values with a "state".
+  This monad is useful to store values with a "state", or to mimic mutable variables.
 
 `⌘`
 
-+++ `do` and `←`
-When working with monads, two crucial syntax are at our disposal: `do` simply allows you to do imperative programming inside a `def`.
-
-The syntax `let ←` is an improvement of `bind`:
-+++
 
 ## Going Meta
 +++ Expressions and variables
