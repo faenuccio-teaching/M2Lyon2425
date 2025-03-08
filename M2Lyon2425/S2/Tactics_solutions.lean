@@ -89,79 +89,11 @@ lemma abcd_bacb₁ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (
   split_and [h]
   repeat' sorry
 
--- *Somewhat good* but **not really good**... → `⌘`
+-- *Somewhat good* but **not really good**...  `⌘`
 
 
 end macros
 
-
-section Monads
--- # Monads
-
--- ## An example: f/Fibonacci numbers
-
-abbrev State (σ α : Type*) := σ → σ × α
-
-instance (σ : Type*) : Monad (State σ) where
-  pure a := fun s => (s, a)
-  bind x f := fun s ↦
-    let (s', a) := x s
-    f a s'
-
--- The following definition is infamously slow as values are repeatedly computed
-def Fib (n : ℕ) : ℕ :=
-  match n with
- | 0 => 1
- | 1 => 1
- | k + 2 => (Fib k) + Fib (k+1)
-
--- set_option trace.profiler true in
--- #eval Fib 32 --roughly 5 seconds
--- set_option trace.profiler true in
--- #eval Fib 33 -- roughly 11 seconds
-
--- In *python*
--- >>> def fib(n, computed = {0: 0, 1: 1}):
--- ...     if n not in computed:
--- ...         computed[n] = fib(n-1, computed) + fib(n-2, computed)
--- ...     return computed[n]
-
-
-def FibM_bad (n : ℕ) : State (List ℕ) ℕ := do
-  fun L ↦ match L.get? n with
-    | some y => ⟨L, y⟩ -- case when `n < L.length`
-    | none => match n with -- case when `L.length ≤ n`
-      | 0 => ⟨[1], 1⟩ -- subcase when `L` is empty
-      | 1 => ⟨[1, 1], 1⟩ -- subcase when `L` is a singleton
-      | k + 2 =>
-        let sum : ℕ := ((FibM_bad k) L).2 + ((FibM_bad (k+1)) L).2
-        ⟨L ++ [sum], sum⟩  -- subcase when `L` has at least two elements
-
-
--- Recall: `State' (List ℕ) ℕ := List ℕ → List ℕ × ℕ`
-def FibM (n : ℕ) : State (List ℕ) ℕ := do
-  fun L ↦ match L[n]? with
-    | some y => ⟨L, y⟩          -- case when `n < L.length`
-    | none => match n with     -- case when `L.length ≤ n`
-      | 0 => ⟨[1], 1⟩           -- subcase when `L` is empty
-      | 1 => ⟨[1, 1], 1⟩        -- subcase when `L` is a singleton
-      | k + 2 =>                -- subcase when `L` has at least two elements
-        let (L₁, s₁) := (FibM k) L
-        let (L₂, s₂) := (FibM (k + 1)) L₁     -- this steps relies on the previous
-        let sum : ℕ := s₁ + s₂
-        -- let sum : ℕ := ((FibM_bad k) L).2 + ((FibM_bad (k+1)) L).2
-        ⟨L₂ ++ [sum], sum⟩      -- the `List`-part of the output has been updated
-
-instance : Repr (State (List ℕ) ℕ) := ⟨fun f n ↦ instReprNat.reprPrec (f []).2 n⟩
-
-set_option trace.profiler true in
-#eval FibM 32 -- 0.05 seconds
-set_option trace.profiler true in
-#eval FibM 20000 -- 0.05 seconds
-
-
-
-end Monads
 
 section Meta
 section Expressions
@@ -175,7 +107,6 @@ def oneplustwo : Expr :=
   Expr.app (.const ``Nat.succ []) (mkNatLit 2)
 
 #eval oneplustwo
-
 elab "one+two" : term => return oneplustwo
 
 #check one+two
@@ -183,7 +114,6 @@ elab "one+two" : term => return oneplustwo
 
 def oneplustwo' : Expr :=
   Lean.mkAppN (.const `Nat.add []) #[mkNatLit 1, mkNatLit 2]
--- #eval foo
 
 elab "one+two'" : term => return oneplustwo'
 
@@ -232,9 +162,6 @@ elab "type6" : term => return T6
 #reduce type6
 
 
--- `⌘`
-
-
 -- ## Free variables
 -- **§** We want to create the expression `∀ n : ℕ, d + n` where `d` is a free variable.
 def dAddn : Expr :=
@@ -260,23 +187,85 @@ elab "d+P" : term => return dAddP
 -- `⌘`
 
 
+
+section Monads
+
+-- ## An example: f/Fibonacci numbers
+
+abbrev State (σ α : Type*) := σ → σ × α
+
+instance (σ : Type*) : Monad (State σ) where
+  pure a := fun s => (s, a)
+  bind x f := fun s ↦
+    let (s', a) := x s
+    f a s'
+
+-- The following definition is infamously slow as values are repeatedly computed
+def Fib (n : ℕ) : ℕ :=
+  match n with
+ | 0 => 1
+ | 1 => 1
+ | k + 2 => (Fib k) + Fib (k+1)
+
+set_option trace.profiler true in
+#eval Fib 32
+set_option trace.profiler true in
+#eval Fib 33
+
+-- In *python*
+-- >>> def fib(n, computed = {0: 0, 1: 1}):
+-- ...     if n not in computed:
+-- ...         computed[n] = fib(n-1, computed) + fib(n-2, computed)
+-- ...     return computed[n]
+
+
+-- Recall: `State (List ℕ) ℕ := List ℕ → List ℕ × ℕ`
+def FibM (n : ℕ) : State (List ℕ) ℕ := do
+  fun L ↦ match L[n]? with
+    | some y => ⟨L, y⟩          -- case when `n < L.length`
+    | none => match n with     -- case when `L.length ≤ n`
+      | 0 => ⟨[1], 1⟩           -- subcase when `L` is empty
+      | 1 => ⟨[1, 1], 1⟩        -- subcase when `L` is a singleton
+      | k + 2 =>                -- subcase when `L` has at least two elements
+        let (L₁, s₁) := (FibM k) L
+        let (L₂, s₂) := (FibM (k + 1)) L₁     -- this steps relies on the previous
+        let sum : ℕ := s₁ + s₂
+        -- let sum : ℕ := ((FibM_bad k) L).2 + ((FibM_bad (k+1)) L).2 -- this does not work
+        ⟨L₂ ++ [sum], sum⟩      -- the `List`-part of the output has been updated
+
+#check (FibM : ℕ → State (List ℕ) ℕ)
+#check (FibM : ℕ → List ℕ → List ℕ × ℕ)
+
+instance : Repr (State (List ℕ) ℕ) := ⟨fun f n ↦ instReprNat.reprPrec (f []).2 n⟩
+
+-- set_option trace.profiler true in
+-- #eval FibM 32 -- 0.05 seconds
+-- set_option trace.profiler true in
+-- #eval FibM 2000 -- 0.12 seconds
+
+
+end Monads
+
+
 -- ## Metavariables
+
+
 
 /- **§** We want to create a metavariable with type `ℕ`, and assign to it value `3`. -/
 
 
 def var3 : MetaM Unit := do
   let mv ← mkFreshExprMVar nat
-  -- mv.mvarId!.assign (mkNatLit 3) -- try before and after commenting
+  -- mv.mvarId!.assign (mkNatLit 3) -- try `#eval show` below before and after commenting
   IO.println s!"The value of the new metavariable is {← instantiateMVars mv}"
 
 #eval show MetaM Unit from do var3
 
 
-/- **§** The `explore` "tactic" simply looks at
-  1. The main metavariable
-  2. The full list of local declarations in the context
-  3. And prints them in the InfoView. -/
+/- **§** The `explore` "tactic" simply
+  1. Looks at The main metavariable;
+  2. collects the full list of local declarations in the context
+  3. prints them in the InfoView. -/
 
 elab "explore" : tactic => do
   let mvarId : MVarId ← Lean.Elab.Tactic.getMainGoal
@@ -289,14 +278,15 @@ elab "explore" : tactic => do
   -- This is simply `Γ`
   let mut implDet := []
   let mut locDecl := []
-  -- Teo *mutable* empty lists, to be populated later
+  -- These are *mutable* empty lists, to be populated later
   for (localDecl : LocalDecl) in localContext do
     if localDecl.isImplementationDetail then
       implDet := implDet ++ [m!"(implementation detail) \n{localDecl.userName} : {localDecl.type}"]
     else
       locDecl := locDecl ++ [m!"{localDecl.userName} : {localDecl.type}"]
         -- logInfo m!"\n{localDecl.userName} : {localDecl.type}"
-  logInfo m!"The full list of (local) declarations in the context is \n {implDet} \n and \n {locDecl}"
+  logInfo m!"The full list of (local) declarations in the context is
+              \n {implDet} \n and \n {locDecl}"
 
 
 theorem TwoIsTwo (hA : 1 = 1) (hB : 2 = 2) : 2 = 2 := by
@@ -310,31 +300,46 @@ theorem TwoIsTwo (hA : 1 = 1) (hB : 2 = 2) : 2 = 2 := by
 end Expressions
 
 
-section elabs
+section NewTactics
 -- # Elaborated tactics
 
 
-def Count : TacticM Unit :=
-  (do
-    let lctx ← getLCtx
-    let n := lctx.decls.toList.length
-    do logInfo m!"There are {n - 1} variables in scope") -- this `-1`subtracts the goal as `MVar`
+def Count : TacticM Unit := do
+  let f : LocalContext → TacticM Unit :=
+    fun lctx ↦ logInfo m!"There are {(lctx.decls.toList.length) - 1} variables in scope"
+  bind (α := LocalContext) (β := Unit) (m := TacticM)
+    (getLCtx : TacticM LocalContext) f
 
-def ExtrFn : TacticM Unit :=
-  do
-    let mut xs := #[]
-    let lctx ← getLCtx
-    for lh in lctx do
-      if (LocalDecl.index lh) != 0 && lh.type.isForall
-        then xs := xs.push lh.userName
-    do logInfo m!"The list of functions in the context is {xs}"
-    return -- optional
+
+def Count' : TacticM Unit := do
+  getLCtx >>= fun lctx ↦
+    logInfo m!"There are {lctx.decls.toList.length - 1} variables in scope"
+
+
+def Count'' : TacticM Unit := do
+  let lctx ← getLCtx
+  let n := lctx.decls.toList.length
+  logInfo m!"There are {n - 1} variables in scope" -- this `-1`subtracts the goal as `MVar`
+
+
+def ExtrFn : TacticM Unit := do
+  let mut xs := #[]
+  let lctx ← getLCtx
+  for lh in lctx do
+    if (LocalDecl.index lh) != 0 && lh.type.isForall
+      then xs := xs.push lh.userName
+  do logInfo m!"The list of functions in the context is {xs}"
+  return -- optional
 
 elab "count_variables" : tactic => Count
+elab "count_variables'" : tactic => Count'
+elab "count_variables''" : tactic => Count''
 elab "show_fun" : tactic => ExtrFn
 
 
 example (α β : Type) (f g : α → β) (a : α) (h : f a = g a) : True := by
+  count_variables''
+  count_variables'
   count_variables
   show_fun
   sorry
@@ -367,6 +372,7 @@ elab "solve" : tactic => do
     for ld in locCtx do
       if ← isDefEq ld.type metavarDecl.type then
         mvarId.assign ld.toExpr
+
 
 theorem TwoIsTwo' (hA : 1 = 1) (hB : 2 = 2) : 2 = 2 := by
   explore
@@ -411,22 +417,20 @@ more complicated than the macro-defined `split_and` because that one *only acted
 here we navigate all assumptions.
 -/
 
-partial def DestrAnd : TacticM Unit :=
-  withMainContext
-    do
-      for lh in ← getLCtx do -- get the context
-      let eq := Expr.isAppOf lh.type ``And --checks whether `lh` coincides with `?m_1 ∧ ?m_2`
-      -- let eq := Expr.isAppOfArity lh.type ``And 2 --checks whether `lh` coincides with `?m_1 ∧ ?m_2`
-      if eq then  -- if yes, the code below applies `cases` on `lh`
-        liftMetaTactic -- Get goal, run a tactic, add the new goals to the new the goal list
-          fun goal ↦ do
-          let subgoals ← MVarId.cases goal lh.fvarId --insert new subgoals in the list of goals
-          let subgoalsList := subgoals.toList
-          pure (List.map (fun sg ↦
-              InductionSubgoal.mvarId
-              (CasesSubgoal.toInductionSubgoal sg)) subgoalsList)
-        DestrAnd -- finally, a recursive call (try to comment it)
-        return
+partial def DestrAnd : TacticM Unit := withMainContext do
+  for lh in ← getLCtx do -- get the context
+  let eq := Expr.isAppOf lh.type ``And --checks whether `lh` coincides with `?m_1 ∧ ?m_2`
+  -- let eq := Expr.isAppOfArity lh.type ``And 2 --checks whether `lh` coincides with `?m_1 ∧ ?m_2`
+  if eq then  -- if yes, the code below applies `cases` on `lh`
+    liftMetaTactic -- Get goal, run a tactic, add the new goals to the new the goal list
+      fun goal ↦ do
+      let subgoals ← MVarId.cases goal lh.fvarId --insert new subgoals in the list of goals
+      let subgoalsList := subgoals.toList
+      pure (List.map (fun sg ↦
+          InductionSubgoal.mvarId
+          (CasesSubgoal.toInductionSubgoal sg)) subgoalsList)
+    DestrAnd -- finally, a recursive call (try to comment it)
+    return
 
 elab "destruct_and" : tactic => DestrAnd
 
@@ -537,6 +541,6 @@ example (n m k : ℕ) (H : n = 3 + 1) : True := by
   sorry
 
 
-end elabs
+end NewTactics
 
 end Meta
