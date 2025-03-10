@@ -22,8 +22,7 @@ example (α β : Type) (a b : α) (f : α → β) : a = b → f a = f b := by
 example : ∀ n : ℕ, 0 ≤ n := by
   intro n
   cases n
-  rfl   -- BTW: can you see why it works? Because `le_refl` is tagged `@refl`
-        -- and `rfl` as tactic is actually `apply_refl`.
+  rfl   -- BTW: can you see why it works?
   sorry
 
 
@@ -34,22 +33,17 @@ example (α : Type) (a : α) :
   rfl
   sorry
 
--- Let's try to make this into a `macro`:
 
-macro "cases_rfl" : tactic =>
-  `(tactic | (intro h -- this h will *NOT* overwrite existing variables
-              cases h
-              rfl)) -- try also withouth `)`
+macro "cases_rfl" : tactic => sorry
 
 example (α β : Type) (a b : α) (f : α → β) : a = b → f a = f b := by
-  cases_rfl
-
-example : ∀ n : ℕ, 0 ≤ n := by
-  cases_rfl
   sorry
 
-example (α : Type) (a : α) : ∀ (L : List α), a :: L = (a :: L.drop L.length) ++ (L.take L.length) := by
-  cases_rfl
+example : ∀ n : ℕ, 0 ≤ n := by
+  sorry
+
+example (α : Type) (a : α) : ∀ (L : List α),
+    a :: L = (a :: L.drop L.length) ++ (L.take L.length) := by
   sorry
 
 -- **§** Another example
@@ -76,18 +70,14 @@ lemma abcd_bacb (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (c �
       · sorry
       · sorry
 
--- Can this be improved? Perhaps the following works...
-macro "split_and" "[" ids:ident "]": tactic =>
-  `(tactic| repeat' ( apply And.intro
-                      rcases $ids:ident))
+
+macro "split_and" "[" ids:ident "]": tactic => sorry
 
 lemma abcd_bdc₁ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ d ∧ c:= by
-  split_and [h]
-  repeat' sorry
+  sorry
 
 lemma abcd_bacb₁ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (c ∧ b)) := by
-  split_and [h]
-  repeat' sorry
+  sorry
 
 -- *Somewhat good* but **not really good**...  `⌘`
 
@@ -103,85 +93,68 @@ section Expressions
 
 #check Expr.const
 
-def oneplustwo : Expr :=
-  Expr.app (.const ``Nat.succ []) (mkNatLit 2)
+def oneplustwo : Expr := sorry
 
-#eval oneplustwo
 elab "one+two" : term => return oneplustwo
+-- #eval oneplustwo
 
-#check one+two
-#reduce one+two
+-- #check one+two
+-- #reduce one+two
 
-def oneplustwo' : Expr :=
-  Lean.mkAppN (.const `Nat.add []) #[mkNatLit 1, mkNatLit 2]
+def oneplustwo' : Expr := sorry
 
 elab "one+two'" : term => return oneplustwo'
 
-#check one+two' -- of course we would like `1 + 2` but it is already something.
-#eval one+two'
+-- #check one+two' -- of course we would like `1 + 2` but it is already something.
+-- #eval one+two'
 
 -- **§** We want to create the expression `fun x y => x + y`
 def nat : Expr := Expr.const ``Nat []
 
 #check Expr.lam
 
-def funAdd : Expr :=
-  .lam `x nat -- try replacing `nat` with `ℕ` or `Nat`
-    (.lam `y nat
-      (Lean.mkAppN (.const `Nat.add []) #[.bvar 1, .bvar 0])
-      BinderInfo.default)
-  BinderInfo.default
+def funAdd : Expr := sorry
 
 elab "fun_add" : term => return funAdd
 
-#check funAdd
-#check fun_add
+-- #check funAdd
+-- #check fun_add
 
 -- **§** We want to create the expression `∀ x : Prop, x ∧ x`.
 #check Expr.forallE
 
-def forAllAnd : Expr :=
-  .forallE `x (.sort 0)
-    (Lean.mkAppN (.const `And []) #[.bvar 0, .bvar 0])
-  BinderInfo.default
+def forAllAnd : Expr := sorry
 
 elab "for_all_and" : term => return forAllAnd
 
-#check for_all_and
+-- #check for_all_and
 -- #eval for_all_and
 
 -- **§** We want to create the expression `Type 6`
-def T6 : Expr :=
-  .sort 7
+def T6 : Expr := sorry
 
 elab "type6" : term => return T6
 
 #check T6
 #reduce T6
-#check type6
-#reduce type6
+-- #check type6
+-- #reduce type6
 
 
 -- ## Free variables
 -- **§** We want to create the expression `∀ n : ℕ, d + n` where `d` is a free variable.
-def dAddn : Expr :=
-  let dfvar := Expr.fvar (FVarId.mk `d)
-  Expr.forallE `n nat
-    (Lean.mkAppN (.const `Nat.add []) #[dfvar, .bvar 0]) BinderInfo.default
+def dAddn : Expr := sorry
 
-def dAddP : Expr :=
-  let dfvar := Expr.fvar (FVarId.mk `d)
-  Expr.forallE `P (.sort 0)
-    (Lean.mkAppN (.const `Nat.add []) #[dfvar, .bvar 0]) BinderInfo.default
+def dAddP : Expr := sorry
 
 elab "d+n" : term => return dAddn
 elab "d+P" : term => return dAddP
 
-#check dAddn
-#reduce d+n
+-- #check dAddn
+-- #reduce d+n
 
-#check dAddP
-#reduce d+P
+-- #check dAddP
+-- #reduce d+P
 
 
 -- `⌘`
@@ -201,22 +174,19 @@ instance (σ : Type*) : Monad (State σ) where
     f a s'
 
 -- The following definition is infamously slow as values are repeatedly computed
-def fib (n : ℕ) : ℕ :=
-  match n with
- | 0 => 1
- | 1 => 1
- | k + 2 => (fib k) + fib (k+1)
+def fib (n : ℕ) : ℕ := sorry
 
-set_option trace.profiler true in
-#eval fib 32
-set_option trace.profiler true in
-#eval fib 33
+-- set_option trace.profiler true in
+-- #eval fib 32
+-- set_option trace.profiler true in
+-- #eval fib 33
 
--- In *python*
--- >>> def fib(n, computed = {0: 0, 1: 1}):
--- ...     if n not in computed:
--- ...         computed[n] = fib(n-1, computed) + fib(n-2, computed)
--- ...     return computed[n]
+/-In *python*
+def fib(n, computed = {0: 0, 1: 1}):
+  if n not in computed:
+    computed[n] = fib(n-1, computed) + fib(n-2, computed)
+  return computed[n]
+-/
 
 abbrev FibM := State (List ℕ) -- The `State` monad with `σ = List ℕ`
 
@@ -259,12 +229,9 @@ end Monads
 /- **§** We want to create a metavariable with type `ℕ`, and assign to it value `3`. -/
 
 
-def var3 : MetaM Unit := do
-  let mv ← mkFreshExprMVar nat
-  -- mv.mvarId!.assign (mkNatLit 3) -- try `#eval show` below before and after commenting
-  IO.println s!"The value of the new metavariable is {← instantiateMVars mv}"
+def var3 : MetaM Unit := sorry
 
-#eval show MetaM Unit from do var3
+-- #eval show MetaM Unit from do var3
 
 
 /- **§** The `explore` "tactic" simply
@@ -343,10 +310,6 @@ elab "show_fun" : tactic => ExtrFn
 
 
 example (α β : Type) (f g : α → β) (a : α) (h : f a = g a) : True := by
-  count_variables''
-  count_variables'
-  count_variables
-  show_fun
   sorry
 
 example (α : Type) (f g h : α → ℕ) (h : f = g ∨ g = h) : True := by
@@ -359,11 +322,9 @@ example (α : Type) (f g h : α → ℕ) (h : f = g ∨ g = h) : True := by
   · sorry
 
 example (α : Type) (h : ∀ f : ℕ → ℕ, f 0 = f 1) : False := by
-  show_fun
   sorry
 
 example (α : Type) (I : ℕ → Type) (x : Π (n : ℕ), I n) : False := by
-  show_fun
   sorry
 
 
@@ -380,8 +341,7 @@ elab "solve" : tactic => do
 
 
 theorem TwoIsTwo' (hA : 1 = 1) (hB : 2 = 2) : 2 = 2 := by
-  explore
-  solve
+  sorry
 
 -- `⌘`
 
@@ -409,8 +369,7 @@ macro "DeepMind_induction " ids:term : tactic =>
               induction $ids))
 
 example (n : ℕ) : n + 1 = 1 + n := by
-  DeepMind_induction 12
-  repeat' sorry
+  sorry
 
 
 -- `⌘`
@@ -470,19 +429,16 @@ lemma abcd_ac (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : (a ∧ c) := by
 
 /- All this calls for a **macro!** -/
 
-macro "close_and" : tactic =>
-  `(tactic | (repeat' (repeat' apply And.intro)
-                      destruct_and
-                      assumption ))
+macro "close_and" : tactic => sorry
 
 lemma abcd_bdc₃ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ d ∧ c := by
-  close_and
+  sorry
 
 lemma abcd_bacb₃ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (c ∧ b)) := by
-  close_and
+  sorry
 
 lemma abcd_ac₃ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : (a ∧ c) := by
-  close_and
+  sorry
 
 -- ## Modifying terms
 
