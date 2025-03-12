@@ -167,7 +167,7 @@ Let's begin by implementing two tactics, one that simply counts the number of va
 
         * `getLCtx` returns the local context (as a term in `TacticM LocalContext`), and `lctx` is the array describing it (a term in `LocalContext`).
 
-        * Given a **bound variable** `bvar : α`, a **term** `mx : m α` and an **expression containing** `bvar`, say `expr(bvar) : m α`, the syntax  `let bvar ← mx expr(bvar)` is a syntactic sugar for the term in `m β` defined as
+        * Given a **bound variable** `bvar : α`, a **term** `mx : m α` and an **expression containing** `bvar`, say `expr(bvar) : m β`, the syntax  `let bvar ← mx expr(bvar)` is a syntactic sugar for the term in `m β` defined as
 
       ```lean
       bind mx (fun bvar ↦ expr(bvar))
