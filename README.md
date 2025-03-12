@@ -56,5 +56,5 @@ Classes are on Wednesday, from 10.00AM to 1.0PM, at <a href="https://www.ens-lyo
 | Feb 19th | Lists | F. Nuccio | **The class will finish at 12:30PM**
 | Feb 26th  | Categories in Lean 3 | S. Morel
 | Mar 5th | _Holidays_ | ---
-| Mar 12th | Introduction to Metaprogramming | F. Nuccio |
+| Mar 12th | Introduction to Metaprogramming | F. Nuccio | **The class will finish at 12:30PM**
 
