@@ -85,7 +85,7 @@ extra-property:
 
 (a compatibility is required between `pure` and `bind`, but we neglect it).
 
-The interest of `bind` is that it allows composition: if `f : a → m β` and `g : β → m γ` then we would like `g ∘ f : a → m γ`, but it does not type-check. On the other hand,
+The interest of `bind` is that it allows composition: if `f : a → m β` and `g : β → m γ` then we would like `g ∘ f : α → m γ`, but it does not type-check. On the other hand,
 
 ```lean
 fun (a : α) ↦ bind (bind (pure a) f) g
@@ -100,7 +100,7 @@ fun (a : α) ↦ pure a >>= f >>= g : α → m γ
 * One example of a monad is `Option α`: it is the type of terms either of the form `some a` for `a : α`, or equal to the extra-term `none : Option α`. Here, 
 
       pure (a : α) = some a
-      bind (some a) f = some f a
+      bind (some a) f = f a
       bind none f = none
 
   `Option` is useful to encode errors: `List.get : ℕ → List α → Option (List α)`, so that `L.get n = none` whenever `n > L.length`.
