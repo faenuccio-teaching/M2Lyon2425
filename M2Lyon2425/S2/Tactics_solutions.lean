@@ -64,9 +64,9 @@ lemma abcd_bdc (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ d ∧ c := b
   · sorry
   · sorry
 
-lemma abcd_bacb (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (c ∧ b)) := by
+lemma abcd_bacb (a b c d : Prop) (Hyp : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (c ∧ b)) := by
   apply And.intro
-  · rcases h with ⟨ha, hbcd⟩
+  · rcases Hyp with ⟨ha, hbcd⟩
     rcases hbcd with ⟨hbc, hd⟩
     rcases hbc with ⟨hb, hc⟩
     assumption
@@ -85,8 +85,8 @@ lemma abcd_bdc₁ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ d ∧ c:=
   split_and [h]
   repeat' sorry
 
-lemma abcd_bacb₁ (a b c d : Prop) (h : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (c ∧ b)) := by
-  split_and [h]
+lemma abcd_bacb₁ (a b c d : Prop) (Hyp : a ∧ (b ∧ c) ∧ d) : b ∧ (a ∧ (c ∧ b)) := by
+  split_and [Hyp]
   repeat' sorry
 
 -- *Somewhat good* but **not really good**...  `⌘`
@@ -164,6 +164,9 @@ elab "type6" : term => return T6
 
 -- ## Free variables
 -- **§** We want to create the expression `∀ n : ℕ, d + n` where `d` is a free variable.
+
+#check Expr.fvar
+#check FVarId.mk
 def dAddn : Expr :=
   let dfvar := Expr.fvar (FVarId.mk `d)
   Expr.forallE `n nat
@@ -220,11 +223,11 @@ set_option trace.profiler true in
 
 abbrev FibM := State (List ℕ) -- The `State` monad with `σ = List ℕ`
 
-/-Recall: `State (List ℕ) ℕ := List ℕ → List ℕ × ℕ`: `Fib n` is a function that take a list `L` of
-natural numbers (morally: of *Fibonacci numbers*) and returns the pair
+/-Recall: `State (List ℕ) ℕ := List ℕ → List ℕ × ℕ`: `Fib n` is a function that takes a list
+`L` of natural numbers (morally: of *Fibonacci numbers*) and returns the pair
 `(Fn := [fib 0, fib 1,...fib n) , fib n)`, using the input list `L` as an helper to compute `Fn`.
-
 -/
+
 def Fib (n : ℕ) : FibM ℕ := do
   fun L ↦ match L[n]? with
     | some y => ⟨L, y⟩          -- case when `n < L.length`
@@ -235,7 +238,7 @@ def Fib (n : ℕ) : FibM ℕ := do
         let (L₁, s₁) := (Fib k) L
         let (L₂, s₂) := (Fib (k + 1)) L₁     -- this steps relies on the previous
         let sum : ℕ := s₁ + s₂
-        -- let sum : ℕ := ((FibM_bad k) L).2 + ((FibM_bad (k+1)) L).2 -- this does not work
+        -- let sum : ℕ := ((Fib k) L).2 + ((Fib (k+1)) L).2 -- this does not work
         ⟨L₂ ++ [sum], sum⟩      -- the `List`-part of the output has been updated
 
 #check (Fib : ℕ → State (List ℕ) ℕ)
@@ -250,6 +253,9 @@ instance : Repr (State (List ℕ) ℕ) := ⟨fun f n ↦ instReprNat.reprPrec (f
 
 
 end Monads
+
+
+-- `⌘`
 
 
 -- ## Metavariables
