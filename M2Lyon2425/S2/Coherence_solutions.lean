@@ -486,6 +486,6 @@ end FreeBicategory
 
 example (B : Type*) [Bicategory B] (X Y : B) (f g : X ⟶ Y)
     (u v : f ⟶ g) : f = g := by
-  bicategory_coherence
+  bicategory_coherence -- we have not imported the tactic...
 
 end CategoryTheory
