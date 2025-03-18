@@ -3,6 +3,7 @@ import Mathlib.CategoryTheory.Bicategory.LocallyDiscrete
 import Mathlib.CategoryTheory.Functor.FullyFaithful
 import Mathlib.CategoryTheory.PathCategory
 import Mathlib.Algebra.Free
+import Mathlib.Logic.Relation
 
 /-
 # Coherence
@@ -145,11 +146,114 @@ def M := Quot (relW X)
 
 variable {X}
 
+lemma quot_mk_one_left (a : W X) :
+    Quot.mk (relW X) (W.empty * a) =
+    Quot.mk (relW X) a := Quot.sound (relW.one_left _)
+
+lemma quot_mk_one_right (a : W X) :
+    Quot.mk (relW X) (a * W.empty) =
+    Quot.mk (relW X) a := Quot.sound (relW.one_right _)
+
+lemma quot_mk_assoc (a b c : W X) :
+    Quot.mk (relW X) ((a * b) * c) =
+    Quot.mk (relW X) (a * (b * c)) :=
+  Quot.sound (relW.assoc _ _ _)
+
+local instance : Trans (EqvGen (relW X)) (EqvGen (relW X)) (EqvGen (relW X)) where
+  trans := EqvGen.trans _ _ _
+
+lemma relW_mul_left (a b x : W X)
+    (rel : relW X a b) :
+    Quot.mk (relW X) (x * a) = Quot.mk (relW X) (x * b) := by
+  apply Quot.EqvGen_sound
+  revert rel a b
+  rintro _ _ (⟨a, b, c⟩ | ⟨a, b, c, d⟩ | ⟨a⟩ | ⟨a⟩ | ⟨a, b⟩ | ⟨a, b⟩)
+  · exact EqvGen.rel _ _ (relW.left _ _ _ _)
+  · calc EqvGen (relW X) (x * (a * (b * c * d))) ((x * a) * (b * c * d)) :=
+           EqvGen.symm _ _ (EqvGen.rel _ _ (relW.assoc _ _ _))
+         EqvGen (relW X) _ ((x * a) * (b * (c * d))) := EqvGen.rel _ _ (relW.left _ _ _ _)
+         EqvGen (relW X) _ (x * (a * (b * (c * d)))) := EqvGen.rel _ _ (relW.assoc _ _ _)
+  · exact EqvGen.rel _ _ (relW.left_one_left _ _)
+  · exact EqvGen.rel _ _ (relW.left_one_right _ _)
+  · calc EqvGen (relW X) (x * (b * (W.empty * a))) ((x * b) * (W.empty * a)) :=
+           EqvGen.symm _ _ (EqvGen.rel _ _ (relW.assoc _ _ _))
+         EqvGen (relW X) _ ((x * b) * a) := EqvGen.rel _ _ (relW.left_one_left _ _)
+         EqvGen (relW X) _ (x * (b * a)) := EqvGen.rel _ _ (relW.assoc _ _ _)
+  · calc EqvGen (relW X) (x * (b * (a * W.empty))) ((x * b) * (a * W.empty)) :=
+           EqvGen.symm _ _ (EqvGen.rel _ _ (relW.assoc _ _ _))
+         EqvGen (relW X) _ ((x * b) * a) := EqvGen.rel _ _ (relW.left_one_right _ _)
+         EqvGen (relW X) _ (x * (b * a)) := EqvGen.rel _ _ (relW.assoc _ _ _)
+
+lemma relW_mul_right (a b x : W X)
+    (rel : relW X a b) :
+    Quot.mk (relW X) (a * x) = Quot.mk (relW X) (b * x) := by
+  apply Quot.EqvGen_sound
+  revert rel a b
+  rintro _ _ (⟨a, b, c⟩ | ⟨a, b, c, d⟩ | ⟨a⟩ | ⟨a⟩ | ⟨a, b⟩ | ⟨a, b⟩)
+  · calc EqvGen (relW X) (a * b * c * x) ((a * b) * (c * x)) := EqvGen.rel _ _ (relW.assoc _ _ _)
+         EqvGen (relW X) _ (a * (b * (c * x))) := EqvGen.rel _ _ (relW.assoc _ _ _)
+         EqvGen (relW X) _ (a * ((b * c) * x)) := EqvGen.symm _ _ (EqvGen.rel _ _ (relW.left _ _ _ _))
+         EqvGen (relW X) _ ((a * (b * c)) * x) := EqvGen.symm _ _ (EqvGen.rel _ _ (relW.assoc _ _ _))
+  · calc EqvGen (relW X) (a * (b * c * d) * x) (a * ((b * c * d) * x)) :=
+           EqvGen.rel _ _ (relW.assoc _ _ _)
+         EqvGen (relW X) _ (a * ((b * c) * (d * x))) := EqvGen.rel _ _ (relW.left _ _ _ _)
+         EqvGen (relW X) _ (a * (b * (c * (d * x)))) := EqvGen.rel _ _ (relW.left _ _ _ _)
+         EqvGen (relW X) _ (a * (b * ((c * d) * x))) :=
+           EqvGen.symm _ _ (Quot.exact _ (relW_mul_left _ _ _ (relW.left _ _ _ _)))
+         EqvGen (relW X) _ (a * ((b * (c * d)) * x)) :=
+           EqvGen.symm _ _ (EqvGen.rel _ _ (relW.left _ _ _ _))
+         EqvGen (relW X) _ (a * (b * (c * d)) * x) := EqvGen.symm _ _ (EqvGen.rel _ _ (relW.assoc _ _ _))
+  · calc EqvGen (relW X) (W.empty * _ * x) (W.empty * (_ * x)) := EqvGen.rel _ _ (relW.assoc _ _ _)
+         EqvGen (relW X) _ (_ * x) := EqvGen.rel _ _ (relW.one_left _)
+  · calc EqvGen (relW X) (_ * W.empty * x) (_ * (W.empty * x)) := EqvGen.rel _ _ (relW.assoc _ _ _)
+         EqvGen (relW X) _ (_ * x) := EqvGen.rel _ _ (relW.left_one_left _ _)
+  · calc EqvGen (relW X) (b * (W.empty * a) * x) (b * _) := EqvGen.rel _ _ (relW.assoc _ _ _)
+         EqvGen (relW X) _ (b * _) := EqvGen.rel _ _ (relW.left _ _ _ _)
+         EqvGen (relW X) _ (b * (a * x)) := EqvGen.rel _ _ (relW.left_one_left _ _)
+         EqvGen (relW X) _ (b * a * x) := EqvGen.symm _ _ (EqvGen.rel _ _ (relW.assoc _ _ _))
+  · calc EqvGen (relW X) (b * (a * W.empty) * x) (b * _) := EqvGen.rel _ _ (relW.assoc _ _ _)
+         EqvGen (relW X) _ (b * (a * (W.empty * x))) := EqvGen.rel _ _ (relW.left _ _ _ _)
+         EqvGen (relW X) _ ((b * _) * _) := EqvGen.symm _ _ (EqvGen.rel _ _ (relW.assoc _ _ _))
+         EqvGen (relW X) _ (b * a * x) := EqvGen.rel _ _ (relW.left_one_left _ _)
+
+lemma quot_mk_mul_right (a b c : W X)
+    (eq : Quot.mk (relW X) a = Quot.mk (relW X) b) :
+    Quot.mk (relW X) (a * c) = Quot.mk (relW X) (b * c) := by
+  refine Quot.EqvGen_sound ?_
+  set r := Function.onFun (EqvGen (relW X)) (fun x ↦ x * c)
+  have h : Equivalence r :=
+    Equivalence.comap (EqvGen.is_equivalence (relW X)) (fun x ↦ x * c)
+  change r a b
+  rw [← Equivalence.eqvGen_iff h]
+  exact EqvGen.mono (fun a b rel ↦ (Quot.exact (relW X)
+    (relW_mul_right a b c rel))) (Quot.exact _ eq)
+
 @[simp]
 def F (w : W X) (n : N X) : N X := match w with
   | W.empty => n
   | W.of x => N.concX n x
   | W.conc a b => (F b) (F a n)
+
+lemma quot_mk_F (w : W X) (n : N X) :
+    Quot.mk (relW X) (inclusion X (F w n)) =
+    Quot.mk (relW X) ((inclusion X n) * w) := by
+  match w with
+  | W.empty => dsimp [F]; simp [quot_mk_one_right]
+  | W.of x => dsimp [F, inclusion]; rfl
+  | W.conc a b =>
+    dsimp [F]
+    rw [quot_mk_F]; erw [← quot_mk_assoc]
+    exact quot_mk_mul_right _ _ b (quot_mk_F a n)
+
+lemma quot_mk_F' (w : W X) :
+    Quot.mk (relW X) (inclusion X (F w N.empty)) =
+    Quot.mk (relW X) w := by
+  simp [quot_mk_F w N.empty, inclusion, quot_mk_one_left]
+
+lemma F_inclusion (n : N X) : F (inclusion X n) N.empty = n := by
+  match n with
+  | N.empty => dsimp [F, inclusion]
+  | N.concX n x => dsimp [F, inclusion]; rw [F_inclusion]
 
 @[simp]
 def f_aux (x : M X) (n : N X) : N X := by
@@ -170,11 +274,19 @@ def equiv : M X ≃ N X where
   left_inv x := by
     dsimp
     refine Quot.inductionOn x (fun w ↦ ?_)
-    sorry
-  right_inv n := sorry
+    change Quot.mk (relW X) (inclusion X (F w N.empty)) = _
+    simp [quot_mk_F']
+  right_inv n := by
+    dsimp
+    change F _ N.empty = _
+    rw [F_inclusion]
+
 
 
 /- Coming back to bicategories.
+
+This was all taken from the mathlib file `Mathlib.CategoryTheory.Bicategory.Coherence`,
+so you can find solutions there.
 -/
 
 open Quiver (Path)
@@ -371,5 +483,9 @@ def inclusion (B : Type u) [Quiver.{v + 1} B] :
     mapComp := fun f g => inclusionMapCompAux f.as g.as }
 
 end FreeBicategory
+
+example (B : Type*) [Bicategory B] (X Y : B) (f g : X ⟶ Y)
+    (u v : f ⟶ g) : f = g := by
+  bicategory_coherence
 
 end CategoryTheory
