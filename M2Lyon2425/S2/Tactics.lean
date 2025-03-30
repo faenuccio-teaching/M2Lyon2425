@@ -236,9 +236,28 @@ end Monads
 /- **§** We want to create a metavariable with type `ℕ`, and assign to it value `3`. -/
 
 
-def var3 : MetaM Unit := sorry
+def var3 : MetaM Unit := do
+  let mv ← mkFreshExprMVar nat
+  -- mv.mvarId!.assign (mkNatLit 3)
+  IO.println s!"The value of the new metavariable is {← instantiateMVars mv}"
 
--- #eval show MetaM Unit from do var3
+def var3' : MetaM Unit := do
+  -- let mx := mkFreshExprMVar (some nat)
+  -- let f := fun (mv : Expr) ↦ Lean.MVarId.assign (m := MetaM) (Lean.Expr.mvarId! mv) (mkNatLit 5)
+  -- let sugar := bind mx f
+  let (mx : MetaM Expr) := mkFreshExprMVar nat
+  let f : Expr → MetaM Expr := fun e ↦ instantiateMVars (m := MetaM) e
+  -- let (mv : Expr) ← mkFreshExprMVar nat
+  let mv : MetaM Expr := bind mx f
+
+  -- let my : MetaM Expr := instantiateMVars (m := MetaM) mv
+  let g : Expr → MetaM Unit := fun a ↦ IO.println s!"The value of the new metavariable is {a}"
+  let h : Expr → MetaM Unit := fun e ↦ Lean.MVarId.assign (m := MetaM) (Lean.Expr.mvarId! e)
+    (mkNatLit 5)
+  bind mv g
+
+
+#eval show MetaM Unit from do var3'
 
 
 /- **§** The `explore` "tactic" simply

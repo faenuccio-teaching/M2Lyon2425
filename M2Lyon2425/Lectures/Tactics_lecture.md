@@ -103,7 +103,7 @@ fun (a : α) ↦ pure a >>= f >>= g : α → m γ
       bind (some a) f = f a
       bind none f = none
 
-  `Option` is useful to encode errors: `List.get : ℕ → List α → Option (List α)`, so that `L.get n = none` whenever `n > L.length`.
+  `Option` is useful to encode errors: `List.get : ℕ → List α → Option (List α)`, so that `L.get n = none` whenever `n > L.length`. In this case, `bind` allows to efficiently chain operations by taking into account that at any point one of them might throw an error, in which case the whole chain outputs an error.
 
 
 * Another useful example is `State σ α` where `σ : Type*` is some "state-carrying" type: it is simply
