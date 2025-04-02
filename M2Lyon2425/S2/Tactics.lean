@@ -238,8 +238,9 @@ end Monads
 
 def var3 : MetaM Unit := do
   let mv ← mkFreshExprMVar nat
-  -- mv.mvarId!.assign (mkNatLit 3)
-  IO.println s!"The value of the new metavariable is {← instantiateMVars mv}"
+  do Lean.MVarId.assign (Lean.Expr.mvarId! mv) (mkNatLit 3)
+  let instmv ← instantiateMVars mv
+  do IO.println s!"The value of the new metavariable is {instmv}"
 
 def var3' : MetaM Unit := do
   -- let mx := mkFreshExprMVar (some nat)
@@ -252,9 +253,10 @@ def var3' : MetaM Unit := do
 
   -- let my : MetaM Expr := instantiateMVars (m := MetaM) mv
   let g : Expr → MetaM Unit := fun a ↦ IO.println s!"The value of the new metavariable is {a}"
-  let h : Expr → MetaM Unit := fun e ↦ Lean.MVarId.assign (m := MetaM) (Lean.Expr.mvarId! e)
-    (mkNatLit 5)
-  bind mv g
+  let h : Expr → MetaM Unit := fun e ↦
+    Lean.MVarId.assign (m := MetaM) (Lean.Expr.mvarId! e) (mkNatLit 5)
+  -- bind mv g
+  bind mv h
 
 
 #eval show MetaM Unit from do var3'
