@@ -79,7 +79,7 @@ jobs:
 
       - name: "Upload website (API documentation, blueprint and any home page)"
         # if: github.event_name == 'push'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           # path: ${{ env.HOME_PAGE_EXISTS == 'true' && 'home_page/_site' || 'home_page/' }}
           path: home_page/_site
