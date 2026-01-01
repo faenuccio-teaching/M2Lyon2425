@@ -33,7 +33,7 @@ jobs:
         run: ~/.elan/bin/lake exe cache get || true
 
       - name: Cache mathlib docs
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .lake/build/doc
           key: MathlibDoc-${{ hashFiles('lake-manifest.json') }}
